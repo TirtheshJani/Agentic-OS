@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "validate:skills": "node scripts/validate-skills.mjs",
+    "validate:automations": "node scripts/validate-automations.mjs"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",
@@ -15,6 +17,7 @@
     "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",

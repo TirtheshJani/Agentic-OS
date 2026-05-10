@@ -1,0 +1,11 @@
+{
+  "newFileLocation": "folder",
+  "newFileFolderPath": "raw/daily",
+  "useMarkdownLinks": false,
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "raw/attachments",
+  "showLineNumber": true,
+  "spellcheck": false,
+  "promptDelete": true,
+  "trashOption": "system"
+}

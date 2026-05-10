@@ -27,9 +27,16 @@ Bias toward concrete questions over generic checklists.
    - URL `https://github.com/<owner>/<repo>/pull/<num>`
    - shorthand `<owner>/<repo>#<num>`
    - just `#<num>` if the user has a default repo set in context
-   Extract `owner`, `repo`, `num`.
+   Extract `owner`, `repo`, `num`. The deterministic parser is at
+   `../../../scripts/validators/parse_pr_id.py` — call it via
+   `echo "<input>" | python ../../../scripts/validators/parse_pr_id.py`
+   (set `DEFAULT_REPO=owner/repo` for the bare-`#num` case).
 
-2. **Fetch in parallel.** Use the GitHub MCP:
+2. **Fetch in parallel.** Use the GitHub MCP. Before the first call,
+   read `../../../references/services/github.md` for tool selection
+   (prefer `pull_request_read` over multiple `get_file_contents`),
+   the 30/min secondary search-API limit, and how to disambiguate
+   the three flavors of 403.
    - `pull_request_read` for the PR body, base/head SHAs, labels,
      reviewers, mergeable state, draft status.
    - `pull_request_read` with the `files` mode (or

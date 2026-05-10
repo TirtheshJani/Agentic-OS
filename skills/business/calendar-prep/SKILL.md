@@ -19,6 +19,11 @@ Pick one of the five orchestration patterns from standards/skill-authoring.md
 (sequential / multi-MCP / iterative refinement / context-aware tool selection
 / domain-specific intelligence) and structure the body around it.
 
+## References
+- `../../../references/services/calendar.md` — Calendar MCP scopes,
+  `singleEvents=true` for recurring expansion, all-day-event date
+  shape (exclusive `end.date`), and how to filter declined events.
+
 ## Inputs
 TODO
 

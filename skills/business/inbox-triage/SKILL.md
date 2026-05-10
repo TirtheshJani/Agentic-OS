@@ -34,11 +34,14 @@ update the rubric — don't override it inline.
    reply-drafting rules, and escalation list into context. Without
    this the classifications will be inconsistent across runs.
 
-2. **Pull threads.** Call
-   `mcp__a6c76000-...__search_threads` with a query like
-   `in:inbox is:unread newer_than:<since>` (default `since=2d`). Cap
-   at `max_threads` (default 50). For each thread, call
-   `get_thread` to read the body and metadata.
+2. **Pull threads.** Read
+   `../../../references/services/gmail.md` first for required scopes,
+   the threads-vs-messages distinction, the indexing-lag rule for
+   newly-created drafts, and the privacy rule (thread bodies never
+   go in the report). Call the Gmail MCP `search_threads` with a
+   query like `in:inbox is:unread newer_than:<since>` (default
+   `since=2d`). Cap at `max_threads` (default 50). For each thread,
+   call `get_thread` to read the body and metadata.
 
 3. **Classify each thread** into one of the rubric buckets: Reply
    now, Reply later, Read & file, Archive, Spam/Promo. Apply the
@@ -62,6 +65,13 @@ update the rubric — don't override it inline.
    per thread. For Reply-now items, include the draft id (Gmail
    surfaces it as a `messageId` of the draft) so the user can find it
    in Gmail's drafts list.
+
+   Optional self-check after writing (confirms every rubric bucket
+   heading is present and counts add up):
+   ```
+   python ../../../scripts/validators/check_rubric_coverage.py \
+     vault/wiki/business/inbox-<today>.md
+   ```
 
 7. **Surface anything threatening / legal / security-flagged**
    directly in the response, not just in the report. Don't

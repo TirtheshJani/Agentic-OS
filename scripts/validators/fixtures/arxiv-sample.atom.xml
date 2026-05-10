@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <link href="http://arxiv.org/api/query?search_query=cat:cs.LG&amp;start=0&amp;max_results=2" rel="self" type="application/atom+xml"/>
+  <title type="html">arXiv Query: cat:cs.LG</title>
+  <id>http://arxiv.org/api/sample/00000001</id>
+  <updated>2026-05-10T00:00:00Z</updated>
+  <opensearch:totalResults xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">2</opensearch:totalResults>
+  <opensearch:startIndex xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">0</opensearch:startIndex>
+  <opensearch:itemsPerPage xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">2</opensearch:itemsPerPage>
+
+  <entry>
+    <id>http://arxiv.org/abs/2505.04321v1</id>
+    <updated>2026-05-09T18:00:00Z</updated>
+    <published>2026-05-09T18:00:00Z</published>
+    <title>Compute-optimal RAG at 1M context</title>
+    <summary>
+      We argue that token cost dominates retrieval cost above the
+      1M-token regime, and propose a query-rewriter that halves prompt
+      tokens at equal recall.
+    </summary>
+    <author>
+      <name>A. Smith</name>
+    </author>
+    <author>
+      <name>B. Lee</name>
+    </author>
+    <link href="http://arxiv.org/abs/2505.04321v1" rel="alternate" type="text/html"/>
+    <link title="pdf" href="http://arxiv.org/pdf/2505.04321v1" rel="related" type="application/pdf"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <arxiv:comment xmlns:arxiv="http://arxiv.org/schemas/atom">8 pages, 3 figures</arxiv:comment>
+  </entry>
+
+  <entry>
+    <id>http://arxiv.org/abs/2505.04305v1</id>
+    <updated>2026-05-09T17:30:00Z</updated>
+    <published>2026-05-09T17:30:00Z</published>
+    <title>Retriever-as-cache for streaming LLMs</title>
+    <summary>
+      A small engineering paper showing how to maintain a streaming
+      retriever cache without re-embedding stable spans.
+    </summary>
+    <author>
+      <name>C. Chen</name>
+    </author>
+    <link href="http://arxiv.org/abs/2505.04305v1" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+</feed>

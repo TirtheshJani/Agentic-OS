@@ -73,12 +73,17 @@ clone runs.
 **Consequences.** Upstream changes do not auto-update; we re-vendor on
 demand. Acceptable — both upstreams are stable.
 
-**Provenance (filled in at clone time):**
+**Provenance:**
 
-- `skills/_meta/skill-creator/` ← `anthropics/skills` @ `<sha>`
-  (cloned `<date>`)
-- `skills/_meta/karpathy-guidelines/` ← `forrestchang/andrej-karpathy-skills`
-  @ `<sha>` (cloned `<date>`)
+- `skills/_meta/skill-creator/` ← [`anthropics/skills`](https://github.com/anthropics/skills)
+  @ `f458cee31a7577a47ba0c9a101976fa599385174` (cloned 2026-05-10).
+- `skills/_meta/karpathy-guidelines/` ← [`forrestchang/andrej-karpathy-skills`](https://github.com/forrestchang/andrej-karpathy-skills)
+  @ `2c606141936f1eeef17fa3043a72095b4765b9c2` (cloned 2026-05-10).
+- `template/SKILL.md` ← `anthropics/skills/template/SKILL.md` @ same SHA as
+  `skill-creator` above.
+
+To re-vendor: clone the upstream, copy the subtree, update the SHA above,
+commit. No automated sync — that's intentional (see decision body).
 
 ---
 

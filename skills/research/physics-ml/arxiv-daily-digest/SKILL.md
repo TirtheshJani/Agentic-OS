@@ -30,7 +30,10 @@ adjusting defaults.
    categories: from `references/arxiv-categories.md` (cs.LG, stat.ML,
    cs.CL, cs.CV, physics.med-ph).
 
-2. **Fetch listings.** For each category, call:
+2. **Fetch listings.** Read
+   `../../../../references/services/arxiv.md` first for endpoint
+   shape, query patterns, the courtesy 3s gap, and the UTC-date
+   gotcha. For each category, call:
    ```
    https://export.arxiv.org/api/query
      ?search_query=cat:<cat>
@@ -40,7 +43,14 @@ adjusting defaults.
    Parse the Atom XML. Extract: id, title, authors (first 3 + "et al"
    if more), abstract, primary category, submitted timestamp, link.
    Filter to entries whose submitted date matches the target date.
-   Dedupe across categories by id (papers cross-list).
+   Dedupe across categories by canonical id (strip `vN` — papers
+   cross-list).
+
+   Optional shape check on the raw response (catches arXiv-side
+   format drift early):
+   ```
+   python ../../../../scripts/validators/validate_arxiv_atom.py response.xml
+   ```
 
 3. **Cap and prioritize.** If more than `max_papers` (default 20)
    match, keep the most-recent that also match the user's tag hints

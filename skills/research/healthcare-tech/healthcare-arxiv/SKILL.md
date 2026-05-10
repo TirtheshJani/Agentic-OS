@@ -19,6 +19,12 @@ Pick one of the five orchestration patterns from standards/skill-authoring.md
 (sequential / multi-MCP / iterative refinement / context-aware tool selection
 / domain-specific intelligence) and structure the body around it.
 
+## References
+- `../../../../references/services/arxiv.md` — endpoint, query
+  patterns, courtesy 3s gap, UTC date gotcha, cross-list dedupe.
+- `../../../../scripts/validators/validate_arxiv_atom.py` —
+  shape-check on the raw Atom response.
+
 ## Inputs
 TODO
 

@@ -19,6 +19,11 @@ Pick one of the five orchestration patterns from standards/skill-authoring.md
 (sequential / multi-MCP / iterative refinement / context-aware tool selection
 / domain-specific intelligence) and structure the body around it.
 
+## References
+- `../../../../references/services/gmail.md` — Gmail MCP scopes,
+  threads-vs-messages, indexing-lag, and the privacy rule (thread
+  bodies never go to vault).
+
 ## Inputs
 TODO
 

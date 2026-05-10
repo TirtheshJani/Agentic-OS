@@ -36,10 +36,16 @@ abort.
      captures.
    - **Calendar:** call the Calendar MCP `list_events` for the date
      range `<date>T00:00 → <date>T23:59` on the user's primary
-     calendar. Capture title, start/end, and attendees.
+     calendar. Capture title, start/end, and attendees. See
+     `../../../references/services/calendar.md` for the
+     `singleEvents=true` requirement, the all-day-event
+     `start.date` / `end.date` shape, and how to filter declined
+     events out.
    - **GitHub:** call `search_issues` with
      `is:pr author:@me updated:<date>` and `is:issue author:@me
-     updated:<date>` to find PRs and issues the user touched.
+     updated:<date>` to find PRs and issues the user touched. See
+     `../../../references/services/github.md` for the `@me`
+     convention and the search-API secondary rate limit.
 
    If a source errors or is empty, note it as `(unavailable)` and
    continue.

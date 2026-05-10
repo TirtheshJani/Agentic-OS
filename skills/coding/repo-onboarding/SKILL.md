@@ -19,6 +19,11 @@ Pick one of the five orchestration patterns from standards/skill-authoring.md
 (sequential / multi-MCP / iterative refinement / context-aware tool selection
 / domain-specific intelligence) and structure the body around it.
 
+## References
+- `../../../references/services/github.md` — GitHub MCP rate limits,
+  scope requirements, default-branch detection, and tool-selection
+  notes for reading repo structure efficiently.
+
 ## Inputs
 TODO
 

@@ -29,8 +29,11 @@ ranker.
    overridden by the user.
 
 2. **Fetch GitHub trending in parallel.** GitHub doesn't expose
-   `trending` via the API, so approximate it. For each tracked
-   language, call:
+   `trending` via the API, so approximate it. See
+   `../../../../references/services/github.md` for rate-limit shape
+   (especially the 30/min search-API secondary limit — easy to hit
+   when fanning out across languages). For each tracked language,
+   call:
    ```
    mcp__github__search_repositories
      query: "language:<lang> created:>YYYY-MM-DD"  // last 7 days
@@ -40,7 +43,10 @@ ranker.
    ```
    Take the top 5 per language, dedupe across languages.
 
-3. **Fetch arXiv in parallel.** For each category, call
+3. **Fetch arXiv in parallel.** See
+   `../../../../references/services/arxiv.md` for endpoint params and
+   the courtesy 3s gap (stagger across categories — don't fan out).
+   For each category, call
    `https://export.arxiv.org/api/query?search_query=cat:<cat>&sortBy=submittedDate&sortOrder=descending&max_results=15`.
    The response is Atom XML; parse `entry/title`, `entry/summary`,
    `entry/id`, `entry/published`. Dedupe across categories by arXiv

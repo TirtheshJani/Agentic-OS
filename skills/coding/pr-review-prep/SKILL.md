@@ -1,6 +1,6 @@
 ---
 name: pr-review-prep
-description: Given a GitHub PR URL, fetch the diff, files changed, and CI status via the GitHub MCP, then prepare a review checklist with hot-spots and questions. Use when the user asks to "prep PR <url>", "review this PR", "what should I look at in <pr>".
+description: Given a GitHub PR URL, fetch the diff, files changed, and CI status via the GitHub MCP, then prepare a review checklist with hot-spots and questions. Use when the user asks to "prep PR [url]", "review this PR", "what should I look at in [pr]".
 license: MIT
 metadata:
   status: stub

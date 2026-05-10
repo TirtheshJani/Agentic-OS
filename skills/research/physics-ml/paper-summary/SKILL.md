@@ -1,6 +1,6 @@
 ---
 name: paper-summary
-description: Given an arXiv ID, DOI, or paper title, fetch metadata via Semantic Scholar, summarize the paper, and write a structured note to vault/wiki/research/physics-ml/. Use when the user asks to "summarize this paper", "explain arxiv 2401.XXXXX", "give me the gist of <paper>".
+description: Given an arXiv ID, DOI, or paper title, fetch metadata via Semantic Scholar, summarize the paper, and write a structured note to vault/wiki/research/physics-ml/. Use when the user asks to "summarize this paper", "explain arxiv 2401.XXXXX", "give me the gist of [paper]".
 license: MIT
 metadata:
   status: stub

@@ -1,6 +1,6 @@
 ---
 name: repo-onboarding
-description: Given a GitHub repo URL or local path, produce an onboarding doc covering structure, build/test commands, key abstractions, and likely good first issues. Use when the user asks to "onboard me to <repo>", "explain this codebase", "first-look on <repo>".
+description: Given a GitHub repo URL or local path, produce an onboarding doc covering structure, build/test commands, key abstractions, and likely good first issues. Use when the user asks to "onboard me to [repo]", "explain this codebase", "first-look on [repo]".
 license: MIT
 metadata:
   status: stub

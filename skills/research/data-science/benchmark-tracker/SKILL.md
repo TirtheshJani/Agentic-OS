@@ -1,6 +1,6 @@
 ---
 name: benchmark-tracker
-description: Track changes in named ML benchmarks (PapersWithCode SOTA tables, GLUE, MMLU, etc.) and write a delta report when a previous-best is beaten. Use when the user asks for "benchmark update", "new SOTA", "track <benchmark>".
+description: Track changes in named ML benchmarks (PapersWithCode SOTA tables, GLUE, MMLU, etc.) and write a delta report when a previous-best is beaten. Use when the user asks for "benchmark update", "new SOTA", "track [benchmark]".
 license: MIT
 metadata:
   status: stub

@@ -1,6 +1,6 @@
 ---
 name: issue-triage
-description: Given a GitHub repo, pull open issues, cluster by theme, identify duplicates, and propose labels and priorities. Use when the user asks to "triage issues in <repo>", "issue cleanup", "label these issues".
+description: Given a GitHub repo, pull open issues, cluster by theme, identify duplicates, and propose labels and priorities. Use when the user asks to "triage issues in [repo]", "issue cleanup", "label these issues".
 license: MIT
 metadata:
   status: stub

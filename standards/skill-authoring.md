@@ -114,5 +114,63 @@ Pick one and name it in the SKILL.md so future readers know the shape:
 - [ ] At least one example.
 - [ ] `metadata.status` is `stub` or `authored` and reflects reality.
 - [ ] `metadata.outputs` lists everything the skill writes.
+- [ ] Service references linked from the body if the skill calls an
+  external service (see §8).
 
 The validator script enforces items 1–6 mechanically.
+
+## 8. Repo-internal service references (deviation from spec)
+
+The Anthropic spec recommends bundling references inside each skill
+folder so the skill is self-contained and packageable as a `.skill`
+zip. **This repo deviates** and centralizes service-level docs (rate
+limits, auth, common errors, gotchas) at the repo root under
+`/references/services/`.
+
+Why deviate: this repo doesn't ship skills as `.skill` artifacts. Four
+copies of `github.md` in four skills' `references/` folders would
+drift the day one of them is updated.
+
+When a skill calls an external service that has a corresponding file
+under `/references/services/`, link to it from the body using a
+relative path:
+
+```markdown
+Before calling the GitHub MCP, read
+`../../../references/services/github.md` for rate-limit shape and
+common error codes.
+```
+
+The `../../../` count depends on the skill's depth in `skills/`.
+Don't try to make this configurable — it's three `../` for two-deep
+skills (`skills/<domain>/<skill>/`), four for three-deep
+(`skills/<top>/<sub>/<skill>/`).
+
+A new file lands in `/references/services/` when at least two skills
+will reference it. Below that threshold, prefer a per-skill
+`references/` file.
+
+If we ever extract a skill from this repo to ship as a standalone
+package, copy the relevant `references/services/*.md` into that
+skill's `references/` folder before publishing — the cross-folder
+link would break in the package.
+
+## 9. Deterministic scripts (`/scripts/validators/`)
+
+Skills should call cheap deterministic checks where they pay off
+instead of asking the model to re-derive a parser or schema check
+every run. These live at the repo root under `/scripts/validators/`,
+not per-skill, for the same DRY reasons as §8.
+
+A check earns its place here when:
+- it's a pure function (deterministic, no I/O beyond stdin/argv);
+- it has at least one caller in a SKILL.md;
+- it's small enough that the SKILL.md can show its invocation
+  inline.
+
+Reference from a SKILL.md by repo-relative path:
+
+```markdown
+Validate the Atom response shape:
+`python ../../../../scripts/validators/validate_arxiv_atom.py response.xml`
+```

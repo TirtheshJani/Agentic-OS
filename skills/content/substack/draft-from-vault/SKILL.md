@@ -6,7 +6,7 @@ metadata:
   status: stub
   domain: content/substack
   mode: remote
-  mcp-server: none
+  mcp-server: canva
   external-apis: [none]
   outputs: [vault/outputs/<YYYY-MM-DD>-substack-<slug>.md]
 ---
@@ -18,6 +18,12 @@ TODO: fill in via /new-skill (which delegates to skills/_meta/skill-creator).
 Pick one of the five orchestration patterns from standards/skill-authoring.md
 (sequential / multi-MCP / iterative refinement / context-aware tool selection
 / domain-specific intelligence) and structure the body around it.
+
+## MCP integrations
+- Canva (`generate-design`, `export-design`): optional hero image for the
+  post. Generate once the title is committed; export PNG; place URL in
+  the draft frontmatter as `cover_image`. Skip if the user passes
+  `--no-image`.
 
 ## Inputs
 TODO

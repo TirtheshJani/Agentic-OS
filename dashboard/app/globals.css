@@ -1,44 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Dark-sky palette - single mode (no light theme; the site is dark-only) */
+  --background: oklch(0.13 0.02 250);          /* deep navy near-black */
+  --foreground: oklch(0.96 0.01 250);          /* near-white, slight cool */
+  --card: oklch(0.16 0.02 250);                /* card slightly lifted */
+  --card-foreground: oklch(0.96 0.01 250);
+
+  --primary: oklch(0.68 0.18 250);             /* brand blue */
+  --primary-foreground: oklch(0.13 0.02 250);
+
+  --secondary: oklch(0.22 0.02 250);
+  --secondary-foreground: oklch(0.96 0.01 250);
+
+  --muted: oklch(0.22 0.02 250);
+  --muted-foreground: oklch(0.62 0.03 250);
+
+  --accent: oklch(0.68 0.18 250);              /* brand blue, same as primary for now */
+  --accent-foreground: oklch(0.13 0.02 250);
+
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.96 0.01 250);
+
+  --border: oklch(0.27 0.02 250);
+  --ring: oklch(0.68 0.18 250);
+
+  /* Status semantics */
+  --status-idle: oklch(0.62 0.03 250);
+  --status-running: oklch(0.78 0.18 130);      /* green */
+  --status-blocked: oklch(0.7 0.2 30);         /* amber-red */
+
+  /* Starfield base for the radial-gradient backdrop */
+  --star-color: oklch(0.7 0.05 250 / 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.18 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.985 0 0);
-    --border: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-  }
-}
+/* No prefers-color-scheme override - site is dark-only. */
 
 @theme inline {
   --color-background: var(--background);
@@ -65,4 +61,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Mono header utility - used by SectionHeader and Pill */
+.mono-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
 }

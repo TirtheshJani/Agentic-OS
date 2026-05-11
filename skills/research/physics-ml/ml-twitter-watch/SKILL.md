@@ -3,7 +3,7 @@ name: ml-twitter-watch
 description: Pull recent ML-related discussions from a curated set of accounts and threads, and write a digest of notable claims, links, and disagreements to vault/raw/. Use when the user asks for "ML twitter today", "what's the discourse on X", "twitter recap".
 license: MIT
 metadata:
-  status: stub
+  status: blocked
   domain: research/physics-ml
   mode: remote
   mcp-server: none

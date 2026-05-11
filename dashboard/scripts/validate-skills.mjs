@@ -32,6 +32,7 @@ function walk(dir, out = []) {
 }
 
 function parseFrontmatter(raw) {
+  raw = raw.replace(/\r\n/g, "\n");
   if (!raw.startsWith("---\n")) return null;
   const end = raw.indexOf("\n---", 4);
   if (end < 0) return null;

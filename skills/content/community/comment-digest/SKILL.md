@@ -3,7 +3,7 @@ name: comment-digest
 description: Pull recent Substack/community comments from Gmail, group by post, summarize sentiment, and surface comments that warrant a personal reply. Use when the user asks for "comment digest", "recent comments", "who replied this week".
 license: MIT
 metadata:
-  status: stub
+  status: blocked
   domain: content/community
   mode: remote
   mcp-server: gmail

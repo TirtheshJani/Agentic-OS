@@ -13,6 +13,10 @@ metadata:
 
 # repo-onboarding
 
+## References
+- `references/services/github.md` — `get_file_contents` (decode base64
+  for larger files), `list_commits`, scope allowlist.
+
 ## Instructions
 TODO: fill in via /new-skill (which delegates to skills/_meta/skill-creator).
 Pick one of the five orchestration patterns from standards/skill-authoring.md

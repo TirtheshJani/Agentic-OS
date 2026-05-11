@@ -13,6 +13,12 @@ metadata:
 
 # healthcare-arxiv
 
+## References
+- `references/services/arxiv.md` — endpoint, 3-second rate limit, ID
+  extraction, today vs. yesterday batch.
+- `scripts/validators/validate_arxiv_atom.py` — confirm response
+  shape before iterating.
+
 ## Instructions
 TODO: fill in via /new-skill (which delegates to skills/_meta/skill-creator).
 Pick one of the five orchestration patterns from standards/skill-authoring.md

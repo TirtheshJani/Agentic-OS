@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { branchFor, type BranchMeta } from "./branches";
 import { skillsPath } from "./paths";
 
 export type SkillFrontmatter = {
@@ -17,6 +18,8 @@ export type Skill = {
   folder: string;
   status: "stub" | "authored";
   domain: string;
+  branch: BranchMeta;
+  cadence?: "M" | "L" | "R" | "A";
   mode?: string;
   mcpServer?: string;
   externalApis?: string[];
@@ -33,11 +36,8 @@ function walkSkillMd(dir: string, acc: string[] = []): string[] {
   }
   for (const e of entries) {
     const full = path.join(dir, e.name);
-    if (e.isDirectory()) {
-      walkSkillMd(full, acc);
-    } else if (e.isFile() && e.name === "SKILL.md") {
-      acc.push(full);
-    }
+    if (e.isDirectory()) walkSkillMd(full, acc);
+    else if (e.isFile() && e.name === "SKILL.md") acc.push(full);
   }
   return acc;
 }
@@ -53,14 +53,17 @@ export function loadSkills(): Skill[] {
     const folder = path.relative(skillsPath, path.dirname(file));
     const meta = (fm.metadata ?? {}) as Record<string, unknown>;
     const isMeta = folder.startsWith("_meta");
+    const domain =
+      (meta.domain as string) ??
+      (isMeta ? "_meta" : folder.split(path.sep).slice(0, -1).join("/"));
     skills.push({
       name: fm.name,
       description: fm.description,
       folder,
       status: (meta.status as "stub" | "authored") ?? "authored",
-      domain:
-        (meta.domain as string) ??
-        (isMeta ? "_meta" : folder.split(path.sep).slice(0, -1).join("/")),
+      domain,
+      branch: branchFor(domain || folder.split(path.sep)[0]),
+      cadence: (meta.cadence as Skill["cadence"]) ?? undefined,
       mode: meta.mode as string | undefined,
       mcpServer: meta["mcp-server"] as string | undefined,
       externalApis: meta["external-apis"] as string[] | undefined,
@@ -68,7 +71,10 @@ export function loadSkills(): Skill[] {
       isMeta,
     });
   }
-  return skills.sort((a, b) => a.folder.localeCompare(b.folder));
+  return skills.sort((a, b) => {
+    const ord = a.branch.order - b.branch.order;
+    return ord !== 0 ? ord : a.folder.localeCompare(b.folder);
+  });
 }
 
 export function skillsByDomain(skills: Skill[]) {

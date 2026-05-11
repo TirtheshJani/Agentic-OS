@@ -13,6 +13,11 @@ metadata:
 
 # calendar-prep
 
+## References
+- `references/services/calendar.md` — time-window queries, recurring
+  event expansion, all-day events use `start.date` not `start.dateTime`,
+  per-event TZ vs. user TZ.
+
 ## Instructions
 TODO: fill in via /new-skill (which delegates to skills/_meta/skill-creator).
 Pick one of the five orchestration patterns from standards/skill-authoring.md

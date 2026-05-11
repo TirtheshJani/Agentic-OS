@@ -114,5 +114,51 @@ Pick one and name it in the SKILL.md so future readers know the shape:
 - [ ] At least one example.
 - [ ] `metadata.status` is `stub` or `authored` and reflects reality.
 - [ ] `metadata.outputs` lists everything the skill writes.
+- [ ] Service refs linked at the call site (see §8) when the skill
+  touches GitHub / arXiv / Gmail / Calendar.
 
 The validator script enforces items 1–6 mechanically.
+
+## 8. Centralized references (deliberate spec deviation)
+
+The Anthropic Skills spec expects per-skill `references/` folders so a
+skill is self-contained when extracted. We deviate: shared service
+references live at the **repo root** under `references/services/`
+(github, arxiv, gmail, calendar). Skills link to them by relative path
+at the call site:
+
+```md
+## Instructions
+
+1. Read `../../../../references/services/github.md` for the rate-limit
+   rules before any search call.
+```
+
+**Tradeoff.** A skill extracted to ship standalone is no longer
+self-contained. The required mitigation: at extraction time, copy the
+relevant `references/services/*.md` files into the skill's own
+`references/` and update the link paths. The validator does not
+enforce this — extraction is rare and the cost of catching it manually
+is lower than the cost of N copies drifting.
+
+**When per-skill `references/` is still correct:** content that is
+specific to one skill (e.g. `arxiv-categories.md` listing the
+categories *this* skill scans, not a general arXiv reference). The
+per-skill folder remains the right home for those.
+
+## 9. Centralized validators
+
+Deterministic checks (parsing arXiv Atom, normalizing a PR reference,
+confirming a triage report covers every rubric bucket) live at the
+repo root under `scripts/validators/`, not inside each skill. Same
+tradeoff as §8, same mitigation at extraction time.
+
+A validator is a deterministic Python stdlib-only script that:
+
+- Reads stdin or argv.
+- Writes one JSON object to stdout.
+- Exits 0 (ok), 1 (validation failed), or 2 (bug / bad input).
+
+Skills invoke validators as Bash tool calls. The skill body links to
+`scripts/validators/<name>.py` and documents which exit codes it
+expects to see and what to do with each.

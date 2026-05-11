@@ -13,6 +13,11 @@ metadata:
 
 # issue-triage
 
+## References
+- `references/services/github.md` — rate limits (anonymous search:
+  10/min, authed REST: 5,000/hr), `search_issues` vs. listing, 403
+  disambiguation, PR-vs-issue namespace.
+
 ## Instructions
 TODO: fill in via /new-skill (which delegates to skills/_meta/skill-creator).
 Pick one of the five orchestration patterns from standards/skill-authoring.md

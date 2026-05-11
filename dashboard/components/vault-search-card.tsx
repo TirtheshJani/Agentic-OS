@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import { SectionHeader } from "@/components/ui/section-header";
 
 type Hit = { path: string; score: number; snippet: string };
 
@@ -12,25 +12,16 @@ export function VaultSearchCard() {
   const [reason, setReason] = useState<string | null>(null);
 
   const run = useCallback(async (query: string) => {
-    if (query.trim().length < 2) {
-      setHits([]);
-      setReason(null);
-      return;
-    }
+    if (query.trim().length < 2) { setHits([]); setReason(null); return; }
     setSearching(true);
     try {
-      const res = await fetch(
-        `/api/vault/search?q=${encodeURIComponent(query)}`
-      );
+      const res = await fetch(`/api/vault/search?q=${encodeURIComponent(query)}`);
       const data = (await res.json()) as { hits: Hit[]; reason?: string };
       setHits(data.hits ?? []);
       setReason(data.reason ?? null);
     } catch {
-      setHits([]);
-      setReason("search failed");
-    } finally {
-      setSearching(false);
-    }
+      setHits([]); setReason("search failed");
+    } finally { setSearching(false); }
   }, []);
 
   useEffect(() => {
@@ -39,39 +30,27 @@ export function VaultSearchCard() {
   }, [q, run]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Vault search</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="search vault markdown..."
-          className="w-full text-xs px-2 py-1 rounded border border-border bg-background"
-        />
-        {searching && (
-          <div className="text-xs text-muted-foreground">Searching…</div>
-        )}
-        {!searching && q.trim().length >= 2 && hits.length === 0 && (
-          <div className="text-xs text-muted-foreground">
-            {reason ?? "No matches."}
+    <div className="border border-border rounded-md bg-card/60 px-3 py-2">
+      <SectionHeader title="VAULT · SEARCH" />
+      <input
+        type="text"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="search vault markdown..."
+        className="w-full text-xs px-2 py-1 rounded-sm border border-border bg-background font-mono mt-1"
+      />
+      {searching && <div className="text-xs text-muted-foreground mt-1">Searching…</div>}
+      {!searching && q.trim().length >= 2 && hits.length === 0 && (
+        <div className="text-xs text-muted-foreground mt-1">{reason ?? "No matches."}</div>
+      )}
+      <div className="space-y-1.5 max-h-64 overflow-y-auto mt-1">
+        {hits.map((h) => (
+          <div key={h.path} className="text-xs space-y-0.5">
+            <div className="font-mono truncate" title={h.path}>{h.path}</div>
+            <div className="text-muted-foreground line-clamp-2">{h.snippet}</div>
           </div>
-        )}
-        <div className="space-y-1.5 max-h-64 overflow-y-auto">
-          {hits.map((h) => (
-            <div key={h.path} className="text-xs space-y-0.5">
-              <div className="font-mono truncate" title={h.path}>
-                {h.path}
-              </div>
-              <div className="text-muted-foreground line-clamp-2">
-                {h.snippet}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   );
 }

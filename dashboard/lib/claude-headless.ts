@@ -1,6 +1,11 @@
 import { spawn } from "node:child_process";
 import { allowedRunCwds, repoRoot } from "./paths";
 
+// Resolve the claude CLI binary. On Windows the executable is often bundled
+// inside the VS Code extension and not on PATH. Set CLAUDE_BIN in .env.local
+// to override (full path including .exe on Windows).
+const CLAUDE_BIN = process.env.CLAUDE_BIN ?? "claude";
+
 export type ClaudeEvent =
   | { type: "delta"; data: string }
   | { type: "tool"; data: { name: string; input?: unknown } }
@@ -27,9 +32,17 @@ export async function* runClaude(opts: {
   }
 
   const child = spawn(
-    "claude",
+    CLAUDE_BIN,
     ["-p", opts.prompt, "--output-format", "stream-json", "--verbose"],
-    { cwd, env: process.env, stdio: ["ignore", "pipe", "pipe"] }
+    {
+      cwd,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+      // shell: true lets Windows resolve .cmd wrappers and PATH entries that
+      // are not visible to Node's direct spawn. Only needed when CLAUDE_BIN
+      // is a plain name (not an absolute path).
+      shell: !CLAUDE_BIN.includes("/") && !CLAUDE_BIN.includes("\\"),
+    }
   );
 
   const queue: ClaudeEvent[] = [];

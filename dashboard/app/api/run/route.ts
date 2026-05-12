@@ -1,11 +1,19 @@
 import { runClaude } from "@/lib/claude-headless";
-import { finishRun, insertRun } from "@/lib/db";
-import { loadSkills } from "@/lib/skills-loader";
+import { finishRun, insertRun, updateRunUsage, type RunUsage } from "@/lib/db";
+import { resolveMcpForServer, type McpResolution } from "@/lib/mcp-loader";
 import { repoRoot } from "@/lib/paths";
+import { projectBySlug } from "@/lib/projects-loader";
+import { loadSkills } from "@/lib/skills-loader";
 
 export const dynamic = "force-dynamic";
 
-type RunBody = { skillSlug?: string; userInput?: string };
+type RunBody = {
+  skillSlug?: string;
+  userInput?: string;
+  projectSlug?: string;
+  prompt?: string;
+  agent?: string;
+};
 
 export async function POST(req: Request) {
   let body: RunBody;
@@ -14,17 +22,62 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "invalid json" }, { status: 400 });
   }
-  const { skillSlug, userInput } = body;
-  if (!skillSlug) {
-    return Response.json({ error: "missing skillSlug" }, { status: 400 });
-  }
-  const skill = loadSkills().find((s) => s.name === skillSlug);
-  if (!skill) {
+
+  const { skillSlug, userInput, projectSlug, prompt: freeformPrompt, agent } = body;
+
+  const skill = skillSlug
+    ? loadSkills().find((s) => s.name === skillSlug)
+    : null;
+  if (skillSlug && !skill) {
     return Response.json({ error: "unknown skill" }, { status: 404 });
   }
 
-  const prompt = `Use the ${skill.name} skill.${userInput ? `\n\nInputs:\n${userInput}` : ""}`;
-  const runId = insertRun(skill.name, prompt);
+  const project = projectSlug ? projectBySlug(projectSlug) : null;
+  if (projectSlug && !project) {
+    return Response.json({ error: "unknown project" }, { status: 404 });
+  }
+  if (project && !project.pathExists) {
+    return Response.json(
+      { error: `project path missing: ${project.path}` },
+      { status: 412 }
+    );
+  }
+
+  if (!skill && !freeformPrompt?.trim()) {
+    return Response.json(
+      { error: "either skillSlug or prompt required" },
+      { status: 400 }
+    );
+  }
+
+  const cwd = project?.path ?? repoRoot;
+  const resolvedAgent = agent ?? skill?.agent ?? project?.agent ?? null;
+  const prompt = buildPrompt({
+    skillName: skill?.name ?? null,
+    userInput: userInput ?? null,
+    freeform: freeformPrompt ?? null,
+    projectName: project?.name ?? null,
+  });
+
+  const mcpResolution: McpResolution | null = skill?.mcpServer
+    ? resolveMcpForServer(skill.mcpServer)
+    : null;
+  const activeMcp =
+    mcpResolution && mcpResolution.kind === "ready"
+      ? { name: mcpResolution.serverName, source: mcpResolution.source }
+      : null;
+  const mcpStatus: "ready" | "cloud-only" | "not-found" | null = mcpResolution
+    ? mcpResolution.kind
+    : null;
+
+  const runId = insertRun({
+    skillSlug: skill?.name ?? "(adhoc)",
+    prompt,
+    projectSlug: project?.slug ?? null,
+    cwd,
+    agent: resolvedAgent,
+    mcpServer: activeMcp?.name ?? null,
+  });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -32,20 +85,38 @@ export async function POST(req: Request) {
       const send = (data: unknown) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
-      send({ type: "started", runId });
+      send({
+        type: "started",
+        runId,
+        cwd,
+        projectSlug: project?.slug ?? null,
+        activeMcp,
+        mcpStatus,
+        requestedMcp: skill?.mcpServer ?? null,
+      });
       let outputPath: string | null = null;
       let error: string | null = null;
+      let usage: RunUsage = {};
       try {
-        for await (const evt of runClaude({ prompt, cwd: repoRoot })) {
+        for await (const evt of runClaude({
+          prompt,
+          cwd,
+          mcpConfigPath:
+            mcpResolution?.kind === "ready" ? mcpResolution.tmpConfigPath : undefined,
+        })) {
           send(evt);
           if (evt.type === "done") outputPath = evt.data.outputPath;
           if (evt.type === "error") error = evt.data.message;
+          if (evt.type === "usage") {
+            usage = { ...usage, ...evt.data };
+            updateRunUsage(runId, evt.data);
+          }
         }
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);
         send({ type: "error", data: { message: error } });
       } finally {
-        finishRun(runId, error ? "error" : "done", outputPath, error);
+        finishRun(runId, error ? "error" : "done", outputPath, error, usage);
         controller.close();
       }
     },
@@ -58,4 +129,26 @@ export async function POST(req: Request) {
       Connection: "keep-alive",
     },
   });
+}
+
+function buildPrompt(opts: {
+  skillName: string | null;
+  userInput: string | null;
+  freeform: string | null;
+  projectName: string | null;
+}): string {
+  const parts: string[] = [];
+  if (opts.projectName) {
+    parts.push(`Working in project "${opts.projectName}".`);
+  }
+  if (opts.skillName) {
+    parts.push(`Use the ${opts.skillName} skill.`);
+  }
+  if (opts.userInput) {
+    parts.push(`Inputs:\n${opts.userInput}`);
+  }
+  if (opts.freeform) {
+    parts.push(opts.freeform);
+  }
+  return parts.join("\n\n");
 }

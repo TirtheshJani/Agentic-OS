@@ -5,9 +5,9 @@ type PillTone = "default" | "muted" | "good" | "warn" | "bad";
 const TONE_CLASS: Record<PillTone, string> = {
   default: "text-foreground border-border",
   muted: "text-muted-foreground border-border",
-  good: "text-[oklch(0.78_0.18_130)] border-[oklch(0.78_0.18_130)]",
-  warn: "text-[oklch(0.78_0.15_80)] border-[oklch(0.78_0.15_80)]",
-  bad: "text-[oklch(0.7_0.2_30)] border-[oklch(0.7_0.2_30)]",
+  good: "text-[var(--teal)] border-[var(--teal)]",
+  warn: "text-[var(--ember-soft)] border-[var(--ember-soft)]",
+  bad: "text-[var(--danger)] border-[var(--danger)]",
 };
 
 export function Pill({

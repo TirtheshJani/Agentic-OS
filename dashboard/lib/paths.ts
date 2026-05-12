@@ -10,4 +10,6 @@ export const dbPath = process.env.AGENTIC_OS_DB
   ? path.resolve(repoRoot, process.env.AGENTIC_OS_DB)
   : path.join(repoRoot, ".agentic-os", "state.db");
 
-export const allowedRunCwds = new Set([repoRoot, vaultPath]);
+export function normalizeCwd(p: string): string {
+  return path.resolve(p).toLowerCase();
+}

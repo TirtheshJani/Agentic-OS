@@ -1,31 +1,57 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { OutputStream, type StreamEvent } from "@/components/output-stream";
 import { PromptPanel } from "@/components/prompt-panel";
 import { SkillsRail } from "@/components/skills-rail";
+import { useRunState } from "@/components/run-state";
 import type { Skill } from "@/lib/skills-loader";
+import type { Project } from "@/lib/projects-loader";
 
-export function Workbench({ skills }: { skills: Skill[] }) {
-  const [selected, setSelected] = useState<string | null>(null);
+type Props = {
+  skills: Skill[];
+  projects: Project[];
+};
+
+export function Workbench({ skills, projects }: Props) {
+  const { running, setRunning, mergeUsage, resetUsage, setCurrentProject, setActiveMcp } =
+    useRunState();
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [userInput, setUserInput] = useState("");
   const [events, setEvents] = useState<StreamEvent[]>([]);
-  const [running, setRunning] = useState(false);
 
   const skill = useMemo(
-    () => skills.find((s) => s.name === selected) ?? null,
-    [skills, selected]
+    () => skills.find((s) => s.name === selectedSkill) ?? null,
+    [skills, selectedSkill]
+  );
+  const project = useMemo(
+    () => projects.find((p) => p.slug === selectedProject) ?? null,
+    [projects, selectedProject]
   );
 
+  useEffect(() => {
+    setCurrentProject(selectedProject);
+  }, [selectedProject, setCurrentProject]);
+
   const onRun = useCallback(async () => {
-    if (!skill) return;
+    const hasInput = userInput.trim().length > 0;
+    if (!skill && !hasInput) return;
     setRunning(true);
+    resetUsage();
+    setActiveMcp(null);
     setEvents([]);
     try {
       const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skillSlug: skill.name, userInput }),
+        body: JSON.stringify({
+          skillSlug: skill?.name,
+          projectSlug: project?.slug,
+          userInput: skill ? userInput : undefined,
+          prompt: !skill && hasInput ? userInput : undefined,
+          agent: skill?.agent ?? project?.agent,
+        }),
       });
       if (!res.body) {
         setEvents([{ type: "error", data: { message: "no response body" } }]);
@@ -47,6 +73,8 @@ export function Workbench({ skills }: { skills: Skill[] }) {
           try {
             const evt = JSON.parse(json) as StreamEvent;
             setEvents((prev) => [...prev, evt]);
+            if (evt.type === "usage") mergeUsage(evt.data);
+            if (evt.type === "started") setActiveMcp(evt.activeMcp ?? null);
           } catch {
             /* ignore non-JSON lines */
           }
@@ -57,18 +85,27 @@ export function Workbench({ skills }: { skills: Skill[] }) {
       setEvents((prev) => [...prev, { type: "error", data: { message: msg } }]);
     } finally {
       setRunning(false);
+      setActiveMcp(null);
     }
-  }, [skill, userInput]);
+  }, [skill, project, userInput, setRunning, resetUsage, mergeUsage, setActiveMcp]);
 
   return (
     <>
       <aside className="border border-border rounded-lg bg-card overflow-hidden">
-        <SkillsRail skills={skills} selected={selected} onSelect={setSelected} />
+        <SkillsRail
+          skills={skills}
+          projects={projects}
+          selectedSkill={selectedSkill}
+          selectedProject={selectedProject}
+          onSelectSkill={setSelectedSkill}
+          onSelectProject={setSelectedProject}
+        />
       </aside>
       <section className="border border-border rounded-lg bg-card flex flex-col overflow-hidden">
         <div className="p-4 border-b border-border">
           <PromptPanel
             skill={skill}
+            project={project}
             userInput={userInput}
             onUserInput={setUserInput}
             onRun={onRun}

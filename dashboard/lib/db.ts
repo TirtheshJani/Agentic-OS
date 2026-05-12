@@ -47,6 +47,29 @@ function migrate(db: Database.Database) {
       source TEXT NOT NULL
     );
   `);
+
+  addColumnIfMissing(db, "runs", "project_slug", "TEXT");
+  addColumnIfMissing(db, "runs", "cwd", "TEXT");
+  addColumnIfMissing(db, "runs", "agent", "TEXT");
+  addColumnIfMissing(db, "runs", "mcp_server", "TEXT");
+  addColumnIfMissing(db, "runs", "tokens_in", "INTEGER");
+  addColumnIfMissing(db, "runs", "tokens_out", "INTEGER");
+  addColumnIfMissing(db, "runs", "tokens_cache_read", "INTEGER");
+  addColumnIfMissing(db, "runs", "tokens_cache_create", "INTEGER");
+  addColumnIfMissing(db, "runs", "cost_usd", "REAL");
+}
+
+function addColumnIfMissing(
+  db: Database.Database,
+  table: string,
+  column: string,
+  type: string
+) {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  if (rows.some((r) => r.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
 
 export type RunRow = {
@@ -59,6 +82,23 @@ export type RunRow = {
   duration_ms: number | null;
   output_path: string | null;
   error: string | null;
+  project_slug: string | null;
+  cwd: string | null;
+  agent: string | null;
+  mcp_server: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  tokens_cache_read: number | null;
+  tokens_cache_create: number | null;
+  cost_usd: number | null;
+};
+
+export type RunUsage = {
+  tokens_in?: number;
+  tokens_out?: number;
+  tokens_cache_read?: number;
+  tokens_cache_create?: number;
+  cost_usd?: number;
 };
 
 export type VaultChangeRow = {
@@ -68,19 +108,38 @@ export type VaultChangeRow = {
   ts: number;
 };
 
-export function insertRun(skillSlug: string, prompt: string): number {
+export function insertRun(opts: {
+  skillSlug: string;
+  prompt: string;
+  projectSlug?: string | null;
+  cwd?: string | null;
+  agent?: string | null;
+  mcpServer?: string | null;
+}): number {
   const db = getDb();
   const stmt = db.prepare(
-    `INSERT INTO runs (skill_slug, prompt, status, started_at) VALUES (?, ?, 'running', ?)`
+    `INSERT INTO runs (skill_slug, prompt, status, started_at, project_slug, cwd, agent, mcp_server)
+     VALUES (?, ?, 'running', ?, ?, ?, ?, ?)`
   );
-  return Number(stmt.run(skillSlug, prompt, Date.now()).lastInsertRowid);
+  return Number(
+    stmt.run(
+      opts.skillSlug,
+      opts.prompt,
+      Date.now(),
+      opts.projectSlug ?? null,
+      opts.cwd ?? null,
+      opts.agent ?? null,
+      opts.mcpServer ?? null
+    ).lastInsertRowid
+  );
 }
 
 export function finishRun(
   id: number,
   status: "done" | "error",
   outputPath: string | null,
-  error: string | null
+  error: string | null,
+  usage?: RunUsage
 ) {
   const db = getDb();
   const ended = Date.now();
@@ -89,8 +148,47 @@ export function finishRun(
     | undefined;
   const duration = row ? ended - row.started_at : null;
   db.prepare(
-    `UPDATE runs SET status = ?, ended_at = ?, duration_ms = ?, output_path = ?, error = ? WHERE id = ?`
-  ).run(status, ended, duration, outputPath, error, id);
+    `UPDATE runs SET status = ?, ended_at = ?, duration_ms = ?, output_path = ?, error = ?,
+       tokens_in = COALESCE(?, tokens_in),
+       tokens_out = COALESCE(?, tokens_out),
+       tokens_cache_read = COALESCE(?, tokens_cache_read),
+       tokens_cache_create = COALESCE(?, tokens_cache_create),
+       cost_usd = COALESCE(?, cost_usd)
+     WHERE id = ?`
+  ).run(
+    status,
+    ended,
+    duration,
+    outputPath,
+    error,
+    usage?.tokens_in ?? null,
+    usage?.tokens_out ?? null,
+    usage?.tokens_cache_read ?? null,
+    usage?.tokens_cache_create ?? null,
+    usage?.cost_usd ?? null,
+    id
+  );
+}
+
+export function updateRunUsage(id: number, usage: RunUsage) {
+  if (!usage) return;
+  const db = getDb();
+  db.prepare(
+    `UPDATE runs SET
+       tokens_in = COALESCE(?, tokens_in),
+       tokens_out = COALESCE(?, tokens_out),
+       tokens_cache_read = COALESCE(?, tokens_cache_read),
+       tokens_cache_create = COALESCE(?, tokens_cache_create),
+       cost_usd = COALESCE(?, cost_usd)
+     WHERE id = ?`
+  ).run(
+    usage.tokens_in ?? null,
+    usage.tokens_out ?? null,
+    usage.tokens_cache_read ?? null,
+    usage.tokens_cache_create ?? null,
+    usage.cost_usd ?? null,
+    id
+  );
 }
 
 export function recentRuns(limit = 8): RunRow[] {

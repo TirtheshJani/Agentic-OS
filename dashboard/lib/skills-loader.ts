@@ -25,6 +25,7 @@ export type Skill = {
   externalApis?: string[];
   outputs?: string[];
   isMeta: boolean;
+  agent?: string;
 };
 
 function walkSkillMd(dir: string, acc: string[] = []): string[] {
@@ -69,6 +70,7 @@ export function loadSkills(): Skill[] {
       externalApis: meta["external-apis"] as string[] | undefined,
       outputs: meta.outputs as string[] | undefined,
       isMeta,
+      agent: meta.agent as string | undefined,
     });
   }
   return skills.sort((a, b) => {

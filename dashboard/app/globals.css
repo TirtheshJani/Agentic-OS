@@ -1,37 +1,55 @@
 @import "tailwindcss";
 
+/* Palette: exact hex from tirtheshjani.com (see /assets/index-*.css). */
 :root {
-  /* Dark-sky palette - single mode (no light theme; the site is dark-only) */
-  --background: oklch(0.13 0.02 250);          /* deep navy near-black */
-  --foreground: oklch(0.96 0.01 250);          /* near-white, slight cool */
-  --card: oklch(0.16 0.02 250);                /* card slightly lifted */
-  --card-foreground: oklch(0.96 0.01 250);
+  /* base surfaces */
+  --space-1: #000000;          /* deepest, body */
+  --space-3: #0a1426;          /* darker tier */
+  --ink-navy: #0d1628;         /* card / lifted surface */
 
-  --primary: oklch(0.68 0.18 250);             /* brand blue */
-  --primary-foreground: oklch(0.13 0.02 250);
+  /* text */
+  --text-white: #ffffff;
+  --text-muted-dark: #b8bcc3;
+  --star: #e8eef9;             /* near-white with subtle blue, used for starfield */
 
-  --secondary: oklch(0.22 0.02 250);
-  --secondary-foreground: oklch(0.96 0.01 250);
+  /* brand */
+  --ember: #4a8fd1;            /* primary brand blue */
+  --ember-soft: #7fb4e8;
+  --azure: #6faef3;            /* brighter accent blue */
+  --teal: #4aa896;
+  --danger: #c0392b;
 
-  --muted: oklch(0.22 0.02 250);
-  --muted-foreground: oklch(0.62 0.03 250);
+  /* Tailwind / shadcn semantic tokens mapped onto the palette above */
+  --background: var(--space-3);
+  --foreground: var(--text-white);
+  --card: var(--ink-navy);
+  --card-foreground: var(--text-white);
 
-  --accent: oklch(0.68 0.18 250);              /* brand blue, same as primary for now */
-  --accent-foreground: oklch(0.13 0.02 250);
+  --primary: var(--ember);
+  --primary-foreground: var(--space-1);
 
-  --destructive: oklch(0.62 0.22 25);
-  --destructive-foreground: oklch(0.96 0.01 250);
+  --secondary: #1e2a44;
+  --secondary-foreground: var(--text-white);
 
-  --border: oklch(0.27 0.02 250);
-  --ring: oklch(0.68 0.18 250);
+  --muted: #1e2a44;
+  --muted-foreground: var(--text-muted-dark);
 
-  /* Status semantics */
-  --status-idle: oklch(0.62 0.03 250);
-  --status-running: oklch(0.78 0.18 130);      /* green */
-  --status-blocked: oklch(0.7 0.2 30);         /* amber-red */
+  --accent: var(--azure);
+  --accent-foreground: var(--space-1);
 
-  /* Starfield base for the radial-gradient backdrop */
-  --star-color: oklch(0.7 0.05 250 / 0.5);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--text-white);
+
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: var(--ember);
+
+  /* status semantics */
+  --status-idle: var(--text-muted-dark);
+  --status-running: var(--teal);
+  --status-blocked: var(--danger);
+
+  /* starfield base for the radial-gradient backdrop */
+  --star-color: rgba(232, 238, 249, 0.5);
 }
 
 /* No prefers-color-scheme override - site is dark-only. */
@@ -58,9 +76,22 @@
 }
 
 body {
-  background: var(--background);
+  background: var(--space-1);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Site-matching cosmic gradient backdrop. Layered behind the starfield, above body. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -20;
+  background:
+    radial-gradient(ellipse 80% 60% at 80% 10%, rgba(74, 143, 209, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 15% 30%, rgba(111, 174, 243, 0.08) 0%, transparent 65%),
+    var(--space-1);
 }
 
 /* Mono header utility - used by SectionHeader and Pill */

@@ -10,6 +10,9 @@ type Run = {
   status: "queued" | "running" | "done" | "error";
   started_at: number;
   duration_ms: number | null;
+  project_slug: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
 };
 
 export function RecentRunsCard() {
@@ -35,13 +38,25 @@ export function RecentRunsCard() {
         <div className="text-xs text-muted-foreground mt-1">No runs yet.</div>
       )}
       <ul className="space-y-0.5 mt-1">
-        {runs.map((r) => (
-          <li key={r.id} className="flex items-center gap-2 font-mono text-xs">
-            <StatusDot state={dotFor(r.status)} />
-            <span className="text-muted-foreground">{hhmm(r.started_at)}</span>
-            <span className="truncate">{r.skill_slug}</span>
-          </li>
-        ))}
+        {runs.map((r) => {
+          const tokens =
+            r.tokens_in !== null && r.tokens_out !== null
+              ? `${r.tokens_in}/${r.tokens_out}`
+              : null;
+          return (
+            <li key={r.id} className="flex items-center gap-2 font-mono text-xs">
+              <StatusDot state={dotFor(r.status)} />
+              <span className="text-muted-foreground">{hhmm(r.started_at)}</span>
+              {r.project_slug && (
+                <span className="text-[var(--azure)] shrink-0">◆ {r.project_slug}</span>
+              )}
+              <span className="truncate">{r.skill_slug}</span>
+              {tokens && (
+                <span className="text-muted-foreground ml-auto shrink-0">{tokens}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

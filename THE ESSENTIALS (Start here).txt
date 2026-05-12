@@ -1,0 +1,297 @@
+THE ESSENTIALS (Start here)
+Superpowers (by obra)
+
+The Swiss Army knife everyone talks about. Brainstorming, debugging, TDD enforcement, execution planning - all with slash commands.
+
+That /superpowers:execute-plan command? Saved me SO many hours of “ok Claude now do this… ok now this… wait go back”
+
+Real talk: First day I was lost. Second day it clicked.
+
+Link: https://github.com/obra/superpowers
+
+Superpowers Lab (by obra)
+
+Experimental/bleeding-edge version of Superpowers. For when you want to try stuff before it’s stable.
+
+Link: https://github.com/obra/superpowers-lab
+
+Skill Seekers (by yusufkaraaslan)
+
+Point it at ANY documentation site, PDF, or codebase. It auto-generates a Claude Skill.
+
+The moment I got it: We use this internal framework at work that Claude knows nothing about. Normally I’d paste docs into every conversation. Skill Seekers turned the entire docs site into a skill in 10 minutes.
+
+Works with React docs, Django docs, Godot, whatever. Just point and generate.
+
+Link: https://github.com/yusufkaraaslan/Skill_Seekers
+
+DEVELOPER WORKFLOW SKILLS
+Test-Driven Development Skill
+
+Enforces actual TDD workflows. Makes Claude write tests first, not as an afterthought.
+
+Found in: https://github.com/obra/superpowers or https://github.com/BehiSecc/awesome-claude-skills
+
+Systematic Debugging Skill
+
+Stops Claude from just guessing at fixes. Forces root-cause analysis like an experienced dev.
+
+Saved me at 2am once during a production bug. We actually FOUND the issue instead of throwing random fixes at it.
+
+Found in: https://github.com/obra/superpowers
+
+Finishing a Development Branch Skill
+
+Streamlines that annoying “ok now merge this and clean up and…” workflow.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Using Git Worktrees Skill
+
+If you work on multiple branches simultaneously, this is a lifesaver. Makes Claude actually understand worktrees.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Pypict Skill
+
+Generates combinatorial testing cases. For when you need robust QA and don’t want to manually write 500 test cases.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Webapp Testing with Playwright Skill
+
+Automates web app testing. Claude can test your UI flows end-to-end.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+ffuf_claude_skill
+
+Security fuzzing and vulnerability analysis. If you’re doing any security work, this is it.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Defense-in-Depth Skill
+
+Multi-layered security and quality checks for your codebase. Hardens everything.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+RESEARCH & KNOWLEDGE SKILLS
+Tapestry
+
+Takes technical docs and creates a navigable knowledge graph. I had 50+ API PDFs. Tapestry turned them into an interconnected wiki I can actually query.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills or https://github.com/travisvn/awesome-claude-skills
+
+YouTube Transcript/Article Extractor Skills
+
+Scrapes and summarizes YouTube videos or web articles. Great for research without watching 50 hours of content.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Brainstorming Skill
+
+Turns rough ideas into structured design plans. Less “I have a vague thought” more “here’s the actual plan”
+
+Found in: https://github.com/obra/superpowers
+
+Content Research Writer Skill
+
+Adds citations, iterates on quality, organizes research automatically. If you write content backed by research, this is huge.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+EPUB & PDF Analyzer
+
+Summarizes or queries ebooks and academic papers. Academic research people love this one.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+PRODUCTIVITY & AUTOMATION SKILLS
+Invoice/File Organizer Skills
+
+Smart categorization for receipts, documents, finance stuff.
+
+Tax season me is SO much happier. Point it at a folder of chaos, get structure back.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills
+
+Web Asset Generator Skill
+
+Auto-creates icons, Open Graph tags, PWA assets. Web devs save like an hour per project.
+
+Found in: https://github.com/BehiSecc/awesome-claude-skills or https://github.com/travisvn/awesome-claude-skills
+
+CLAUDE CODE HOOKS (If you use Claude Code)
+Hooks are event-driven triggers. Claude does something → your hook runs. Super powerful if you know what you’re doing.
+
+johnlindquist/claude-hooks
+
+The main one. TypeScript framework with auto-completion and typed payloads.
+
+If you’re doing ANYTHING programmatic with Claude Code, this is your foundation.
+
+Warning: You need to know TypeScript. Not beginner-friendly.
+
+Link: https://github.com/johnlindquist/claude-hooks
+
+CCHooks (by GowayLee)
+
+Python version. Minimal, clean abstraction. Fun to customize if you prefer Python.
+
+Search for “GowayLee CCHooks” on GitHub or check: https://github.com/hesreallyhim/awesome-claude-code
+
+claude-code-hooks-sdk (by beyondcode)
+
+PHP/Laravel-style hooks. For the PHP crowd.
+
+Search “beyondcode claude-code-hooks” on GitHub or check: https://github.com/hesreallyhim/awesome-claude-code
+
+Claudio (by Christopher Toth)
+
+Adds OS-native sounds to Claude. Sounds silly but people love the “delightful alerts”
+
+Beep when Claude finishes a task. Ding when errors happen. It’s weirdly satisfying.
+
+Search “Christopher Toth Claudio” on GitHub or check: https://github.com/hesreallyhim/awesome-claude-code
+
+CC Notify
+
+Desktop notifications, session reminders, progress alerts. Know when Claude finishes long tasks.
+
+Super useful when Claude’s running something that takes 10 minutes and you’re in another window.
+
+Found in: https://github.com/hesreallyhim/awesome-claude-code
+
+codeinbox/claude-code-discord
+
+Real-time session activity notifications to Discord or Slack. Great for teams or just keeping a log of what Claude’s doing.
+
+Link: https://github.com/codeinbox/claude-code-discord
+
+fcakyon Code Quality Collection
+
+Various code quality hooks - TDD enforcement, linting, tool checks. Super comprehensive.
+
+If you want to enforce standards across your team’s Claude usage, this is it.
+
+Search “fcakyon claude” on GitHub or check: https://github.com/hesreallyhim/awesome-claude-code
+
+TypeScript Quality Hooks (by bartolli)
+
+Advanced project health for TypeScript. Instant validation and format-fixers.
+
+Catches TypeScript issues before they become problems.
+
+Search “bartolli typescript claude hooks” on GitHub or check: https://github.com/hesreallyhim/awesome-claude-code
+
+What I learned:
+Works:
+
+Skills solving ONE specific problem really well
+
+Dev-focused skills have highest quality (devs scratching their own itch)
+
+Hooks are insanely powerful if you invest time learning them
+
+Documentation-to-skill generators (like Skill Seekers) are secretly the most useful
+
+Doesn’t work:
+
+Vague “makes Claude smarter” skills
+
+Complicated setup that breaks on every update
+
+Skills that try to do too much at once
+
+Who this is for:
+
+Casual Claude chat? Official skills are fine.
+
+Daily work (coding, research, content)? Community skills are a must.
+
+Claude Code user? Hooks + Superpowers are non-negotiable.
+
+Working with custom/internal tools? Skill Seekers changes everything.
+
+How to actually try this:
+For beginners:
+
+Start at https://github.com/travisvn/awesome-claude-skills or https://github.com/BehiSecc/awesome-claude-skills
+
+Install Superpowers if you code, Skill Seekers if you work with docs
+
+Try Invoice Organizer or Tapestry if you’re non-technical
+
+Read the README before installing
+
+For developers:
+
+Get Superpowers + Systematic Debugging immediately
+
+Try TDD Skill and Git Worktrees Skill
+
+Learn johnlindquist/claude-hooks if you use Claude Code
+
+Explore fcakyon’s quality hooks for code standards
+
+For researchers/writers:
+
+Tapestry for knowledge management
+
+Content Research Writer for citations
+
+YouTube/Article Extractors for quick research
+
+EPUB/PDF Analyzer for academic work
+
+For Claude Code users:
+
+https://github.com/johnlindquist/claude-hooks as foundation
+
+CC Notify for task completion alerts
+
+fcakyon Code Quality Collection for standards
+
+Claudio if you want fun sound effects (you do)
+
+Main Resource Hubs:
+
+https://github.com/BehiSecc/awesome-claude-skills (Skills)
+
+https://github.com/hesreallyhim/awesome-claude-code (Hooks)
+
+When stuff breaks:
+
+Check Claude Projects settings - manually enable skills
+
+Restart Claude Code (fixes 80% of issues)
+
+Read the GitHub Issues - someone else hit your problem
+
+Most skills need to be in the right directory structure
+
+What are you using?
+I went down this rabbit hole because I was wasting 2 hours daily on repetitive tasks. Now it’s 20 minutes.
+
+Drop links to skills you’ve built or found. Especially:
+
+Non-dev use cases (most of this is technical)
+
+Creative/content workflows
+
+Business automation that actually works
+
+Or if you’ve built something cool with hooks, I want to see it.
+
+https://github.com/rebelytics/one-skill-to-rule-them-all
+
+GSD for large projects is absolutely golden, it has a workflow above and beyond what all other skills have.
+https://github.com/gsd-build/get-shit-done
+
+Superpowers for small to medium projects - fast, efficient, and has the best brainstorming mode of all skills.
+https://github.com/obra/superpowers
+
+Openspec - works great for small projects to quickly build and iterate over something
+https://github.com/Fission-AI/OpenSpec
+

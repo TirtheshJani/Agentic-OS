@@ -49,7 +49,14 @@ metadata:
   mcp-server: gmail     # name from .mcp.json or 'none'
   external-apis: [arxiv, semantic-scholar]
   outputs: [vault/wiki/research/physics-ml/arxiv-YYYY-MM-DD.md]
+  agent: Plan           # optional: Task subagent_type the dashboard suggests for runs
+  cadence: M            # M | L | R | A (manual / local cron / remote cron / agent-loop)
 ```
+
+The `agent` field is purely advisory. When the dashboard runs a skill, it surfaces the
+suggested agent in the prompt panel and forwards it through the run API so an orchestrator
+can spawn the right Task subagent. Common values: `general-purpose`, `Plan`, `Explore`,
+`statusline-setup`, or a project-specific subagent name. Leave unset for ad-hoc skills.
 
 - `status: stub` — frontmatter only; body is a `TODO`. Dashboard shows a
   muted badge.

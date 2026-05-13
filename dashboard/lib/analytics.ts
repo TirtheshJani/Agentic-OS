@@ -62,3 +62,92 @@ export function totalRuns(): number {
     .get() as { n: number };
   return row.n;
 }
+
+export type Totals = {
+  runs: number;
+  done: number;
+  error: number;
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+};
+
+export function totals(): Totals {
+  const row = getDb()
+    .prepare(
+      `SELECT
+         COUNT(*) AS runs,
+         COALESCE(SUM(CASE WHEN status = 'done'  THEN 1 ELSE 0 END), 0) AS done,
+         COALESCE(SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END), 0) AS error,
+         COALESCE(SUM(tokens_in),  0) AS tokensIn,
+         COALESCE(SUM(tokens_out), 0) AS tokensOut,
+         COALESCE(SUM(cost_usd),   0) AS costUsd
+       FROM runs`
+    )
+    .get() as Totals;
+  return row;
+}
+
+export type CostRow = { skill: string; costUsd: number; runs: number };
+
+export function costBySkill(limit = 10): CostRow[] {
+  return getDb()
+    .prepare(
+      `SELECT skill_slug AS skill,
+              COALESCE(SUM(cost_usd), 0) AS costUsd,
+              COUNT(*) AS runs
+       FROM runs
+       WHERE cost_usd IS NOT NULL
+       GROUP BY skill_slug
+       HAVING costUsd > 0
+       ORDER BY costUsd DESC
+       LIMIT ?`
+    )
+    .all(limit) as CostRow[];
+}
+
+export type DurationRow = {
+  skill: string;
+  runs: number;
+  p50Ms: number;
+  p95Ms: number;
+};
+
+export function durationBySkill(limit = 10): DurationRow[] {
+  // SQLite has no percentile_cont; pull per-skill durations and compute in JS.
+  const skills = getDb()
+    .prepare(
+      `SELECT skill_slug AS skill, COUNT(*) AS runs
+       FROM runs
+       WHERE duration_ms IS NOT NULL AND status = 'done'
+       GROUP BY skill_slug
+       ORDER BY runs DESC
+       LIMIT ?`
+    )
+    .all(limit) as { skill: string; runs: number }[];
+  const durStmt = getDb().prepare(
+    `SELECT duration_ms FROM runs
+     WHERE skill_slug = ? AND duration_ms IS NOT NULL AND status = 'done'
+     ORDER BY duration_ms ASC`
+  );
+  return skills.map(({ skill, runs }) => {
+    const rows = durStmt.all(skill) as { duration_ms: number }[];
+    const xs = rows.map((r) => r.duration_ms);
+    return {
+      skill,
+      runs,
+      p50Ms: percentile(xs, 0.5),
+      p95Ms: percentile(xs, 0.95),
+    };
+  });
+}
+
+function percentile(sortedAsc: number[], p: number): number {
+  if (sortedAsc.length === 0) return 0;
+  if (sortedAsc.length === 1) return sortedAsc[0];
+  const idx = Math.min(
+    sortedAsc.length - 1,
+    Math.max(0, Math.floor(p * (sortedAsc.length - 1)))
+  );
+  return sortedAsc[idx];
+}

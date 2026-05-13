@@ -26,6 +26,8 @@ deliverable for an external audience, so it lives in `vault/outputs/`.
 ## References
 
 - `vault/CLAUDE.md` — vault folder map; outputs vs. raw vs. wiki rules.
+- `references/services/notion.md` — auth, rate limits, common gotchas
+  (rich-text shape, pagination, property types).
 - `skills/content/avoid-ai-writing/SKILL.md` — run on the draft before
   marking the file final. The Anxious Nomad voice is conversational and
   specific; AI-isms break it harder than they break technical content.

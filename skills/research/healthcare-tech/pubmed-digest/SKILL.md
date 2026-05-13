@@ -20,8 +20,10 @@ digest noting the failure.
 
 ## References
 
-- `references/eutils.md` (skill-local) — endpoints, auth, rate limits,
+- `references/services/pubmed.md` — endpoints, auth, rate limits,
   query syntax cheatsheet. Consult before composing any query.
+- `scripts/validators/validate_pubmed_esummary.py` — confirms the
+  ESummary JSON response carries the per-record fields stage 3 reads.
 - `vault/CLAUDE.md` — wiki frontmatter shape and naming rules.
 
 ## Instructions
@@ -45,9 +47,16 @@ digest noting the failure.
 3. **ESUMMARY for metadata.** Chunk the PMID list at 200 per call.
    GET `esummary.fcgi?db=pubmed&id=<comma-PMIDs>&retmode=json&...`.
    Sleep ≥350ms between chunks (3 req/sec ceiling without API key).
-   On HTTP 429 back off 60s, retry once. Parse for each record:
-   `title`, `pubdate`, `authors[]`, `source` (journal), `pubtype[]`,
-   `elocationid` (often a DOI).
+   On HTTP 429 back off 60s, retry once. Validate the JSON shape:
+   ```bash
+   python3 scripts/validators/validate_pubmed_esummary.py < /tmp/esummary.json
+   ```
+   Exit 0 → iterate records. Exit 1 → log the `missing_fields` array
+   in the digest's Notes section; proceed only if the missing fields
+   are non-critical (`pubtype` or `elocationid`). Exit 2 → upstream
+   returned malformed JSON; back off 60s and retry once. Parse each
+   record: `title`, `pubdate`, `authors[]`, `source` (journal),
+   `pubtype[]`, `elocationid` (often a DOI).
 
 4. **EFETCH abstracts and extract study facts.** GET
    `efetch.fcgi?db=pubmed&id=<comma-PMIDs>&rettype=abstract&retmode=xml`

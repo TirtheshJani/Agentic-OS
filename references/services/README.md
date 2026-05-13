@@ -18,7 +18,12 @@ relevant file must be copied into that skill's own `references/`.
 | `github.md` | morning-trend-scan, pr-review-prep, issue-triage, repo-onboarding, weekly-rollup |
 | `arxiv.md` | arxiv-daily-digest, morning-trend-scan, healthcare-arxiv, paper-summary |
 | `gmail.md` | inbox-triage, comment-digest |
-| `calendar.md` | daily-rollup, calendar-prep |
+| `calendar.md` | daily-rollup, calendar-prep, weekly-rollup |
+| `notion.md` | weekly-rollup, collective-update, engagement-report |
+| `canva.md` | newsletter-roundup, draft-from-vault |
+| `drive.md` | deep-web-research (foundational; anticipated reuse) |
+| `pubmed.md` | pubmed-digest |
+| `semantic-scholar.md` | paper-summary |
 
 ## What goes in each ref
 

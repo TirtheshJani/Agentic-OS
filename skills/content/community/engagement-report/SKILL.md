@@ -35,6 +35,8 @@ wiki series.
 ## References
 
 - `vault/CLAUDE.md` — wiki frontmatter shape.
+- `references/services/notion.md` — auth, rate limits, search latency
+  and pagination caveats.
 - `skills/content/community/comment-digest/SKILL.md` — the comment-side
   companion (qualitative engagement); this skill is quantitative.
   If both run in the same session, the report links the digest.

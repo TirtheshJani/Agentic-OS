@@ -24,6 +24,7 @@ optional GitHub — all pulled in before synthesis.
 
 - `references/services/calendar.md` — time-window queries, TZ gotchas
 - `references/services/github.md` — `list_commits`, rate limits
+- `references/services/notion.md` — search vs. fetch, pagination, rich-text shape
 
 ## Instructions
 

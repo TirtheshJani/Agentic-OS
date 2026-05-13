@@ -25,11 +25,14 @@ This skill is for a single named paper. For a topic-wide scan prefer
 
 ## References
 
-- `references/services/arxiv.md` (repo-level) — Atom endpoint, the
-  3-second rule, ID extraction. Used in stage 3 when an arXiv ID is
-  available and full text is needed.
-- `references/semantic-scholar-tips.md` (skill-local) — Graph API base
-  URL, ID prefixes (`arXiv:`, `DOI:`), rate limits, error handling.
+- `references/services/arxiv.md` — Atom endpoint, the 3-second rule,
+  ID extraction. Used in stage 3 when an arXiv ID is available and
+  full text is needed.
+- `references/services/semantic-scholar.md` — Graph API base URL, ID
+  prefixes (`arXiv:`, `DOI:`), rate limits, error handling.
+- `scripts/validators/validate_semantic_scholar.py` — confirms the
+  paper-details response has required fields and flags missing
+  recommended fields as warnings.
 - `vault/CLAUDE.md` — wiki frontmatter shape and naming rules.
 
 ## Instructions
@@ -53,9 +56,16 @@ This skill is for a single named paper. For a topic-wide scan prefer
    `fields=title,abstract,authors,year,venue,externalIds,tldr,
    openAccessPdf,citationCount,referenceCount,fieldsOfStudy`.
    On 404, re-check the prefix per
-   `references/semantic-scholar-tips.md`. On 429, back off 30s and
+   `references/services/semantic-scholar.md`. On 429, back off 30s and
    retry once; if still 429, write a stub note with metadata only and
-   stop.
+   stop. Validate the response shape:
+   ```bash
+   python3 scripts/validators/validate_semantic_scholar.py < /tmp/paper.json
+   ```
+   Exit 0 → proceed; `warnings` lists null recommended fields the
+   summary template will record as "not provided". Exit 1 → required
+   field missing (title or paperId); stop and surface to user. Exit 2
+   → upstream returned non-JSON; back off 30s and retry once.
 
 3. **Fetch full text (best effort).** If the abstract alone is enough
    for the user's request (default), skip this stage. Otherwise:
@@ -183,7 +193,7 @@ Stage 6: write
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| 404 from Semantic Scholar | Missing `arXiv:` or `DOI:` prefix | Re-prefix the ID per `references/semantic-scholar-tips.md` and retry |
+| 404 from Semantic Scholar | Missing `arXiv:` or `DOI:` prefix | Re-prefix the ID per `references/services/semantic-scholar.md` and retry |
 | 429 from Semantic Scholar | Free-tier 100-per-5min limit tripped | Back off 30s, retry once; if still 429, write stub and stop |
 | Title-search returns the wrong paper | Common title, ambiguous match | Ask the user for an arXiv ID or DOI; do not guess |
 | Abstract empty in response | Closed-access record without indexed body | If arXiv ID present, fetch the Atom entry; else summarize from title + venue and label the gap |

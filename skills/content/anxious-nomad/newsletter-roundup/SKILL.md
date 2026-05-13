@@ -31,6 +31,8 @@ finished deliverable, so it writes to `vault/outputs/`.
 - `skills/research/general/morning-trend-scan/SKILL.md` — produces the
   trend-scan digests this skill consumes as a link source.
 - `skills/content/avoid-ai-writing/SKILL.md` — final polish pass.
+- `references/services/canva.md` — auth scopes, generative rate caps,
+  transaction lifecycle, brand-kit fallbacks.
 - Canva MCP tools used here:
   - `mcp__claude_ai_Canva__list-brand-kits` — pull the Anxious Nomad
     palette once per session and cache the kit ID in memory.

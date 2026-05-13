@@ -25,6 +25,8 @@ existing vault material prefer `substack/draft-from-vault`.
 
 - `references/firecrawl-tips.md` — rate limits, content selectors,
   pagination, JS/CAPTCHA pitfalls. Consult before any scrape call.
+- `references/services/drive.md` — Drive MCP auth, rate limits, folder
+  semantics, query-language quirks. Consult before any Drive write.
 - Drive MCP tools: `mcp__claude_ai_Google_Drive__create_file`,
   `mcp__claude_ai_Google_Drive__copy_file`. Used in stage 4 for
   archival of raw source bodies.

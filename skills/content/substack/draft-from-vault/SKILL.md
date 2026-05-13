@@ -38,6 +38,8 @@ new wiki page. For audit-only work on an existing draft, use
   prior writing samples to anchor on.
 - `vault/CLAUDE.md` — vault folder rules. Substack drafts are finished
   deliverables and belong in `vault/outputs/`, not `wiki/` or `raw/`.
+- `references/services/canva.md` — auth scopes, generative rate caps,
+  transaction lifecycle. Required reading before any hero-image work.
 - Canva MCP (`mcp__claude_ai_Canva__generate-design`,
   `mcp__claude_ai_Canva__export-design`) — optional hero image. Skip
   when the user passes `--no-image` or omits an image request.

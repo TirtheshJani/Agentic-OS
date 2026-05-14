@@ -25,7 +25,7 @@ export default function Page() {
       <RunStateProvider>
         <Header />
         <main className="grid grid-cols-[280px_1fr_320px] gap-3 p-3 min-h-[calc(100dvh-3rem)]">
-          <Workbench skills={skills} projects={projects} />
+          <Workbench skills={skills} projects={projects} agents={agents} />
           <aside className="space-y-3 overflow-y-auto">
             <UsageCard />
             <IntegrationsStrip />

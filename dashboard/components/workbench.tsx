@@ -7,19 +7,22 @@ import { SkillsRail } from "@/components/skills-rail";
 import { useRunState } from "@/components/run-state";
 import type { Skill } from "@/lib/skills-loader";
 import type { Project } from "@/lib/projects-loader";
+import type { Agent } from "@/lib/agents-loader";
 
 type Props = {
   skills: Skill[];
   projects: Project[];
+  agents: Agent[];
 };
 
-export function Workbench({ skills, projects }: Props) {
+export function Workbench({ skills, projects, agents }: Props) {
   const { running, setRunning, mergeUsage, resetUsage, setCurrentProject, setActiveMcp } =
     useRunState();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [userInput, setUserInput] = useState("");
   const [events, setEvents] = useState<StreamEvent[]>([]);
+  const [assignee, setAssignee] = useState<string>("user");
 
   const skill = useMemo(
     () => skills.find((s) => s.name === selectedSkill) ?? null,
@@ -37,6 +40,39 @@ export function Workbench({ skills, projects }: Props) {
   const onRun = useCallback(async () => {
     const hasInput = userInput.trim().length > 0;
     if (!skill && !hasInput) return;
+
+    // Assignee is not "user" -> enqueue as a task, do not stream
+    if (assignee !== "user") {
+      const dept = assignee.startsWith("lead:") ? assignee.slice(5) : null;
+      const promptText = skill ? `Use ${skill.name}.\n${userInput}` : userInput;
+      try {
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: promptText,
+            assignee,
+            department: dept,
+          }),
+        });
+        const j = await res.json();
+        setEvents([
+          {
+            type: "delta",
+            data: res.ok
+              ? `Task ${j.id} enqueued for ${assignee}.\n`
+              : `Error: ${j.error ?? "enqueue failed"}\n`,
+          },
+        ]);
+      } catch (e) {
+        setEvents([
+          { type: "error", data: { message: e instanceof Error ? e.message : String(e) } },
+        ]);
+      }
+      return;
+    }
+
+    // assignee === "user" -> existing immediate-run path
     setRunning(true);
     resetUsage();
     setActiveMcp(null);
@@ -87,7 +123,7 @@ export function Workbench({ skills, projects }: Props) {
       setRunning(false);
       setActiveMcp(null);
     }
-  }, [skill, project, userInput, setRunning, resetUsage, mergeUsage, setActiveMcp]);
+  }, [skill, project, userInput, assignee, setRunning, resetUsage, mergeUsage, setActiveMcp]);
 
   return (
     <>
@@ -110,6 +146,9 @@ export function Workbench({ skills, projects }: Props) {
             onUserInput={setUserInput}
             onRun={onRun}
             running={running}
+            agents={agents}
+            assignee={assignee}
+            onAssigneeChange={setAssignee}
           />
         </div>
         <div className="flex-1 min-h-0">

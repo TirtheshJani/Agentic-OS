@@ -9,7 +9,8 @@
     "lint": "eslint",
     "validate:skills": "node scripts/validate-skills.mjs",
     "validate:automations": "node scripts/validate-automations.mjs",
-    "validate:agents": "node scripts/validate-agents.mjs"
+    "validate:agents": "node scripts/validate-agents.mjs",
+    "test:tasks": "tsx scripts/test-tasks.mjs"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.22.0",
     "typescript": "^5"
   }
 }

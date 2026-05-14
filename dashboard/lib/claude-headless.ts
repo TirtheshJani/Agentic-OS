@@ -31,6 +31,8 @@ export async function* runClaude(opts: {
   prompt: string;
   cwd?: string;
   mcpConfigPath?: string;
+  appendSystemPrompt?: string;
+  extraEnv?: Record<string, string>;
 }): AsyncGenerator<ClaudeEvent> {
   if (opts.prompt.length > 32_000) {
     yield { type: "error", data: { message: "prompt too large" } };
@@ -44,10 +46,13 @@ export async function* runClaude(opts: {
 
   const args = ["-p", opts.prompt, "--output-format", "stream-json", "--verbose"];
   if (opts.mcpConfigPath) args.push("--mcp-config", opts.mcpConfigPath);
+  if (opts.appendSystemPrompt) args.push("--append-system-prompt", opts.appendSystemPrompt);
+
+  const env = { ...process.env, ...(opts.extraEnv ?? {}) };
 
   const child = spawn(CLAUDE_BIN, args, {
     cwd,
-    env: process.env,
+    env,
     stdio: ["ignore", "pipe", "pipe"],
     // shell: true lets Windows resolve .cmd wrappers and PATH entries that
     // are not visible to Node's direct spawn. Only needed when CLAUDE_BIN

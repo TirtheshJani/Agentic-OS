@@ -48,6 +48,25 @@ function migrate(db: Database.Database) {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prompt TEXT NOT NULL,
+      assignee TEXT NOT NULL,
+      department TEXT,
+      parent_task_id INTEGER REFERENCES tasks(id),
+      status TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      started_at INTEGER,
+      finished_at INTEGER,
+      run_id INTEGER REFERENCES runs(id),
+      error TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status, assignee);
+    CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at DESC);
+  `);
+
   addColumnIfMissing(db, "runs", "project_slug", "TEXT");
   addColumnIfMissing(db, "runs", "cwd", "TEXT");
   addColumnIfMissing(db, "runs", "agent", "TEXT");
@@ -57,6 +76,7 @@ function migrate(db: Database.Database) {
   addColumnIfMissing(db, "runs", "tokens_cache_read", "INTEGER");
   addColumnIfMissing(db, "runs", "tokens_cache_create", "INTEGER");
   addColumnIfMissing(db, "runs", "cost_usd", "REAL");
+  addColumnIfMissing(db, "runs", "task_id", "INTEGER REFERENCES tasks(id)");
 }
 
 function addColumnIfMissing(
@@ -91,6 +111,7 @@ export type RunRow = {
   tokens_cache_read: number | null;
   tokens_cache_create: number | null;
   cost_usd: number | null;
+  task_id: number | null;
 };
 
 export type RunUsage = {
@@ -208,3 +229,19 @@ export function recordVaultChange(p: string, kind: "add" | "change" | "unlink") 
     .prepare(`INSERT INTO vault_changes (path, kind, ts) VALUES (?, ?, ?)`)
     .run(p, kind, Date.now());
 }
+
+export type TaskStatus = "queued" | "claimed" | "running" | "done" | "failed";
+
+export type TaskRow = {
+  id: number;
+  prompt: string;
+  assignee: string;
+  department: string | null;
+  parent_task_id: number | null;
+  status: TaskStatus;
+  created_at: number;
+  started_at: number | null;
+  finished_at: number | null;
+  run_id: number | null;
+  error: string | null;
+};

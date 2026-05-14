@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import type { Skill } from "@/lib/skills-loader";
 import type { Project } from "@/lib/projects-loader";
+import type { Agent } from "@/lib/agents-loader";
 
 type Props = {
   skill: Skill | null;
@@ -12,9 +13,22 @@ type Props = {
   onUserInput: (v: string) => void;
   onRun: () => void;
   running: boolean;
+  agents: Agent[];
+  assignee: string;
+  onAssigneeChange: (v: string) => void;
 };
 
-export function PromptPanel({ skill, project, userInput, onUserInput, onRun, running }: Props) {
+export function PromptPanel({
+  skill,
+  project,
+  userInput,
+  onUserInput,
+  onRun,
+  running,
+  agents,
+  assignee,
+  onAssigneeChange,
+}: Props) {
   const hasInput = userInput.trim().length > 0;
   const canRun = !!skill || hasInput;
   const agent = skill?.agent ?? project?.agent ?? null;
@@ -68,6 +82,39 @@ export function PromptPanel({ skill, project, userInput, onUserInput, onRun, run
       {!skill && project && (
         <p className="text-xs text-muted-foreground line-clamp-3">{project.description}</p>
       )}
+
+      <div>
+        <label htmlFor="assignee" className="mono-label text-muted-foreground">
+          ASSIGN TO
+        </label>
+        <select
+          id="assignee"
+          value={assignee}
+          onChange={(e) => onAssigneeChange(e.target.value)}
+          disabled={running}
+          className="mt-1 w-full rounded-sm border border-border bg-background p-2 text-sm font-mono"
+        >
+          <option value="user">user (run immediately)</option>
+          <optgroup label="Departments">
+            <option value="lead:research">@research</option>
+            <option value="lead:coding">@coding</option>
+            <option value="lead:content">@content</option>
+            <option value="lead:business">@business</option>
+            <option value="lead:productivity">@productivity</option>
+          </optgroup>
+          {agents.filter((a) => a.role === "member").length > 0 && (
+            <optgroup label="Agents">
+              {agents
+                .filter((a) => a.role === "member")
+                .map((a) => (
+                  <option key={a.name} value={a.name}>
+                    @{a.name}
+                  </option>
+                ))}
+            </optgroup>
+          )}
+        </select>
+      </div>
 
       <div>
         <label htmlFor="user-input" className="mono-label text-muted-foreground">

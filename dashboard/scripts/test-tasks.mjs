@@ -74,5 +74,14 @@ try {
 
   console.log("\nALL PASS");
 } finally {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  try {
+    getDb().close();
+  } catch {
+    // ignore
+  }
+  try {
+    fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  } catch {
+    // best-effort cleanup; SQLite WAL handles on Windows may briefly hold the file
+  }
 }

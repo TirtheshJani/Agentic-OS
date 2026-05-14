@@ -26,6 +26,7 @@ export type Skill = {
   outputs?: string[];
   isMeta: boolean;
   agent?: string;
+  handoff: boolean;
 };
 
 function walkSkillMd(dir: string, acc: string[] = []): string[] {
@@ -71,6 +72,7 @@ export function loadSkills(): Skill[] {
       outputs: meta.outputs as string[] | undefined,
       isMeta,
       agent: meta.agent as string | undefined,
+      handoff: meta.handoff === true,
     });
   }
   return skills.sort((a, b) => {

@@ -57,6 +57,22 @@ export function TeamRail({ agents }: { agents: Agent[] }) {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
+  const onTick = async (dept: string) => {
+    try {
+      const res = await fetch("/api/lead/tick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ department: dept }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({ error: "tick failed" }));
+        console.error(`tick ${dept}: ${j.error}`);
+      }
+    } catch (e) {
+      console.error("tick failed", e);
+    }
+  };
+
   return (
     <div className="border border-border rounded-md bg-card/60 px-3 py-2">
       <SectionHeader title="TEAM" meta={<Pill tone="muted">{agents.length}</Pill>} />
@@ -77,6 +93,13 @@ export function TeamRail({ agents }: { agents: Agent[] }) {
                 <span className="flex items-center gap-1">
                   {c.queued > 0 && <Pill tone="warn">Q · {c.queued}</Pill>}
                   {c.claimed > 0 && <Pill tone="muted">C · {c.claimed}</Pill>}
+                  <button
+                    onClick={() => onTick(dept)}
+                    className="mono-label text-muted-foreground hover:text-foreground border border-border rounded-sm px-1.5"
+                    title={`Run ${dept}-lead now`}
+                  >
+                    TICK
+                  </button>
                 </span>
               </div>
               <ul className="space-y-0.5">

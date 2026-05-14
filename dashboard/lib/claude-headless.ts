@@ -20,7 +20,8 @@ export type ClaudeEvent =
   | { type: "tool"; data: { name: string; input?: unknown } }
   | { type: "usage"; data: UsageSnapshot }
   | { type: "done"; data: { outputPath: string | null } }
-  | { type: "error"; data: { message: string } };
+  | { type: "error"; data: { message: string } }
+  | { type: "handoff"; data: { assignee: string; prompt: string; parentTaskId?: number } };
 
 const WRITE_PATTERNS = [
   /(?:wrote|created|saved)(?: to)?\s+([\w./\-]+\.md)/i,
@@ -83,6 +84,8 @@ export async function* runClaude(opts: {
               fullText.push(norm.data);
               const path = scanForWrite(norm.data);
               if (path) outputPath = path;
+              const handoff = scanForHandoff(norm.data);
+              if (handoff) queue.push({ type: "handoff", data: handoff });
             }
             if (norm.type === "tool") {
               const input = (norm.data.input ?? {}) as Record<string, unknown>;
@@ -185,6 +188,26 @@ function scanForWrite(text: string): string | null {
   for (const re of WRITE_PATTERNS) {
     const m = text.match(re);
     if (m) return m[1];
+  }
+  return null;
+}
+
+function scanForHandoff(text: string): { assignee: string; prompt: string; parentTaskId?: number } | null {
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const m = line.match(/^next-task:\s*(\{.+\})\s*$/);
+    if (!m) continue;
+    try {
+      const obj = JSON.parse(m[1]) as Record<string, unknown>;
+      const assignee = typeof obj.assignee === "string" ? obj.assignee : null;
+      const promptText = typeof obj.prompt === "string" ? obj.prompt : null;
+      const parent = typeof obj.parent_task_id === "number" ? obj.parent_task_id : undefined;
+      if (assignee && promptText) {
+        return { assignee, prompt: promptText, parentTaskId: parent };
+      }
+    } catch {
+      // ignore
+    }
   }
   return null;
 }

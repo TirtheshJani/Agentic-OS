@@ -4,6 +4,7 @@ import { resolveMcpForServer, type McpResolution } from "@/lib/mcp-loader";
 import { repoRoot } from "@/lib/paths";
 import { projectBySlug } from "@/lib/projects-loader";
 import { loadSkills } from "@/lib/skills-loader";
+import { createTask } from "@/lib/tasks";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ type RunBody = {
   projectSlug?: string;
   prompt?: string;
   agent?: string;
+  taskId?: number;
 };
 
 export async function POST(req: Request) {
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const { skillSlug, userInput, projectSlug, prompt: freeformPrompt, agent } = body;
+  const { skillSlug, userInput, projectSlug, prompt: freeformPrompt, agent, taskId } = body;
 
   const skill = skillSlug
     ? loadSkills().find((s) => s.name === skillSlug)
@@ -110,6 +112,23 @@ export async function POST(req: Request) {
           if (evt.type === "usage") {
             usage = { ...usage, ...evt.data };
             updateRunUsage(runId, evt.data);
+          }
+          if (evt.type === "handoff") {
+            if (skill?.handoff !== true) {
+              send({ type: "delta", data: `[handoff dropped — skill ${skill?.name ?? "(adhoc)"} did not opt in via metadata.handoff: true]\n` });
+              continue;
+            }
+            try {
+              const childId = createTask({
+                prompt: evt.data.prompt,
+                assignee: evt.data.assignee,
+                department: evt.data.assignee.startsWith("lead:") ? evt.data.assignee.slice(5) : null,
+                parentTaskId: taskId ?? evt.data.parentTaskId ?? null,
+              });
+              send({ type: "delta", data: `[handoff → task ${childId} for ${evt.data.assignee}]\n` });
+            } catch (e) {
+              send({ type: "delta", data: `[handoff failed: ${e instanceof Error ? e.message : String(e)}]\n` });
+            }
           }
         }
       } catch (e) {

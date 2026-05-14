@@ -1,5 +1,6 @@
 import { Starfield } from "@/components/starfield";
 import { Header } from "@/components/header";
+import { RunStateProvider } from "@/components/run-state";
 import { TaskChain } from "@/components/task-chain";
 import { TaskThread } from "@/components/task-thread";
 import { getTask } from "@/lib/tasks";
@@ -15,7 +16,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   if (!task) notFound();
 
   return (
-    <>
+    <RunStateProvider>
       <Starfield />
       <Header />
       <main className="max-w-4xl mx-auto p-4 space-y-4">
@@ -29,6 +30,6 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         <TaskChain taskId={task.id} />
         <TaskThread taskId={task.id} />
       </main>
-    </>
+    </RunStateProvider>
   );
 }

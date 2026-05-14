@@ -9,6 +9,9 @@ export const automationsRemotePath = path.join(repoRoot, "automations", "remote"
 export const dbPath = process.env.AGENTIC_OS_DB
   ? path.resolve(repoRoot, process.env.AGENTIC_OS_DB)
   : path.join(repoRoot, ".agentic-os", "state.db");
+export const agentsPath = path.join(repoRoot, "agents");
+export const agentPromptsPath = path.join(agentsPath, "_prompts");
+export const threadsPath = path.join(vaultPath, "threads");
 
 export function normalizeCwd(p: string): string {
   return path.resolve(p).toLowerCase();

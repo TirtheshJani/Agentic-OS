@@ -5,6 +5,7 @@ import { repoRoot } from "@/lib/paths";
 import { projectBySlug } from "@/lib/projects-loader";
 import { loadSkills } from "@/lib/skills-loader";
 import { createTask } from "@/lib/tasks";
+import path from "node:path";
 
 export const dynamic = "force-dynamic";
 
@@ -99,12 +100,18 @@ export async function POST(req: Request) {
       let outputPath: string | null = null;
       let error: string | null = null;
       let usage: RunUsage = {};
+      const extraEnv: Record<string, string> = {};
+      if (taskId) {
+        const threadFile = path.join(repoRoot, "vault", "threads", `${taskId}.md`);
+        extraEnv.AGENTIC_OS_THREAD_PATH = threadFile;
+      }
       try {
         for await (const evt of runClaude({
           prompt,
           cwd,
           mcpConfigPath:
             mcpResolution?.kind === "ready" ? mcpResolution.tmpConfigPath : undefined,
+          extraEnv,
         })) {
           send(evt);
           if (evt.type === "done") outputPath = evt.data.outputPath;

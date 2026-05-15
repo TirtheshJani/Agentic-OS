@@ -104,3 +104,22 @@ on every build.
 **Consequences.** All ~25 stub skills pass the spec validator from day one.
 Cost: dashboard has to read `metadata.status`/`metadata.domain` instead of
 the top level. Negligible.
+
+---
+
+## ADR-006 — Roadmap phases 6–9 added
+
+**Date:** 2026-05-15
+
+**Context.** Phases 1–5 are done. The system has grown beyond bootstrap:
+raw notes are accumulating without a promotion cadence, the projects layer
+is unused in the dashboard, and skills are starting to want to call each
+other. Without an explicit roadmap these tracks would drift.
+
+**Decision.** Append four phases — wiki promotion & curation (6), projects
+layer (7), skill chaining (8), hardening & e2e (9) — to `product/roadmap.md`
+with concrete deliverables. Mark phases 1–5 as done.
+
+**Consequences.** Future work has named buckets; agents can claim a phase
+without coordination. Standards work for chaining (Phase 8) is flagged as a
+TODO against `standards/skill-authoring.md`, owned by a different agent.

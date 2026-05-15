@@ -4,9 +4,10 @@ A personal "Agentic OS" built on top of Claude Code: a single repo that holds
 your skills, automations, memory, and a local dashboard for delegating
 recurring work.
 
-> **Status:** scaffolding bootstrap. ~25 domain skills exist as spec-compliant
-> stubs; author them interactively via `/new-skill`. See `plan.md` for the
-> full design.
+> **Status:** post-bootstrap. Roadmap phases 1–5 done; phases 6–9 (wiki
+> promotion, projects layer, skill chaining, hardening) in flight. See
+> `product/roadmap.md` for the current plan and `plan.md` for the original
+> design.
 
 ## Layers
 

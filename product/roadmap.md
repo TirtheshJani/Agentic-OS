@@ -41,3 +41,113 @@ Use `/new-skill` to fill stubs in priority order:
 - Dashboard analytics view (run counts by skill, by domain, by week).
 - Vault search card.
 - Optional: hook into Spotify/Canva MCPs for content workflows.
+
+## Phase 6 — Multi-agent teams
+
+Borrow the agents-as-teammates model from
+[multica](https://github.com/TirtheshJani/multicaproject) (squads under a
+leader agent, task lifecycle, comments) and graft it onto the existing
+branch-as-department structure. Single operator — non-goal of "multi-user
+team deployments" still holds. The "team" is internal: TJ assigns to a
+department or a named agent, the lead routes, agents hand off via comments
+and follow-up tasks. No Postgres, no Go daemon — stays on SQLite + Next.js.
+
+Each step ships independently. Earlier steps unlock later ones; do not skip
+order.
+
+### 6.1 Agent profiles
+
+- `agents/<department>/<name>.md` with frontmatter: `name`, `model`,
+  `department`, `role` (`lead` | `member`), `allowed-skills`, `allowed-tools`,
+  `system-prompt` (path to a `.md` seed).
+- Departments map 1:1 to existing branches (`research`, `coding`, `content`,
+  `business`, `productivity`, `_meta`).
+- One `lead` agent per department, 0+ `member` agents.
+- `lib/agents-loader.ts` mirrors `skills-loader.ts`; validator added to
+  `npm run validate:agents` (frontmatter shape, lead-per-department).
+
+**Exit criteria:** at least one agent profile per active department, validator
+exits 0, dashboard "Team" rail lists them grouped by department.
+
+### 6.2 Task lifecycle in SQLite
+
+- New `tasks` table: `id`, `prompt`, `assignee` (agent name or `user`),
+  `department`, `parent_task_id` (nullable), `status`
+  (`queued` | `claimed` | `running` | `done` | `failed`), `created_at`,
+  `started_at`, `finished_at`, `run_id` (FK into `runs`).
+- API: `POST /api/tasks` (enqueue), `POST /api/tasks/:id/claim`,
+  `POST /api/tasks/:id/start`, `POST /api/tasks/:id/finish`.
+- Existing `runs` table gets a nullable `task_id` column so a one-off prompt
+  still works without a task.
+
+**Exit criteria:** task can be created via API and round-trip through all
+states; `runs` row links back to its task; migrations apply cleanly on a fresh
+DB.
+
+### 6.3 Assignee picker in the workbench
+
+- Prompt panel grows an "Assign to" control: defaults to `user` (current
+  behavior, no task row), can target a department (`@research`) or a named
+  agent (`@arxiv-watcher`).
+- Department target enqueues a task with `assignee=lead:<dept>`; named target
+  enqueues `assignee=<agent>` directly.
+- Workbench shows a "queue" sub-rail per department with pending/claimed
+  counts.
+
+**Exit criteria:** UI can enqueue a task to a department or an agent; queue
+counters update without a page reload.
+
+### 6.4 Lead routing skill
+
+- One skill per department: `<dept>/lead`. Reads the department queue, picks
+  a teammate based on `allowed-skills` overlap with the task, and reassigns
+  the task to that teammate.
+- Spawns `claude -p` with the chosen agent's system prompt and skill
+  allowlist via `--allowed-tools` and a prepended system message.
+- Lead loop runs as a local cron (`automations/local/<dept>-lead.sh`) or on
+  demand from the dashboard.
+
+**Exit criteria:** an unassigned task addressed to a department gets claimed
+and reassigned by the lead within one tick; assignment is logged to the
+task's thread.
+
+### 6.5 Cross-agent handoff
+
+- Streaming protocol gains a `next-task` event: an agent emits a JSON line
+  with `{ assignee, prompt, parent_task_id }`; `claude-headless.ts` parses it
+  and `POST`s to `/api/tasks` with `parent_task_id` set.
+- Skills can opt into handoff with a frontmatter flag
+  (`metadata.handoff: true`) so accidental emissions don't fan out.
+- Dashboard renders the parent → child chain on the task detail view.
+
+**Exit criteria:** a content/draft skill can hand off to a content/edit skill
+end-to-end; chain renders in the dashboard with both run logs accessible.
+
+### 6.6 Task thread (comments)
+
+- Per task: `vault/threads/<task-id>.md` with append-only entries (timestamp,
+  author, body). Lead routing decisions, agent self-notes, and human comments
+  all land here.
+- Dashboard task detail renders the thread; a text box at the bottom appends
+  a `user`-authored entry.
+- Skills can write to the thread via a `thread.md` convention — no new tool,
+  just a known path the orchestrator tails.
+
+**Exit criteria:** thread file exists for every task with at least one entry;
+dashboard renders it; manual append from the UI persists.
+
+**Phase 6 exit criteria (gate to call it done):** TJ can type "research the
+NIH stance on FHIR-RAG and draft a Substack section" into the prompt panel
+with assignee `@research`, watch the `research/lead` claim the task, hand off
+the literature pull to `research/arxiv-watcher`, hand off the draft to
+`content/anxious-nomad/lead`, and end with two linked runs and one task
+thread in the vault — without TJ touching the keyboard between handoffs.
+
+### Out of scope (deliberately)
+
+- Multi-user auth, RBAC, shared workspaces. Mission non-goal stands.
+- Postgres / pgvector. SQLite is enough at this scale.
+- Multi-CLI runtime (Codex, Copilot, Cursor). Claude Code only; revisit if a
+  specific workflow proves Claude is the wrong tool.
+- Agent-to-agent direct messaging outside of tasks. Threads are the only
+  channel; keeps the audit trail intact.

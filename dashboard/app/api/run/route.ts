@@ -4,7 +4,8 @@ import { resolveMcpForServer, type McpResolution } from "@/lib/mcp-loader";
 import { repoRoot } from "@/lib/paths";
 import { projectBySlug } from "@/lib/projects-loader";
 import { loadSkills } from "@/lib/skills-loader";
-import { createTask } from "@/lib/tasks";
+import { createTask, finishTask, getTask, startTask } from "@/lib/tasks";
+import { spawnTaskIfNamed } from "@/lib/task-runner";
 import path from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,18 @@ export async function POST(req: Request) {
     mcpServer: activeMcp?.name ?? null,
   });
 
+  if (taskId) {
+    try {
+      startTask(taskId, runId);
+    } catch (e) {
+      // State machine rejected (task already running/done/etc). Run still
+      // proceeds — the task->run link will just be missing.
+      console.error(
+        `[run] startTask(${taskId}) rejected: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -133,6 +146,8 @@ export async function POST(req: Request) {
                 parentTaskId: taskId ?? evt.data.parentTaskId ?? null,
               });
               send({ type: "delta", data: `[handoff → task ${childId} for ${evt.data.assignee}]\n` });
+              const child = getTask(childId);
+              if (child) spawnTaskIfNamed(child);
             } catch (e) {
               send({ type: "delta", data: `[handoff failed: ${e instanceof Error ? e.message : String(e)}]\n` });
             }
@@ -143,6 +158,15 @@ export async function POST(req: Request) {
         send({ type: "error", data: { message: error } });
       } finally {
         finishRun(runId, error ? "error" : "done", outputPath, error, usage);
+        if (taskId) {
+          try {
+            finishTask(taskId, error ? "failed" : "done", error);
+          } catch (e) {
+            console.error(
+              `[run] finishTask(${taskId}) rejected: ${e instanceof Error ? e.message : String(e)}`
+            );
+          }
+        }
         controller.close();
       }
     },

@@ -1,4 +1,5 @@
-import { createTask, listTasks } from "@/lib/tasks";
+import { createTask, getTask, listTasks } from "@/lib/tasks";
+import { spawnTaskIfNamed } from "@/lib/task-runner";
 import type { TaskStatus } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ export async function POST(req: Request) {
     department: body.department ?? null,
     parentTaskId: typeof body.parentTaskId === "number" ? body.parentTaskId : null,
   });
+  const task = getTask(id);
+  if (task) spawnTaskIfNamed(task);
   return Response.json({ id }, { status: 201 });
 }
 

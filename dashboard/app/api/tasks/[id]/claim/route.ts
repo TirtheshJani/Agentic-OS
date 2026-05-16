@@ -1,4 +1,5 @@
 import { claimTask } from "@/lib/tasks";
+import { spawnTaskIfNamed } from "@/lib/task-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   try {
     const task = claimTask(n, body.assignee);
     if (!task) return Response.json({ error: "not found" }, { status: 404 });
+    spawnTaskIfNamed(task);
     return Response.json({ task });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 409 });

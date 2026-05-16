@@ -11,7 +11,8 @@
     "validate:automations": "node scripts/validate-automations.mjs",
     "validate:agents": "node scripts/validate-agents.mjs",
     "test:tasks": "tsx scripts/test-tasks.mjs",
-    "test:threads": "tsx scripts/test-threads.mjs"
+    "test:threads": "tsx scripts/test-threads.mjs",
+    "test:task-flow": "tsx scripts/test-task-flow.mjs"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",

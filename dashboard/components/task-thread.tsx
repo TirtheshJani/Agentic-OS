@@ -15,10 +15,20 @@ export function TaskThread({ taskId }: { taskId: number }) {
   }, [taskId]);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 5000);
-    return () => clearInterval(id);
-  }, [load]);
+    let cancelled = false;
+    const tick = async () => {
+      const res = await fetch(`/api/threads/${taskId}`, { cache: "no-store" });
+      if (cancelled || !res.ok) return;
+      const j = (await res.json()) as { content: string };
+      if (!cancelled) setContent(j.content);
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [taskId]);
 
   const onSend = async () => {
     if (!draft.trim()) return;

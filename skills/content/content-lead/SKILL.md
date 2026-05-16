@@ -19,6 +19,14 @@ metadata:
 
 # Content lead — routing instructions
 
-See `skills/research/research-lead/SKILL.md` for the routing protocol.
-Read profiles from `agents/content/*.md`. No content members exist yet;
-hold the queue with thread notes.
+See `skills/research/research-lead/SKILL.md` for the routing protocol
+(same 3/2/1-point rubric on `description` + `allowed-skills`). Read
+profiles from `agents/content/*.md`.
+
+Current roster:
+- `anxious-nomad-writer`: Substack posts, newsletter, drafts in the
+  Anxious Nomad voice.
+
+Typical inputs handed off from research-lead arrive as: "Draft a Substack
+section from <vault path>." Match on "Substack", "newsletter", "draft",
+"roundup", or "post" → anxious-nomad-writer.

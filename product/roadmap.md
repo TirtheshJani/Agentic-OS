@@ -1,6 +1,6 @@
 # Roadmap
 
-## Phase 1 — Bootstrap (this PR)
+## Phase 1 — Bootstrap (done)
 
 - Spec layer (`product/`, `standards/`, `instructions/`, `specs/`).
 - ~25 spec-compliant skill stubs.
@@ -12,7 +12,7 @@
 **Exit criteria:** dashboard renders, validator exits 0, one stub authored
 end-to-end as smoke test.
 
-## Phase 2 — Author skill bodies
+## Phase 2 — Author skill bodies (done)
 
 Use `/new-skill` to fill stubs in priority order:
 
@@ -24,19 +24,19 @@ Use `/new-skill` to fill stubs in priority order:
 5. `coding/pr-review-prep` (proves GitHub MCP for PRs).
 6. The remaining ~20 in any order driven by use.
 
-## Phase 3 — MCP integration polish
+## Phase 3 — MCP integration polish (done)
 
 - Per-skill `references/<service>-tips.md` capturing rate limits, auth
   patterns, common errors.
 - Add `scripts/` deterministic checks (e.g. validate arXiv response shape).
 
-## Phase 4 — Remote scheduled tasks
+## Phase 4 — Remote scheduled tasks (done)
 
 - Register `automations/remote/*.md` with Claude Code's scheduled-task
   runner.
 - Forecast card on the dashboard reflects next-run timestamps.
 
-## Phase 5 — Polish
+## Phase 5 — Polish (done)
 
 - Dashboard analytics view (run counts by skill, by domain, by week).
 - Vault search card.
@@ -138,10 +138,17 @@ dashboard renders it; manual append from the UI persists.
 
 **Phase 6 exit criteria (gate to call it done):** TJ can type "research the
 NIH stance on FHIR-RAG and draft a Substack section" into the prompt panel
-with assignee `@research`, watch the `research/lead` claim the task, hand off
-the literature pull to `research/arxiv-watcher`, hand off the draft to
-`content/anxious-nomad/lead`, and end with two linked runs and one task
-thread in the vault — without TJ touching the keyboard between handoffs.
+with assignee `@research`, watch `research-lead` claim and route the task to
+`health-watcher`, watch `health-watcher` produce a digest and hand off to
+`anxious-nomad-writer` via `next-task:`, and end with two linked runs plus
+a parent-child task thread pair in the vault — without TJ touching the
+keyboard between handoffs.
+
+**Status: gate plumbing complete (2026-05-16).** Auto-spawn closes the loop
+in /api/run; the handoff gate trusts named-agent runs as of phase 6.8;
+`health-watcher` and `anxious-nomad-writer` member agents are in place; lead
+routing scores on agent description + skill names. Live e2e demo run is
+pending operator execution; chain is structurally ready.
 
 ### Out of scope (deliberately)
 

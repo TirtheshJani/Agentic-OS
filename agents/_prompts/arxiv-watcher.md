@@ -18,5 +18,5 @@ the digest), emit a next-task event on a single line of stdout:
   next-task: {"assignee":"content-lead","prompt":"Draft Substack section from <path>","parent_task_id":<id>}
 
 The orchestrator parses this and enqueues a new task with parent_task_id
-set. Only emit next-task if metadata.handoff:true is set in your skill's
-SKILL.md frontmatter, otherwise the event is dropped.
+set. Member-agent runs are trusted handoff sources, so the event will be
+honored even if the skill you ran does not declare metadata.handoff: true.

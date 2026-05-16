@@ -134,7 +134,8 @@ export async function POST(req: Request) {
             updateRunUsage(runId, evt.data);
           }
           if (evt.type === "handoff") {
-            if (skill?.handoff !== true) {
+            const trustedByAgent = typeof agent === "string" && agent.length > 0;
+            if (skill?.handoff !== true && !trustedByAgent) {
               send({ type: "delta", data: `[handoff dropped — skill ${skill?.name ?? "(adhoc)"} did not opt in via metadata.handoff: true]\n` });
               continue;
             }

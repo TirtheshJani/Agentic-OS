@@ -87,7 +87,51 @@ commit. No automated sync — that's intentional (see decision body).
 
 ---
 
-## ADR-005 — Strict Anthropic Skills spec compliance
+## ADR-006 — Named-agent runs trust handoffs without per-skill opt-in
+
+**Date:** 2026-05-16
+
+**Context.** Phase 6.5 added a `metadata.handoff: true` opt-in so accidental
+`next-task:` emissions from ad-hoc skill runs would not fan out. Phase 6.7's
+auto-spawn (commit 8179e8a) posts to `/api/run` with `{ prompt, agent,
+taskId }` and no `skillSlug`. With no skill in context, the opt-in check in
+`/api/run` dropped every handoff with "(adhoc) did not opt in", silently
+breaking the multi-agent chain the gate depended on.
+
+**Decision.** When `body.agent` is set on a `/api/run` call (i.e., a named
+member agent is running), treat the run as a trusted handoff source and
+honor `next-task:` events without requiring `metadata.handoff: true` on the
+underlying skill. Ad-hoc skill runs (no `agent` set) still need the opt-in.
+
+**Consequences.** Member agents can chain through whichever skills suit each
+task without the skill author having to remember to flip the flag. The
+opt-in remains the safety rail for free-form prompt runs from the workbench.
+Cost: a member agent that emits a malformed `next-task:` will now enqueue a
+bad child task; mitigation is the agent system prompt, not the route.
+
+---
+
+## ADR-007 — Routing matcher uses agent description, not just skill names
+
+**Date:** 2026-05-16
+
+**Context.** The original research-lead matcher scored teammates by
+substring-matching `allowed-skills` names against the task prompt. This
+worked for prompts that named a skill ("arxiv ML papers" → arxiv-watcher)
+but failed open-ended healthcare-policy prompts ("NIH stance on FHIR-RAG")
+because no teammate had "NIH" or "FHIR" in any skill name. The gate
+exit criteria depended on such routing succeeding.
+
+**Decision.** Lead routing now scores against the teammate's agent profile
+`description` (3 points for verbatim domain-term match, 2 for synonym,
+1 for skill-name substring). Agent descriptions are deliberately rich in
+domain vocabulary (health-watcher names FDA/NIH/FHIR/HIPAA explicitly).
+Same rubric applies to content-lead.
+
+**Consequences.** Routing is robust to prompts that don't name a tool.
+Cost: each agent description must be curated as a routing signal, not just
+human-facing prose. Validator does not enforce this; failures show up as
+"no teammate matched — holding" thread notes.
 
 **Date:** 2026-05-10
 

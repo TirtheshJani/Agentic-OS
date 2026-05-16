@@ -41,12 +41,19 @@ The spawned `claude -p` receives:
 1. Parse the JSON queue from the user message.
 2. For each pending task:
    1. Read the prompt text.
-   2. Read `agents/research/*.md` profiles to enumerate teammates and their
-      `allowed-skills`. (Use the Read tool with explicit paths; do not glob
-      outside `agents/research/`.)
-   3. Score each teammate by counting `allowed-skills` whose names appear as
-      substrings in the task prompt (case-insensitive). Highest score wins.
-      Ties broken by alphabetical agent name.
+   2. Read `agents/research/*.md` profiles to enumerate teammates. For each,
+      record `name`, `description`, and `allowed-skills`. (Use the Read tool
+      with explicit paths; do not glob outside `agents/research/`.)
+   3. Score each teammate against the prompt with this rubric:
+      - 3 points: a domain noun in the prompt appears verbatim in the
+        teammate's `description` (e.g. prompt "FDA clearance" matches a
+        description containing "FDA").
+      - 2 points: a domain synonym is present (e.g. prompt "NIH guidance"
+        matches "regulatory standards" in the description).
+      - 1 point: any `allowed-skills` name appears as a substring of the
+        prompt (case-insensitive).
+      - 0 points otherwise.
+      Sum across all matches. Highest total wins; ties broken alphabetically.
    4. If best score is 0, leave the task queued and append to its thread:
       `no teammate matched — holding`
    5. Otherwise:
@@ -78,9 +85,22 @@ Input queue with one task:
 {"pending":[{"id":12,"prompt":"summarize today's arxiv ML papers","department":"research"}]}
 ```
 
-Expected behavior: arxiv-watcher's `allowed-skills` include `paper-search`
-and `arxiv-daily-digest`. The prompt contains "arxiv" so it scores 1.
-Claim to arxiv-watcher; append thread note. stdout: `routed: 1 handed-off, 0 held`.
+Expected behavior: arxiv-watcher's `description` mentions "arXiv" and its
+`allowed-skills` include `paper-search` and `arxiv-daily-digest`. Prompt has
+"arxiv" → 3-point match on description plus 1-point match on skill name.
+Total 4. Claim to arxiv-watcher; append thread note. stdout:
+`routed: 1 handed-off, 0 held`.
+
+Input queue with a healthcare-policy task:
+
+```json
+{"pending":[{"id":17,"prompt":"research the NIH stance on FHIR-RAG and draft a Substack section","department":"research"}]}
+```
+
+Expected behavior: health-watcher's `description` names "NIH", "FHIR", and
+"RAG over medical literature" → multiple 3-point matches. arxiv-watcher's
+description does not mention any of these → 0 points. Claim to
+health-watcher; thread note: `assigned to health-watcher (matched: NIH, FHIR)`.
 
 ## Troubleshooting
 

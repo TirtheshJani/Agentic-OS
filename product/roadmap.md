@@ -158,3 +158,123 @@ pending operator execution; chain is structurally ready.
   specific workflow proves Claude is the wrong tool.
 - Agent-to-agent direct messaging outside of tasks. Threads are the only
   channel; keeps the audit trail intact.
+
+## Phase 7 — Projects, load-bearing
+
+PROJECT.md, projects-loader, and the rail's PROJECTS section all shipped
+during phase 5/6. The work in front of us is making projects do something:
+filter skills, scope tasks, drive a detail view, and surface project-local
+status. Single operator, single SQLite DB still. No new infrastructure.
+
+Each step ships independently. Earlier steps unlock later ones; do not skip
+order.
+
+### 7.1 PROJECT.md validator
+
+The 12 existing PROJECT.md files were hand-authored and the schema is
+documented only in `vault/projects/README.md`. There's no validator, so
+drift goes unnoticed (one project has `repo-url: ""`, another has an
+absolute `path:`, neither is wrong but both are unenforced).
+
+- `dashboard/scripts/validate-projects.mjs` mirroring validate-skills /
+  validate-agents: required fields (`name`, `slug`, `description`,
+  `status`), kebab-case slug matching folder name, `branch` in an allowed
+  set (or warn-only on unknown), `status` in `active | dormant | archived`,
+  `path` exists or is flagged with a warning (not a fail — repos can move).
+- `npm run validate:projects` in `dashboard/package.json`.
+- Audit the 12 existing PROJECT.md files; fix drift in one commit.
+
+**Exit criteria:** validator exits 0 on every PROJECT.md, schema lives in
+the script (not just the vault README), CI-ready.
+
+### 7.2 Per-project skill scoping
+
+`PROJECT.md.capabilities` is currently read by the loader but ignored by
+the UI. Selecting `fhir-rag-paper` should narrow the skills rail to skills
+whose `metadata.domain` matches one of `[healthcare-ai, research, coding]`.
+
+- Workbench filters `Skill[]` by intersecting `skill.branch.family` and/or
+  `skill.domain` with the selected project's `capabilities`. Show a
+  collapsed "Show all (N hidden)" toggle below the filtered list so the
+  full roster is still one click away.
+- Add an optional `PROJECT.md.allowed-skills: [..]` for explicit allow-list
+  override when capability tags aren't precise enough.
+- Validator (7.1) warns if `allowed-skills` references a skill that does
+  not exist.
+
+**Exit criteria:** with a project selected, the rail shows only matching
+skills by default; "Show all" reveals the rest; deselecting the project
+restores the full list. Filter is empty-state safe (a project with
+`capabilities: []` shows everything).
+
+### 7.3 Tasks linked to projects
+
+Tasks have `assignee`, `department`, `parent_task_id` but no project
+linkage. A task created while `fhir-rag-paper` is selected should record
+that, so the project detail page can show its open work.
+
+- Migration: `ALTER TABLE tasks ADD COLUMN project_slug TEXT` (nullable;
+  existing rows stay NULL).
+- `createTask({ projectSlug })` accepts the field; workbench passes
+  `selectedProject` through `POST /api/tasks`.
+- Handoff inheritance: child tasks created via `next-task:` inherit the
+  parent's `project_slug` unless the handoff payload overrides it.
+- Lead routing reads `task.project_slug` and, when present, restricts
+  candidate teammates to those whose `allowed-skills` intersect the
+  project's `capabilities`.
+
+**Exit criteria:** enqueue a task with a project selected; row has
+`project_slug`. Child task inherits it across one handoff. Lead routing
+respects project scoping (a content-only project does not route to a
+research-only teammate).
+
+### 7.4 Project detail page
+
+The rail can select a project but there's no detail view. The skill detail
+analogue is the `tasks/[id]` page; projects need the same.
+
+- `app/projects/[slug]/page.tsx` rendering: PROJECT.md prose, capabilities
+  as chips, repo-url link, working-tree path with `pathExists` indicator.
+- Three scoped lists: open tasks (`project_slug = ?`), last 10 runs (via
+  the runs/tasks join), last 10 vault writes inside `vault/projects/<slug>/`
+  or the project's working-tree path.
+- A "Run in this project" button that pre-selects the project and focuses
+  the workbench prompt.
+
+**Exit criteria:** `/projects/fhir-rag-paper` renders prose + three lists,
+all scoped. Clicking a task navigates to the existing task detail page.
+
+### 7.5 Project status surface
+
+When a project is selected on the home page, the right rail should swap
+some of its generic cards for project-scoped ones.
+
+- New `ProjectStatusCard` showing: open task count by status, last vault
+  write inside the project, last git commit on the project path
+  (`git log -1 --format=%cI -- <path>` cached for 60s).
+- `RecentRunsCard` filters by `project_slug` when one is selected; falls
+  back to all runs otherwise.
+- Workbench title shows the selected project name as a chip; clearing the
+  project removes the filter.
+
+**Exit criteria:** selecting a project changes the right rail in a single
+re-render. No regression when no project is selected.
+
+### Phase 7 exit gate
+
+Selecting `fhir-rag-paper` in the rail filters the skills list to the
+project's capabilities; enqueuing a task creates a row with
+`project_slug='fhir-rag-paper'`; the auto-spawned chain inherits the
+project across handoffs; the `/projects/fhir-rag-paper` page shows that
+task in its "open tasks" list and the run in its "recent runs" list. The
+validator passes on all 12 PROJECT.md files.
+
+### Out of scope (deliberately)
+
+- Multi-project tasks. A task belongs to one project (or none).
+- Cross-project handoffs. A handoff with project X stays in project X
+  unless the handoff payload explicitly sets a different `project_slug`.
+- Auto-detection of project from prompt content. The selected project
+  is the source of truth.
+- Project lifecycle automation (status transitions, archival). The
+  `status` field is human-edited.

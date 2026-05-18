@@ -34,6 +34,7 @@ export async function* runClaude(opts: {
   mcpConfigPath?: string;
   appendSystemPrompt?: string;
   extraEnv?: Record<string, string>;
+  signal?: AbortSignal;
 }): AsyncGenerator<ClaudeEvent> {
   if (opts.prompt.length > 32_000) {
     yield { type: "error", data: { message: "prompt too large" } };
@@ -60,6 +61,17 @@ export async function* runClaude(opts: {
     // is a plain name (not an absolute path).
     shell: !CLAUDE_BIN.includes("/") && !CLAUDE_BIN.includes("\\"),
   });
+
+  const killChild = () => {
+    if (!child.killed) {
+      try {
+        child.kill();
+      } catch {
+        // already exited
+      }
+    }
+  };
+  opts.signal?.addEventListener("abort", killChild);
 
   const queue: ClaudeEvent[] = [];
   let done = false;
@@ -97,7 +109,10 @@ export async function* runClaude(opts: {
           queue.push({ type: "delta", data: line });
           fullText.push(line);
         }
-      } catch {
+      } catch (e) {
+        console.warn(
+          `[runClaude] non-JSON stdout line treated as text: ${e instanceof Error ? e.message : String(e)}`
+        );
         queue.push({ type: "delta", data: line });
         fullText.push(line);
       }
@@ -118,17 +133,25 @@ export async function* runClaude(opts: {
     done = true;
   });
 
-  while (true) {
-    if (queue.length > 0) {
-      yield queue.shift()!;
-      continue;
+  try {
+    while (true) {
+      if (queue.length > 0) {
+        yield queue.shift()!;
+        continue;
+      }
+      if (done) {
+        if (err) yield { type: "error", data: { message: err } };
+        else yield { type: "done", data: { outputPath } };
+        return;
+      }
+      await sleep(50);
     }
-    if (done) {
-      if (err) yield { type: "error", data: { message: err } };
-      else yield { type: "done", data: { outputPath } };
-      return;
-    }
-    await sleep(50);
+  } finally {
+    // Runs on normal completion, generator.return() (consumer abandoned the
+    // iterator), or generator.throw(). Ensures the child does not outlive
+    // the caller — even if the SSE client disconnects mid-stream.
+    opts.signal?.removeEventListener("abort", killChild);
+    killChild();
   }
 }
 

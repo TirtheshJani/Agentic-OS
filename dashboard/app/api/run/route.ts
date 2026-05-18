@@ -125,6 +125,7 @@ export async function POST(req: Request) {
           mcpConfigPath:
             mcpResolution?.kind === "ready" ? mcpResolution.tmpConfigPath : undefined,
           extraEnv,
+          signal: req.signal,
         })) {
           send(evt);
           if (evt.type === "done") outputPath = evt.data.outputPath;

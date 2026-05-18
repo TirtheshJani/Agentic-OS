@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OutputStream, type StreamEvent } from "@/components/output-stream";
 import { PromptPanel } from "@/components/prompt-panel";
 import { SkillsRail } from "@/components/skills-rail";
@@ -23,6 +23,13 @@ export function Workbench({ skills, projects, agents }: Props) {
   const [userInput, setUserInput] = useState("");
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [assignee, setAssignee] = useState<string>("user");
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const skill = useMemo(
     () => skills.find((s) => s.name === selectedSkill) ?? null,
@@ -77,6 +84,9 @@ export function Workbench({ skills, projects, agents }: Props) {
     resetUsage();
     setActiveMcp(null);
     setEvents([]);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch("/api/run", {
         method: "POST",
@@ -88,6 +98,7 @@ export function Workbench({ skills, projects, agents }: Props) {
           prompt: !skill && hasInput ? userInput : undefined,
           agent: skill?.agent ?? project?.agent,
         }),
+        signal: controller.signal,
       });
       if (!res.body) {
         setEvents([{ type: "error", data: { message: "no response body" } }]);
@@ -117,9 +128,16 @@ export function Workbench({ skills, projects, agents }: Props) {
         }
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // user navigated away or started a new run; not a real error
+        return;
+      }
       const msg = e instanceof Error ? e.message : String(e);
       setEvents((prev) => [...prev, { type: "error", data: { message: msg } }]);
     } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
       setRunning(false);
       setActiveMcp(null);
     }

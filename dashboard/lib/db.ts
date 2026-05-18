@@ -79,6 +79,9 @@ function migrate(db: Database.Database) {
   addColumnIfMissing(db, "runs", "task_id", "INTEGER REFERENCES tasks(id)");
 }
 
+// SQLite cannot parameterize DDL (PRAGMA, ALTER TABLE) — table/column/type
+// must be interpolated. Only ever called with hardcoded literals from migrate().
+// Never expose this helper to user input.
 function addColumnIfMissing(
   db: Database.Database,
   table: string,

@@ -22,3 +22,13 @@ metadata:
 See `skills/research/research-lead/SKILL.md` for the routing protocol.
 Read profiles from `agents/business/*.md`. No business members exist yet;
 hold the queue.
+
+## Project scoping (phase 7.3)
+
+If the task has a non-null `project_slug`, load the project via the
+projects-loader (or read `vault/projects/<slug>/PROJECT.md` directly).
+Restrict the candidate set to teammates whose `allowed-skills` intersects
+the project's `capabilities`. If the intersection is empty (no teammate
+covers the project's domain), leave the task in the queue and write a
+note to the task thread explaining why — do not assign someone who lacks
+the capability.

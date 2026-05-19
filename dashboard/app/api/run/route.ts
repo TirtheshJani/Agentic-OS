@@ -148,11 +148,30 @@ export async function POST(req: Request) {
               continue;
             }
             try {
+              // Phase 7.3: child task inherits parent's project_slug unless the
+              // handoff payload explicitly overrides it. `evt.data.projectSlug`
+              // is undefined when the payload did not specify a project, null
+              // when the operator explicitly set "no project", or a string for
+              // an explicit override (including cross-project handoffs).
+              const parentTaskId = taskId ?? evt.data.parentTaskId ?? null;
+              let childProjectSlug: string | null = null;
+              if (evt.data.projectSlug !== undefined) {
+                childProjectSlug = evt.data.projectSlug;
+              } else if (parentTaskId != null) {
+                const parent = getTask(parentTaskId);
+                if (parent?.project_slug) {
+                  childProjectSlug = parent.project_slug;
+                  console.log(
+                    `[run] handoff inheriting project_slug=${childProjectSlug} from parent task ${parentTaskId}`
+                  );
+                }
+              }
               const childId = createTask({
                 prompt: evt.data.prompt,
                 assignee: evt.data.assignee,
                 department: evt.data.assignee.startsWith("lead:") ? evt.data.assignee.slice(5) : null,
-                parentTaskId: taskId ?? evt.data.parentTaskId ?? null,
+                parentTaskId,
+                projectSlug: childProjectSlug,
               });
               send({ type: "delta", data: `[handoff → task ${childId} for ${evt.data.assignee}]\n` });
               const child = getTask(childId);

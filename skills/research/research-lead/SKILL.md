@@ -109,3 +109,13 @@ health-watcher; thread note: `assigned to health-watcher (matched: NIH, FHIR)`.
   `tick saw 409 on claim — task moved`.
 - `no agents in agents/research/`: the validator should have caught this.
   Exit with stdout `error: no research agents found` and exit code 1.
+
+## Project scoping (phase 7.3)
+
+If the task has a non-null `project_slug`, load the project via the
+projects-loader (or read `vault/projects/<slug>/PROJECT.md` directly).
+Restrict the candidate set to teammates whose `allowed-skills` intersects
+the project's `capabilities`. If the intersection is empty (no teammate
+covers the project's domain), leave the task in the queue and write a
+note to the task thread explaining why — do not assign someone who lacks
+the capability.

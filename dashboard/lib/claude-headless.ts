@@ -21,7 +21,16 @@ export type ClaudeEvent =
   | { type: "usage"; data: UsageSnapshot }
   | { type: "done"; data: { outputPath: string | null } }
   | { type: "error"; data: { message: string } }
-  | { type: "handoff"; data: { assignee: string; prompt: string; parentTaskId?: number } };
+  | {
+      type: "handoff";
+      data: {
+        assignee: string;
+        prompt: string;
+        parentTaskId?: number;
+        // null = explicit "no project"; undefined = no override (inherit from parent).
+        projectSlug?: string | null;
+      };
+    };
 
 const WRITE_PATTERNS = [
   /(?:wrote|created|saved)(?: to)?\s+([\w./\-]+\.md)/i,
@@ -217,7 +226,14 @@ function scanForWrite(text: string): string | null {
   return null;
 }
 
-function scanForHandoff(text: string): { assignee: string; prompt: string; parentTaskId?: number } | null {
+function scanForHandoff(
+  text: string
+): {
+  assignee: string;
+  prompt: string;
+  parentTaskId?: number;
+  projectSlug?: string | null;
+} | null {
   const lines = text.split("\n");
   for (const line of lines) {
     const m = line.match(/^next-task:\s*(\{.+\})\s*$/);
@@ -227,8 +243,30 @@ function scanForHandoff(text: string): { assignee: string; prompt: string; paren
       const assignee = typeof obj.assignee === "string" ? obj.assignee : null;
       const promptText = typeof obj.prompt === "string" ? obj.prompt : null;
       const parent = typeof obj.parent_task_id === "number" ? obj.parent_task_id : undefined;
+      // Accept either `projectSlug` or `project_slug` from the operator. Three
+      // states matter downstream:
+      //   - key absent          → undefined → inherit from parent task
+      //   - key = string        → explicit override
+      //   - key = null          → explicit "no project" (do not inherit)
+      // Anything else (number, array, etc.) is treated as "key absent".
+      const rawProject =
+        "projectSlug" in obj
+          ? obj.projectSlug
+          : "project_slug" in obj
+            ? obj.project_slug
+            : undefined;
+      let projectSlug: string | null | undefined;
+      if (rawProject === undefined) {
+        projectSlug = undefined;
+      } else if (rawProject === null) {
+        projectSlug = null;
+      } else if (typeof rawProject === "string") {
+        projectSlug = rawProject;
+      } else {
+        projectSlug = undefined;
+      }
       if (assignee && promptText) {
-        return { assignee, prompt: promptText, parentTaskId: parent };
+        return { assignee, prompt: promptText, parentTaskId: parent, projectSlug };
       }
     } catch {
       // ignore

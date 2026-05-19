@@ -1,45 +1,46 @@
 #!/usr/bin/env node
-// Diagnostic for the phase 8.5 GitHub sync path.
+// Tests for the phase 8.5 GitHub sync path. Asserts parseGithubRepo (pure
+// function) and prints the checkGhAvailable result (env-dependent — not
+// asserted). Exits non-zero on any parseGithubRepo failure.
 //
-// What it does:
-//   1. Probes `gh auth status` via checkGhAvailable().
-//   2. Tests parseGithubRepo against a few canonical inputs.
-//   3. If gh is authed, optionally runs `gh issue list --limit 1` against
-//      a small public repo to confirm the JSON shape we depend on.
-//
-// Never fails: prints the result and exits 0 even when gh is missing.
-// This is a diagnostic, not a CI gate.
+// Does NOT exercise importIssues — that one writes to the real db.
 
+import assert from "node:assert/strict";
 const sync = await import("../lib/github-sync.ts");
 
-console.log("--- parseGithubRepo ---");
 const cases = [
-  "https://github.com/TirtheshJani/FHIR_RAG_TEST",
-  "https://github.com/TirtheshJani/FHIR_RAG_TEST.git",
-  "https://github.com/TirtheshJani/FHIR_RAG_TEST/",
-  "git@github.com:TirtheshJani/FHIR_RAG_TEST.git",
-  "https://gitlab.com/foo/bar",
-  "not a url",
-  null,
+  ["https://github.com/TirtheshJani/FHIR_RAG_TEST", "TirtheshJani/FHIR_RAG_TEST"],
+  ["https://github.com/TirtheshJani/FHIR_RAG_TEST.git", "TirtheshJani/FHIR_RAG_TEST"],
+  ["https://github.com/TirtheshJani/FHIR_RAG_TEST/", "TirtheshJani/FHIR_RAG_TEST"],
+  ["git@github.com:TirtheshJani/FHIR_RAG_TEST.git", "TirtheshJani/FHIR_RAG_TEST"],
+  ["github.com/TirtheshJani/FHIR_RAG_TEST", "TirtheshJani/FHIR_RAG_TEST"],
+  ["https://gitlab.com/foo/bar", null],
+  ["https://github.com/single", null],
+  ["not a url", null],
+  ["", null],
+  [null, null],
+  [undefined, null],
 ];
-for (const c of cases) {
-  console.log(`  ${JSON.stringify(c)} -> ${JSON.stringify(sync.parseGithubRepo(c))}`);
+
+let failed = 0;
+for (const [input, expected] of cases) {
+  const actual = sync.parseGithubRepo(input);
+  try {
+    assert.equal(actual, expected);
+    console.log(`OK    parseGithubRepo(${JSON.stringify(input)}) -> ${JSON.stringify(actual)}`);
+  } catch {
+    failed++;
+    console.error(
+      `FAIL  parseGithubRepo(${JSON.stringify(input)}) -> ${JSON.stringify(actual)} (expected ${JSON.stringify(expected)})`
+    );
+  }
 }
 
-console.log("\n--- checkGhAvailable ---");
 const probe = await sync.checkGhAvailable();
-console.log(`  result: ${JSON.stringify(probe)}`);
+console.log(`\ngh availability: ${JSON.stringify(probe)}`);
 
-if (probe.ok) {
-  console.log("\n--- live gh issue list (TirtheshJani/Agentic-OS, --limit 1) ---");
-  const summary = await sync.importIssues("TirtheshJani/Agentic-OS", { projectSlug: null });
-  // importIssues commits to the DB. We don't want that side effect during a
-  // diagnostic, so we ran it against an in-memory placeholder only when the
-  // caller sets AGENTIC_OS_DB to a temp path. Print the counts either way
-  // so the user sees the shape.
-  console.log(`  summary: ${JSON.stringify(summary)}`);
-} else {
-  console.log("\n  gh CLI not available — skipping live probe. This is fine.");
+if (failed > 0) {
+  console.error(`\n${failed} assertion(s) failed.`);
+  process.exit(1);
 }
-
-console.log("\nOK");
+console.log("\nALL PASS");

@@ -2,10 +2,11 @@ import { runClaude } from "@/lib/claude-headless";
 import { finishRun, insertRun, updateRunUsage, type RunUsage } from "@/lib/db";
 import { resolveMcpForServer, type McpResolution } from "@/lib/mcp-loader";
 import { repoRoot } from "@/lib/paths";
-import { projectBySlug } from "@/lib/projects-loader";
+import { sharedVaultEnv, sharedVaultSystemPrompt } from "@/lib/shared-vault";
 import { loadSkills } from "@/lib/skills-loader";
 import { createTask, finishTask, getTask, startTask } from "@/lib/tasks";
 import { spawnTaskIfNamed } from "@/lib/task-runner";
+import { teamBySlug } from "@/lib/teams";
 import path from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ type RunBody = {
   skillSlug?: string;
   userInput?: string;
   projectSlug?: string;
+  teamSlug?: string;
   prompt?: string;
   agent?: string;
   taskId?: number;
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const { skillSlug, userInput, projectSlug, prompt: freeformPrompt, agent, taskId } = body;
+  const { skillSlug, userInput, projectSlug, teamSlug, prompt: freeformPrompt, agent, taskId } = body;
 
   const skill = skillSlug
     ? loadSkills().find((s) => s.name === skillSlug)
@@ -36,13 +38,15 @@ export async function POST(req: Request) {
     return Response.json({ error: "unknown skill" }, { status: 404 });
   }
 
-  const project = projectSlug ? projectBySlug(projectSlug) : null;
-  if (projectSlug && !project) {
-    return Response.json({ error: "unknown project" }, { status: 404 });
+  // teamSlug supersedes projectSlug; either resolves to a Team (project or discovered repo).
+  const targetSlug = teamSlug ?? projectSlug ?? null;
+  const team = targetSlug ? teamBySlug(targetSlug) : null;
+  if (targetSlug && !team) {
+    return Response.json({ error: "unknown team" }, { status: 404 });
   }
-  if (project && !project.pathExists) {
+  if (team && !team.pathExists) {
     return Response.json(
-      { error: `project path missing: ${project.path}` },
+      { error: `team path missing: ${team.path}` },
       { status: 412 }
     );
   }
@@ -54,13 +58,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const cwd = project?.path ?? repoRoot;
-  const resolvedAgent = agent ?? skill?.agent ?? project?.agent ?? null;
+  const cwd = team?.path ?? repoRoot;
+  const resolvedAgent = agent ?? skill?.agent ?? team?.agent ?? null;
   const prompt = buildPrompt({
     skillName: skill?.name ?? null,
     userInput: userInput ?? null,
     freeform: freeformPrompt ?? null,
-    projectName: project?.name ?? null,
+    projectName: team?.name ?? null,
   });
 
   const mcpResolution: McpResolution | null = skill?.mcpServer
@@ -77,7 +81,7 @@ export async function POST(req: Request) {
   const runId = insertRun({
     skillSlug: skill?.name ?? "(adhoc)",
     prompt,
-    projectSlug: project?.slug ?? null,
+    projectSlug: team?.slug ?? null,
     cwd,
     agent: resolvedAgent,
     mcpServer: activeMcp?.name ?? null,
@@ -105,7 +109,9 @@ export async function POST(req: Request) {
         type: "started",
         runId,
         cwd,
-        projectSlug: project?.slug ?? null,
+        projectSlug: team?.slug ?? null,
+        teamSlug: team?.slug ?? null,
+        teamSource: team?.source ?? null,
         activeMcp,
         mcpStatus,
         requestedMcp: skill?.mcpServer ?? null,
@@ -113,7 +119,7 @@ export async function POST(req: Request) {
       let outputPath: string | null = null;
       let error: string | null = null;
       let usage: RunUsage = {};
-      const extraEnv: Record<string, string> = {};
+      const extraEnv: Record<string, string> = { ...sharedVaultEnv(team?.slug ?? null) };
       if (taskId) {
         const threadFile = path.join(repoRoot, "vault", "threads", `${taskId}.md`);
         extraEnv.AGENTIC_OS_THREAD_PATH = threadFile;
@@ -124,6 +130,7 @@ export async function POST(req: Request) {
           cwd,
           mcpConfigPath:
             mcpResolution?.kind === "ready" ? mcpResolution.tmpConfigPath : undefined,
+          appendSystemPrompt: sharedVaultSystemPrompt(team?.slug ?? null),
           extraEnv,
           signal: req.signal,
         })) {

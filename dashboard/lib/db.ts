@@ -77,6 +77,11 @@ function migrate(db: Database.Database) {
   addColumnIfMissing(db, "runs", "tokens_cache_create", "INTEGER");
   addColumnIfMissing(db, "runs", "cost_usd", "REAL");
   addColumnIfMissing(db, "runs", "task_id", "INTEGER REFERENCES tasks(id)");
+  // For external Claude Code sessions (started outside the dashboard) that
+  // report in via the global SessionStart/Stop hook.
+  addColumnIfMissing(db, "runs", "session_id", "TEXT");
+  addColumnIfMissing(db, "runs", "source", "TEXT");
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id);`);
 }
 
 // SQLite cannot parameterize DDL (PRAGMA, ALTER TABLE) — table/column/type

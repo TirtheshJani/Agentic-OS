@@ -35,6 +35,7 @@ export async function* runClaude(opts: {
   appendSystemPrompt?: string;
   extraEnv?: Record<string, string>;
   signal?: AbortSignal;
+  model?: string;
 }): AsyncGenerator<ClaudeEvent> {
   if (opts.prompt.length > 32_000) {
     yield { type: "error", data: { message: "prompt too large" } };
@@ -49,6 +50,7 @@ export async function* runClaude(opts: {
   const args = ["-p", opts.prompt, "--output-format", "stream-json", "--verbose"];
   if (opts.mcpConfigPath) args.push("--mcp-config", opts.mcpConfigPath);
   if (opts.appendSystemPrompt) args.push("--append-system-prompt", opts.appendSystemPrompt);
+  if (opts.model) args.push("--model", opts.model);
 
   const env = { ...process.env, ...(opts.extraEnv ?? {}) };
 

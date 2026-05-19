@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OutputStream, type StreamEvent } from "@/components/output-stream";
 import { PromptPanel } from "@/components/prompt-panel";
+import { RouterPanel } from "@/components/router-panel";
 import { SkillsRail } from "@/components/skills-rail";
 import { useRunState } from "@/components/run-state";
 import type { Skill } from "@/lib/skills-loader";
@@ -44,62 +45,73 @@ export function Workbench({ skills, projects, agents }: Props) {
     setCurrentProject(selectedProject);
   }, [selectedProject, setCurrentProject]);
 
-  const onRun = useCallback(async () => {
-    const hasInput = userInput.trim().length > 0;
-    if (!skill && !hasInput) return;
+  const dispatchRun = useCallback(
+    async (args: {
+      skillSlug?: string;
+      teamSlug?: string;
+      userInput?: string;
+      prompt?: string;
+      agent?: string | null;
+      assignee?: string;
+      preamble?: string;
+    }) => {
+      const hasFreeform = (args.prompt ?? "").trim().length > 0;
+      const hasUserInput = (args.userInput ?? "").trim().length > 0;
+      if (!args.skillSlug && !hasFreeform && !hasUserInput) return;
 
-    // Assignee is not "user" -> enqueue as a task, do not stream
-    if (assignee !== "user") {
-      const dept = assignee.startsWith("lead:") ? assignee.slice(5) : null;
-      const promptText = skill ? `Use ${skill.name}.\n${userInput}` : userInput;
+      const ass = args.assignee ?? "user";
+      if (ass !== "user") {
+        const dept = ass.startsWith("lead:") ? ass.slice(5) : null;
+        const promptText = args.skillSlug
+          ? `Use ${args.skillSlug}.\n${args.userInput ?? ""}`
+          : args.prompt ?? "";
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: promptText, assignee: ass, department: dept }),
+          });
+          const j = await res.json();
+          setEvents([
+            {
+              type: "delta",
+              data: res.ok
+                ? `Task ${j.id} enqueued for ${ass}.\n`
+                : `Error: ${j.error ?? "enqueue failed"}\n`,
+            },
+          ]);
+        } catch (e) {
+          setEvents([
+            { type: "error", data: { message: e instanceof Error ? e.message : String(e) } },
+          ]);
+        }
+        return;
+      }
+
+      setRunning(true);
+      resetUsage();
+      setActiveMcp(null);
+      setEvents(
+        args.preamble
+          ? [{ type: "delta", data: args.preamble }]
+          : []
+      );
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const res = await fetch("/api/tasks", {
+        const res = await fetch("/api/run", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: promptText,
-            assignee,
-            department: dept,
+            skillSlug: args.skillSlug,
+            teamSlug: args.teamSlug,
+            userInput: args.skillSlug ? args.userInput : undefined,
+            prompt: !args.skillSlug && hasFreeform ? args.prompt : undefined,
+            agent: args.agent ?? undefined,
           }),
+          signal: controller.signal,
         });
-        const j = await res.json();
-        setEvents([
-          {
-            type: "delta",
-            data: res.ok
-              ? `Task ${j.id} enqueued for ${assignee}.\n`
-              : `Error: ${j.error ?? "enqueue failed"}\n`,
-          },
-        ]);
-      } catch (e) {
-        setEvents([
-          { type: "error", data: { message: e instanceof Error ? e.message : String(e) } },
-        ]);
-      }
-      return;
-    }
-
-    // assignee === "user" -> existing immediate-run path
-    setRunning(true);
-    resetUsage();
-    setActiveMcp(null);
-    setEvents([]);
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    try {
-      const res = await fetch("/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          skillSlug: skill?.name,
-          projectSlug: project?.slug,
-          userInput: skill ? userInput : undefined,
-          prompt: !skill && hasInput ? userInput : undefined,
-          agent: skill?.agent ?? project?.agent,
-        }),
-        signal: controller.signal,
-      });
       if (!res.body) {
         setEvents([{ type: "error", data: { message: "no response body" } }]);
         return;
@@ -141,7 +153,46 @@ export function Workbench({ skills, projects, agents }: Props) {
       setRunning(false);
       setActiveMcp(null);
     }
-  }, [skill, project, userInput, assignee, setRunning, resetUsage, mergeUsage, setActiveMcp]);
+  }, [setRunning, resetUsage, mergeUsage, setActiveMcp]);
+
+  const onRun = useCallback(() => {
+    return dispatchRun({
+      skillSlug: skill?.name,
+      teamSlug: project?.slug,
+      userInput,
+      prompt: userInput,
+      agent: skill?.agent ?? project?.agent ?? null,
+      assignee,
+    });
+  }, [dispatchRun, skill, project, userInput, assignee]);
+
+  const onRouted = useCallback(
+    ({
+      teamSlug,
+      teamName,
+      prompt,
+      routeMode,
+      routeReason,
+    }: {
+      teamSlug: string;
+      teamName: string;
+      prompt: string;
+      routeMode: "deterministic" | "llm";
+      routeReason: string;
+    }) => {
+      setSelectedProject(teamSlug);
+      setSelectedSkill(null);
+      setUserInput("");
+      const preamble = `[router → ${teamName} via ${routeMode}: ${routeReason}]\n`;
+      void dispatchRun({
+        teamSlug,
+        prompt,
+        assignee: "user",
+        preamble,
+      });
+    },
+    [dispatchRun]
+  );
 
   return (
     <>
@@ -155,22 +206,25 @@ export function Workbench({ skills, projects, agents }: Props) {
           onSelectProject={setSelectedProject}
         />
       </aside>
-      <section className="border border-border rounded-lg bg-card flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <PromptPanel
-            skill={skill}
-            project={project}
-            userInput={userInput}
-            onUserInput={setUserInput}
-            onRun={onRun}
-            running={running}
-            agents={agents}
-            assignee={assignee}
-            onAssigneeChange={setAssignee}
-          />
-        </div>
-        <div className="flex-1 min-h-0">
-          <OutputStream events={events} />
+      <section className="flex flex-col gap-3 overflow-hidden">
+        <RouterPanel running={running} onDispatch={onRouted} />
+        <div className="border border-border rounded-lg bg-card flex flex-col overflow-hidden flex-1 min-h-0">
+          <div className="p-4 border-b border-border">
+            <PromptPanel
+              skill={skill}
+              project={project}
+              userInput={userInput}
+              onUserInput={setUserInput}
+              onRun={onRun}
+              running={running}
+              agents={agents}
+              assignee={assignee}
+              onAssigneeChange={setAssignee}
+            />
+          </div>
+          <div className="flex-1 min-h-0">
+            <OutputStream events={events} />
+          </div>
         </div>
       </section>
     </>

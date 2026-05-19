@@ -13,6 +13,12 @@ export const agentsPath = path.join(repoRoot, "agents");
 export const agentPromptsPath = path.join(agentsPath, "_prompts");
 export const threadsPath = path.join(vaultPath, "threads");
 
+// Parent directory scanned for sibling git repos. Override with
+// AGENTIC_OS_DISCOVERY_ROOT. Default matches the user's GitHub clone root.
+export const discoveryRoot = process.env.AGENTIC_OS_DISCOVERY_ROOT
+  ? path.resolve(process.env.AGENTIC_OS_DISCOVERY_ROOT)
+  : path.resolve(repoRoot, "..");
+
 export function normalizeCwd(p: string): string {
   return path.resolve(p).toLowerCase();
 }

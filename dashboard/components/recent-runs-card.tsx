@@ -15,13 +15,26 @@ type Run = {
   tokens_out: number | null;
 };
 
-export function RecentRunsCard() {
+type Props = {
+  // When set, scopes the list to runs whose linked task lives in this
+  // project (uses /api/runs?project=<slug>). Leave undefined/null on the
+  // global home rail.
+  projectSlug?: string | null;
+  // Display name shown in the header when a project filter is active.
+  // Falls back to the slug when omitted.
+  projectName?: string | null;
+};
+
+export function RecentRunsCard({ projectSlug, projectName }: Props = {}) {
   const [runs, setRuns] = useState<Run[]>([]);
   useEffect(() => {
     let cancelled = false;
+    const url = projectSlug
+      ? `/api/runs?project=${encodeURIComponent(projectSlug)}`
+      : "/api/runs";
     const tick = async () => {
       try {
-        const res = await fetch("/api/runs", { cache: "no-store" });
+        const res = await fetch(url, { cache: "no-store" });
         const j = await res.json();
         if (!cancelled) setRuns(j.runs ?? []);
       } catch {}
@@ -29,13 +42,20 @@ export function RecentRunsCard() {
     tick();
     const id = setInterval(tick, 5000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  }, [projectSlug]);
+
+  const title = projectSlug
+    ? `RECENT RUNS · ${projectName ?? projectSlug}`
+    : "RECENT RUNS";
+  const emptyCopy = projectSlug
+    ? "No runs in this project yet."
+    : "No runs yet.";
 
   return (
     <div className="border border-border rounded-md bg-card/60 px-3 py-2">
-      <SectionHeader title="RECENT RUNS" />
+      <SectionHeader title={title} />
       {runs.length === 0 && (
-        <div className="text-xs text-muted-foreground mt-1">No runs yet.</div>
+        <div className="text-xs text-muted-foreground mt-1">{emptyCopy}</div>
       )}
       <ul className="space-y-0.5 mt-1">
         {runs.map((r) => {
@@ -47,7 +67,7 @@ export function RecentRunsCard() {
             <li key={r.id} className="flex items-center gap-2 font-mono text-xs">
               <StatusDot state={dotFor(r.status)} />
               <span className="text-muted-foreground">{hhmm(r.started_at)}</span>
-              {r.project_slug && (
+              {r.project_slug && !projectSlug && (
                 <span className="text-[var(--azure)] shrink-0">◆ {r.project_slug}</span>
               )}
               <span className="truncate">{r.skill_slug}</span>

@@ -16,6 +16,9 @@ type Props = {
   agents: Agent[];
   assignee: string;
   onAssigneeChange: (v: string) => void;
+  // Clear the currently-selected project. Wired by Workbench so we can
+  // both reset state and remove `?project=` from the URL in one call.
+  onClearProject?: () => void;
 };
 
 export function PromptPanel({
@@ -28,6 +31,7 @@ export function PromptPanel({
   agents,
   assignee,
   onAssigneeChange,
+  onClearProject,
 }: Props) {
   const hasInput = userInput.trim().length > 0;
   const canRun = !!skill || hasInput;
@@ -49,6 +53,28 @@ export function PromptPanel({
 
   return (
     <div className="space-y-3">
+      {project && (
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-sm border border-[var(--azure)]/40 bg-[var(--azure)]/10 px-2 py-0.5 mono-label text-[var(--azure)]"
+            title={project.path}
+          >
+            <span aria-hidden>◆</span>
+            <span>IN: {project.name}</span>
+            {onClearProject && (
+              <button
+                type="button"
+                onClick={onClearProject}
+                aria-label={`Clear project ${project.name}`}
+                className="ml-1 text-[var(--azure)]/80 hover:text-foreground"
+                disabled={running}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        </div>
+      )}
       <div className="flex items-baseline justify-between gap-2">
         <div className="space-y-1 min-w-0">
           {project && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OutputStream, type StreamEvent } from "@/components/output-stream";
 import { PromptPanel } from "@/components/prompt-panel";
@@ -14,13 +15,21 @@ type Props = {
   skills: Skill[];
   projects: Project[];
   agents: Agent[];
+  // Slug pulled from `?project=...` on the server. Used as the initial
+  // selection so the workbench renders consistently with the rest of the
+  // page (status card, scoped runs) on first paint.
+  initialProjectSlug?: string | null;
 };
 
-export function Workbench({ skills, projects, agents }: Props) {
+export function Workbench({ skills, projects, agents, initialProjectSlug }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { running, setRunning, mergeUsage, resetUsage, setCurrentProject, setActiveMcp } =
     useRunState();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(
+    initialProjectSlug ?? null
+  );
   const [userInput, setUserInput] = useState("");
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [assignee, setAssignee] = useState<string>("user");
@@ -31,6 +40,35 @@ export function Workbench({ skills, projects, agents }: Props) {
       abortRef.current?.abort();
     };
   }, []);
+
+  // Keep the URL `?project=<slug>` in sync with the selection so the URL is
+  // the single source of truth: deep links work, refresh preserves state,
+  // and the server-rendered status card stays consistent. We replace rather
+  // than push so the back button does not collect every selection toggle.
+  const syncProjectInUrl = useCallback(
+    (slug: string | null) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      const current = params.get("project");
+      if (slug) {
+        if (current === slug) return;
+        params.set("project", slug);
+      } else {
+        if (current === null) return;
+        params.delete("project");
+      }
+      const query = params.toString();
+      router.replace(query ? `/?${query}` : "/", { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const handleSelectProject = useCallback(
+    (slug: string | null) => {
+      setSelectedProject(slug);
+      syncProjectInUrl(slug);
+    },
+    [syncProjectInUrl]
+  );
 
   const skill = useMemo(
     () => skills.find((s) => s.name === selectedSkill) ?? null,
@@ -180,7 +218,7 @@ export function Workbench({ skills, projects, agents }: Props) {
       routeMode: "deterministic" | "llm";
       routeReason: string;
     }) => {
-      setSelectedProject(teamSlug);
+      handleSelectProject(teamSlug);
       setSelectedSkill(null);
       setUserInput("");
       const preamble = `[router → ${teamName} via ${routeMode}: ${routeReason}]\n`;
@@ -191,7 +229,7 @@ export function Workbench({ skills, projects, agents }: Props) {
         preamble,
       });
     },
-    [dispatchRun]
+    [dispatchRun, handleSelectProject]
   );
 
   return (
@@ -203,7 +241,7 @@ export function Workbench({ skills, projects, agents }: Props) {
           selectedSkill={selectedSkill}
           selectedProject={selectedProject}
           onSelectSkill={setSelectedSkill}
-          onSelectProject={setSelectedProject}
+          onSelectProject={handleSelectProject}
         />
       </aside>
       <section className="flex flex-col gap-3 overflow-hidden">
@@ -220,6 +258,7 @@ export function Workbench({ skills, projects, agents }: Props) {
               agents={agents}
               assignee={assignee}
               onAssigneeChange={setAssignee}
+              onClearProject={() => handleSelectProject(null)}
             />
           </div>
           <div className="flex-1 min-h-0">

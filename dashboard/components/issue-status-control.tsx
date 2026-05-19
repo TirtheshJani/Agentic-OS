@@ -46,17 +46,10 @@ function pillToneFor(s: TaskStatus): "default" | "muted" | "good" | "warn" | "ba
   }
 }
 
-export function IssueStatusControl({
-  taskId,
-  status,
-}: {
-  taskId: number;
-  status: TaskStatus;
-}) {
+function useStatusMutation(taskId: number, status: TaskStatus) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const legal = new Set(LEGAL_NEXT[status]);
 
   const onChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const next = e.target.value as TaskStatus;
@@ -74,7 +67,9 @@ export function IssueStatusControl({
         setErr(j.error ?? `status update failed (${res.status})`);
       } else {
         // Refresh the server component so the status pill + dropdown
-        // re-read from the canonical DB row.
+        // re-read from the canonical DB row. Per Next 16 docs,
+        // router.refresh() re-fetches the closest server-component
+        // boundary and re-renders without dropping client state.
         router.refresh();
       }
     } catch (e) {
@@ -83,6 +78,19 @@ export function IssueStatusControl({
       setBusy(false);
     }
   };
+
+  return { busy, err, onChange };
+}
+
+export function IssueStatusControl({
+  taskId,
+  status,
+}: {
+  taskId: number;
+  status: TaskStatus;
+}) {
+  const legal = new Set(LEGAL_NEXT[status]);
+  const { busy, err, onChange } = useStatusMutation(taskId, status);
 
   return (
     <div className="flex items-center gap-2">
@@ -101,6 +109,47 @@ export function IssueStatusControl({
       </select>
       {err && (
         <span className="text-xs font-mono text-[var(--danger)]">{err}</span>
+      )}
+    </div>
+  );
+}
+
+// Leaner variant for the board cards: dropdown only, no leading pill (the
+// card itself lives inside a column whose header already conveys status).
+// On error, falls back to a tiny inline indicator so the card layout does
+// not jump.
+export function IssueStatusControlCompact({
+  taskId,
+  status,
+}: {
+  taskId: number;
+  status: TaskStatus;
+}) {
+  const legal = new Set(LEGAL_NEXT[status]);
+  const { busy, err, onChange } = useStatusMutation(taskId, status);
+
+  return (
+    <div className="flex items-center gap-1 min-w-0">
+      <select
+        value={status}
+        onChange={onChange}
+        disabled={busy}
+        title={err ?? "Change status"}
+        className="rounded-sm border border-border bg-background px-1 py-0.5 text-[10px] font-mono leading-tight max-w-full"
+      >
+        {ALL_STATUS.map((s) => (
+          <option key={s} value={s} disabled={s !== status && !legal.has(s)}>
+            → {s}
+          </option>
+        ))}
+      </select>
+      {err && (
+        <span
+          aria-label={err}
+          className="text-[10px] font-mono text-[var(--danger)] shrink-0"
+        >
+          !
+        </span>
       )}
     </div>
   );

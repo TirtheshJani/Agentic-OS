@@ -68,7 +68,10 @@ export function getTask(id: number): TaskRow | null {
 export function listTasks(opts: {
   assignee?: string;
   department?: string;
-  status?: TaskStatus;
+  // Single status keeps existing single-equality SQL. Array form fans out
+  // into an IN (?, ?, ...) clause so the board page can fetch all five
+  // visible columns in one query.
+  status?: TaskStatus | TaskStatus[];
   projectSlug?: string;
   limit?: number;
 } = {}): TaskRow[] {
@@ -77,7 +80,17 @@ export function listTasks(opts: {
   const args: unknown[] = [];
   if (opts.assignee) { conds.push("assignee = ?"); args.push(opts.assignee); }
   if (opts.department) { conds.push("department = ?"); args.push(opts.department); }
-  if (opts.status) { conds.push("status = ?"); args.push(opts.status); }
+  if (opts.status !== undefined) {
+    if (Array.isArray(opts.status)) {
+      if (opts.status.length === 0) return [];
+      const placeholders = opts.status.map(() => "?").join(", ");
+      conds.push(`status IN (${placeholders})`);
+      args.push(...opts.status);
+    } else {
+      conds.push("status = ?");
+      args.push(opts.status);
+    }
+  }
   if (opts.projectSlug) { conds.push("project_slug = ?"); args.push(opts.projectSlug); }
   const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
@@ -85,6 +98,19 @@ export function listTasks(opts: {
   return db
     .prepare(`SELECT * FROM tasks ${where} ORDER BY created_at DESC LIMIT ?`)
     .all(...args) as TaskRow[];
+}
+
+// Numeric rank for sorting board cards: urgent > high > med > low > null.
+// Higher number sorts first when callers do `b - a`.
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  urgent: 4,
+  high: 3,
+  med: 2,
+  low: 1,
+};
+
+export function priorityRank(p: TaskPriority | null | undefined): number {
+  return p ? PRIORITY_RANK[p] : 0;
 }
 
 export function claimTask(id: number, newAssignee: string): TaskRow | null {

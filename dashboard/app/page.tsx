@@ -1,6 +1,7 @@
 import { ForecastCard } from "@/components/forecast-card";
 import { Header } from "@/components/header";
 import { IntegrationsStrip } from "@/components/integrations-strip";
+import { OpenIssuesCard } from "@/components/open-issues-card";
 import { RecentRunsCard } from "@/components/recent-runs-card";
 import { RunStateProvider } from "@/components/run-state";
 import { Starfield } from "@/components/starfield";
@@ -29,6 +30,7 @@ export default function Page() {
           <aside className="space-y-3 overflow-y-auto">
             <UsageCard />
             <IntegrationsStrip />
+            <OpenIssuesCard />
             <TeamRail agents={agents} />
             <RecentRunsCard />
             <VaultRecentCard />

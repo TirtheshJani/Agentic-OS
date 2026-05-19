@@ -15,13 +15,22 @@ type Props = {
   skills: Skill[];
   projects: Project[];
   agents: Agent[];
-  // Slug pulled from `?project=...` on the server. Used as the initial
-  // selection so the workbench renders consistently with the rest of the
-  // page (status card, scoped runs) on first paint.
+  // Seeds pulled from `?project=`, `?prompt=`, `?agent=` on the server. The
+  // issue-launch "Run headless" navigation lands here so the workbench
+  // prefills and the user just clicks Run.
   initialProjectSlug?: string | null;
+  initialPrompt?: string | null;
+  initialAssignee?: string | null;
 };
 
-export function Workbench({ skills, projects, agents, initialProjectSlug }: Props) {
+export function Workbench({
+  skills,
+  projects,
+  agents,
+  initialProjectSlug,
+  initialPrompt,
+  initialAssignee,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { running, setRunning, mergeUsage, resetUsage, setCurrentProject, setActiveMcp } =
@@ -30,9 +39,9 @@ export function Workbench({ skills, projects, agents, initialProjectSlug }: Prop
   const [selectedProject, setSelectedProject] = useState<string | null>(
     initialProjectSlug ?? null
   );
-  const [userInput, setUserInput] = useState("");
+  const [userInput, setUserInput] = useState(initialPrompt ?? "");
   const [events, setEvents] = useState<StreamEvent[]>([]);
-  const [assignee, setAssignee] = useState<string>("user");
+  const [assignee, setAssignee] = useState<string>(initialAssignee ?? "user");
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {

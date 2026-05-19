@@ -66,29 +66,20 @@ export async function launch(opts: LaunchOpts): Promise<LaunchResult> {
     taskId: opts.taskId ?? null,
   });
 
-  // Prompt handling: passed as a positional argument to `claude`. The
-  // claude CLI accepts an interactive prompt this way (claude [prompt]),
-  // so the new REPL opens with the prompt as the first user message.
-  // child_process.spawn with argv array (no shell:true on wt.exe) means
-  // we do NOT need to escape quotes/backslashes — Node hands each argv
-  // entry to the OS as a single token. wt.exe then forwards everything
-  // after `--` to the spawned process verbatim.
-  //
-  // Newlines in prompts: wt.exe's command-line on Windows handles \n
-  // inside an argv entry fine because we're not using shell. If anything
-  // misbehaves the fallback is to drop the prompt and let the user paste
-  // it (claude opens in cwd either way).
+  // We deliberately do NOT pass the prompt as an opening argument to
+  // claude. wt.exe forwards its trailing argv to the default profile
+  // shell (PowerShell on Win11), which would interpret `$`, backticks,
+  // `;`, and `()` in the prompt body. The runs row keeps the prompt as
+  // a receipt so the UI can render it for the user to paste.
   try {
     if (process.platform === "win32") {
-      // wt.exe -d <cwd> -- claude "<prompt>"
+      // wt.exe -d <cwd> -- claude
       // The `--` separator tells Windows Terminal that everything after
-      // is the command to run in the new tab. `claude` is resolved by
-      // the new terminal's PATH (it finds claude.cmd on Windows).
-      const args = ["-d", opts.cwd, "--", CLAUDE_BIN, opts.prompt];
-      const child = spawn("wt.exe", args, {
+      // is the command to run in the new tab. `claude` resolves via the
+      // new terminal's PATH (claude.cmd on Windows).
+      const child = spawn("wt.exe", ["-d", opts.cwd, "--", CLAUDE_BIN], {
         detached: true,
         stdio: "ignore",
-        // No shell — argv passthrough avoids quote-escaping headaches.
         shell: false,
       });
       child.on("error", (e) => {
@@ -96,13 +87,9 @@ export async function launch(opts: LaunchOpts): Promise<LaunchResult> {
       });
       child.unref();
     } else if (process.platform === "darwin") {
-      // Terminal.app branch. UNTESTED on this Windows box — written so
-      // macOS users hitting this path on day 1 are not blocked. Uses
-      // osascript to drive AppleScript. Escapes embedded double quotes
-      // and backslashes inside the AppleScript string literal.
-      const escaped = opts.prompt.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      // Terminal.app branch via osascript. Untested on this Windows box.
       const cwdEscaped = opts.cwd.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-      const script = `tell application "Terminal" to do script "cd \\"${cwdEscaped}\\" && ${CLAUDE_BIN} \\"${escaped}\\""`;
+      const script = `tell application "Terminal" to do script "cd \\"${cwdEscaped}\\" && ${CLAUDE_BIN}"`;
       const child = spawn("osascript", ["-e", script], {
         detached: true,
         stdio: "ignore",

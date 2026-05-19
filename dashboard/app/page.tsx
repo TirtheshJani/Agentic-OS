@@ -42,6 +42,10 @@ export default async function Page({ searchParams }: PageProps) {
   // rather than 404. The URL stays as-is so a user fixing a typo can simply
   // change it; we just do not seed any selection or render the status card.
   const activeSlug = activeProject?.slug ?? null;
+  // Pre-fill from `?prompt=` and `?agent=` so the issue launch button can
+  // hand off to the workbench by navigation (phase 8.4 alternative).
+  const initialPrompt = firstParam(sp.prompt);
+  const initialAssignee = firstParam(sp.agent);
 
   return (
     <>
@@ -54,6 +58,8 @@ export default async function Page({ searchParams }: PageProps) {
             projects={projects}
             agents={agents}
             initialProjectSlug={activeSlug}
+            initialPrompt={initialPrompt}
+            initialAssignee={initialAssignee}
           />
           <aside className="space-y-3 overflow-y-auto">
             <UsageCard />

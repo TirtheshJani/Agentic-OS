@@ -108,6 +108,7 @@ export default async function IssueDetailPage({
                 taskId={task.id}
                 assignee={task.assignee}
                 prompt={task.prompt}
+                projectSlug={task.project_slug}
                 defaultRepo={assigneeAgent?.defaultRepo ?? null}
               />
             </div>

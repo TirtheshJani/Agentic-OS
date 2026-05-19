@@ -17,6 +17,8 @@ import {
 import { repoRoot, vaultPath } from "@/lib/paths";
 import { projectBySlug, type Project, type ProjectStatus } from "@/lib/projects-loader";
 import { listTasks } from "@/lib/tasks";
+import { displayTitle, taskHref } from "@/lib/ui-utils";
+import { PriorityBadge } from "@/components/priority-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -146,7 +148,7 @@ function OpenTasksCard({ tasks }: { tasks: TaskRow[] }) {
                 className="flex items-baseline gap-2 hover:bg-muted/30 rounded px-1 py-0.5"
               >
                 <span className="text-muted-foreground shrink-0">#{t.id}</span>
-                <span className="truncate flex-1">{displayTitle(t)}</span>
+                <span className="truncate flex-1">{displayTitle(t, 80)}</span>
                 {t.priority && <PriorityBadge priority={t.priority} />}
                 <span className="text-muted-foreground shrink-0">{t.assignee}</span>
               </Link>
@@ -213,26 +215,6 @@ function VaultWritesCard({ changes }: { changes: VaultChangeRow[] }) {
       )}
     </section>
   );
-}
-
-function taskHref(t: TaskRow): string {
-  return t.title ? `/issues/${t.id}` : `/tasks/${t.id}`;
-}
-
-function displayTitle(t: TaskRow): string {
-  if (t.title && t.title.trim().length > 0) return t.title;
-  const p = t.prompt.trim();
-  return p.length > 80 ? p.slice(0, 80) + "…" : p;
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const tone =
-    priority === "urgent" || priority === "high"
-      ? "warn"
-      : priority === "low"
-        ? "muted"
-        : "default";
-  return <Pill tone={tone}>{priority}</Pill>;
 }
 
 function dotFor(s: RunRow["status"]): "idle" | "running" | "blocked" {

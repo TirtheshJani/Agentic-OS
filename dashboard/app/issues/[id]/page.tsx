@@ -7,37 +7,16 @@ import { TaskThread } from "@/components/task-thread";
 import { IssueStatusControl } from "@/components/issue-status-control";
 import { IssueLaunchButtons } from "@/components/issue-launch-buttons";
 import { Pill } from "@/components/ui/pill";
+import { PriorityBadge } from "@/components/priority-badge";
 import { agentByName } from "@/lib/agents-loader";
 import { getTask, runsForTask } from "@/lib/tasks";
+import { parseLabels } from "@/lib/ui-utils";
 
 export const dynamic = "force-dynamic";
 
-function parseLabels(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function priorityTone(p: string | null): "default" | "muted" | "good" | "warn" | "bad" {
-  switch (p) {
-    case "urgent":
-      return "bad";
-    case "high":
-      return "warn";
-    case "med":
-      return "default";
-    case "low":
-      return "muted";
-    default:
-      return "muted";
-  }
-}
-
-function hhmm(ts: number): string {
+// `YYYY-MM-DD HH:MM` for the metadata grid. The board page uses a
+// shorter `hhmm` (time-only); these are different functions on purpose.
+function localDateTime(ts: number): string {
   const d = new Date(ts);
   return `${d.toISOString().slice(0, 10)} ${d.toTimeString().slice(0, 5)}`;
 }
@@ -83,11 +62,7 @@ export default async function IssueDetailPage({
               {task.project_slug && (
                 <Pill tone="muted" glyph="◆">{task.project_slug}</Pill>
               )}
-              {task.priority && (
-                <Pill tone={priorityTone(task.priority)}>
-                  {task.priority.toUpperCase()}
-                </Pill>
-              )}
+              <PriorityBadge priority={task.priority} uppercase />
               {labels.map((l) => (
                 <Pill key={l} tone="default">{l}</Pill>
               ))}
@@ -135,17 +110,17 @@ export default async function IssueDetailPage({
             <div className="mono-label text-muted-foreground">META</div>
             <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs font-mono">
               <dt className="text-muted-foreground">created</dt>
-              <dd>{hhmm(task.created_at)}</dd>
+              <dd>{localDateTime(task.created_at)}</dd>
               {task.started_at !== null && (
                 <>
                   <dt className="text-muted-foreground">started</dt>
-                  <dd>{hhmm(task.started_at)}</dd>
+                  <dd>{localDateTime(task.started_at)}</dd>
                 </>
               )}
               {task.finished_at !== null && (
                 <>
                   <dt className="text-muted-foreground">finished</dt>
-                  <dd>{hhmm(task.finished_at)}</dd>
+                  <dd>{localDateTime(task.finished_at)}</dd>
                 </>
               )}
               {task.department && (

@@ -7,10 +7,12 @@ import { RunStateProvider } from "@/components/run-state";
 import { Starfield } from "@/components/starfield";
 import { Pill } from "@/components/ui/pill";
 import { SectionHeader } from "@/components/ui/section-header";
-import type { TaskPriority, TaskRow, TaskStatus } from "@/lib/db";
+import type { TaskRow, TaskStatus } from "@/lib/db";
 import { parseGithubRepo } from "@/lib/github-sync";
 import { projectBySlug } from "@/lib/projects-loader";
 import { listTasks, priorityRank } from "@/lib/tasks";
+import { displayTitle, parseLabels, taskHref } from "@/lib/ui-utils";
+import { PriorityBadge } from "@/components/priority-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -174,7 +176,7 @@ function Card({ task }: { task: TaskRow }) {
             {task.repo}
           </Pill>
         )}
-        {task.priority && <PriorityBadge priority={task.priority} />}
+        {task.priority && <PriorityBadge priority={task.priority} uppercase />}
         {labels.slice(0, 3).map((l) => (
           <Pill key={l} tone="default">
             {l}
@@ -191,42 +193,6 @@ function Card({ task }: { task: TaskRow }) {
   );
 }
 
-function PriorityBadge({ priority }: { priority: TaskPriority }) {
-  // Tone mapping per roadmap 8.3: low=muted, med=info, high=warn, urgent=bad.
-  // The Pill component has no `info` tone, so med maps to the neutral
-  // `default` outline, which reads as "informational but not warn".
-  const tone =
-    priority === "urgent"
-      ? "bad"
-      : priority === "high"
-        ? "warn"
-        : priority === "low"
-          ? "muted"
-          : "default";
-  return <Pill tone={tone}>{priority.toUpperCase()}</Pill>;
-}
-
-function taskHref(t: TaskRow): string {
-  return t.title ? `/issues/${t.id}` : `/tasks/${t.id}`;
-}
-
-function displayTitle(t: TaskRow): string {
-  if (t.title && t.title.trim().length > 0) return t.title;
-  const p = t.prompt.trim();
-  return p.length > 60 ? p.slice(0, 60) + "…" : p;
-}
-
-function parseLabels(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((x): x is string => typeof x === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
 
 // Sort by priority desc (urgent first), then created_at desc. Ties keep
 // the DB-order (which is already created_at desc from listTasks).

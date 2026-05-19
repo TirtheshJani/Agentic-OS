@@ -1,4 +1,4 @@
-import { getDb, type TaskPriority, type TaskRow, type TaskStatus } from "./db";
+import { getDb, type RunRow, type TaskPriority, type TaskRow, type TaskStatus } from "./db";
 
 export type CreateTaskInput = {
   prompt: string;
@@ -12,6 +12,11 @@ export type CreateTaskInput = {
   labels?: string[] | null;
   githubUrl?: string | null;
   githubNumber?: number | null;
+  // Phase 8.2: callers can file a task directly into the backlog (issues UI)
+  // instead of the default 'queued' state that auto-spawns a run. Only
+  // 'backlog' and 'queued' are accepted here; other initial states are
+  // illegal and silently coerced to 'queued'.
+  status?: "queued" | "backlog" | null;
 };
 
 export function createTask(input: CreateTaskInput): number {
@@ -28,12 +33,13 @@ export function createTask(input: CreateTaskInput): number {
     Array.isArray(input.labels) && input.labels.length > 0
       ? JSON.stringify(input.labels)
       : null;
+  const initialStatus: TaskStatus = input.status === "backlog" ? "backlog" : "queued";
   const stmt = db.prepare(
     `INSERT INTO tasks (
        prompt, assignee, department, parent_task_id, status, created_at,
        project_slug, title, repo, priority, labels, github_url, github_number
      )
-     VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   return Number(
     stmt.run(
@@ -41,6 +47,7 @@ export function createTask(input: CreateTaskInput): number {
       input.assignee,
       input.department ?? null,
       input.parentTaskId ?? null,
+      initialStatus,
       Date.now(),
       input.projectSlug ?? null,
       title,
@@ -62,6 +69,7 @@ export function listTasks(opts: {
   assignee?: string;
   department?: string;
   status?: TaskStatus;
+  projectSlug?: string;
   limit?: number;
 } = {}): TaskRow[] {
   const db = getDb();
@@ -70,6 +78,7 @@ export function listTasks(opts: {
   if (opts.assignee) { conds.push("assignee = ?"); args.push(opts.assignee); }
   if (opts.department) { conds.push("department = ?"); args.push(opts.department); }
   if (opts.status) { conds.push("status = ?"); args.push(opts.status); }
+  if (opts.projectSlug) { conds.push("project_slug = ?"); args.push(opts.projectSlug); }
   const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
   args.push(limit);
@@ -130,4 +139,68 @@ export function childrenOf(id: number): TaskRow[] {
   return db
     .prepare(`SELECT * FROM tasks WHERE parent_task_id = ? ORDER BY created_at ASC`)
     .all(id) as TaskRow[];
+}
+
+// Phase 8.2: legal state transitions for the manual status-override endpoint
+// (used by the issues UI). Keep this table the single source of truth — the
+// claim/start/finish endpoints retain their own narrower checks for legacy
+// protocol callers, but new code should route through `transitionTask`.
+//
+// Allowed moves:
+//   backlog → queued | failed
+//   queued  → claimed | running | failed
+//   claimed → running | queued | failed
+//   running → review | done | failed
+//   review  → done | running | failed
+//   done    → review            (re-open)
+//   failed  → backlog | queued  (retry / triage)
+const TRANSITIONS: Record<TaskStatus, readonly TaskStatus[]> = {
+  backlog: ["queued", "failed"],
+  queued: ["claimed", "running", "failed"],
+  claimed: ["running", "queued", "failed"],
+  running: ["review", "done", "failed"],
+  review: ["done", "running", "failed"],
+  done: ["review"],
+  failed: ["backlog", "queued"],
+};
+
+export function isLegalTransition(from: TaskStatus, to: TaskStatus): boolean {
+  return TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+export function transitionTask(id: number, newStatus: TaskStatus): TaskRow | null {
+  const db = getDb();
+  const tx = db.transaction((id: number, next: TaskStatus) => {
+    const row = db.prepare(`SELECT * FROM tasks WHERE id = ?`).get(id) as TaskRow | undefined;
+    if (!row) return null;
+    if (!isLegalTransition(row.status, next)) {
+      throw new Error(
+        `illegal transition for task ${id}: ${row.status} -> ${next}`
+      );
+    }
+    // Terminal stamps: any move into done/failed records finished_at. We do
+    // NOT touch started_at here — that's owned by startTask when a run
+    // begins. A backlog -> queued move with no run yet leaves started_at
+    // null until the spawned run lands a startTask call.
+    if (next === "done" || next === "failed") {
+      db.prepare(
+        `UPDATE tasks SET status = ?, finished_at = ? WHERE id = ?`
+      ).run(next, Date.now(), id);
+    } else {
+      db.prepare(`UPDATE tasks SET status = ? WHERE id = ?`).run(next, id);
+    }
+    return db.prepare(`SELECT * FROM tasks WHERE id = ?`).get(id) as TaskRow;
+  });
+  return tx(id, newStatus);
+}
+
+// Runs linked to a given task via runs.task_id. Used by the issue detail
+// page for the per-task run history rail.
+export function runsForTask(taskId: number, limit = 25): RunRow[] {
+  const capped = Math.min(Math.max(limit, 1), 200);
+  return getDb()
+    .prepare(
+      `SELECT * FROM runs WHERE task_id = ? ORDER BY started_at DESC LIMIT ?`
+    )
+    .all(taskId, capped) as RunRow[];
 }

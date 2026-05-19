@@ -247,13 +247,70 @@ export function recentVaultChanges(limit = 8): VaultChangeRow[] {
     .all(limit) as VaultChangeRow[];
 }
 
+// Runs whose underlying task has the given project_slug. Used by the
+// project detail page (phase 7.4) to scope the recent-runs list to one
+// project. Joins runs -> tasks; runs with no task_id are excluded.
+export function recentRunsByProject(slug: string, limit: number): RunRow[] {
+  const capped = Math.min(Math.max(limit, 1), 500);
+  return getDb()
+    .prepare(
+      `SELECT runs.* FROM runs
+         JOIN tasks ON runs.task_id = tasks.id
+        WHERE tasks.project_slug = ?
+        ORDER BY runs.started_at DESC
+        LIMIT ?`
+    )
+    .all(slug, capped) as RunRow[];
+}
+
+// Vault changes whose path starts with any of the given prefixes. Used by
+// the project detail page (phase 7.4) to surface writes inside either
+// `vault/projects/<slug>/` or the project's working-tree path. The LIKE
+// pattern is built by escaping `%` and `_` in the prefix and appending
+// `%`, so we never inject user-controlled wildcards. Empty prefixes
+// return [] without hitting the db.
+export function recentVaultChangesByPathPrefix(
+  prefixes: string[],
+  limit: number
+): VaultChangeRow[] {
+  const cleaned = prefixes
+    .filter((p) => typeof p === "string" && p.length > 0)
+    .map((p) => (p.endsWith("/") ? p : p + "/"));
+  if (cleaned.length === 0) return [];
+  const capped = Math.min(Math.max(limit, 1), 500);
+  const patterns = cleaned.map((p) => escapeLikePrefix(p) + "%");
+  const placeholders = patterns.map(() => "path LIKE ? ESCAPE '\\'").join(" OR ");
+  return getDb()
+    .prepare(
+      `SELECT * FROM vault_changes
+        WHERE ${placeholders}
+        ORDER BY ts DESC
+        LIMIT ?`
+    )
+    .all(...patterns, capped) as VaultChangeRow[];
+}
+
+// Escape SQL LIKE wildcards (`%`, `_`) and the escape char itself so a
+// path that happens to contain `_` or `%` does not match unintended rows.
+// Pair with `ESCAPE '\\'` in the LIKE clause.
+function escapeLikePrefix(prefix: string): string {
+  return prefix.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export function recordVaultChange(p: string, kind: "add" | "change" | "unlink") {
   getDb()
     .prepare(`INSERT INTO vault_changes (path, kind, ts) VALUES (?, ?, ?)`)
     .run(p, kind, Date.now());
 }
 
-export type TaskStatus = "queued" | "claimed" | "running" | "done" | "failed";
+export type TaskStatus =
+  | "backlog"
+  | "queued"
+  | "claimed"
+  | "running"
+  | "review"
+  | "done"
+  | "failed";
 
 export type TaskPriority = "low" | "med" | "high" | "urgent";
 

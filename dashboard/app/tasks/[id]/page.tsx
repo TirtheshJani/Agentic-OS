@@ -4,7 +4,7 @@ import { RunStateProvider } from "@/components/run-state";
 import { TaskChain } from "@/components/task-chain";
 import { TaskThread } from "@/components/task-thread";
 import { getTask } from "@/lib/tasks";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,9 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   if (!Number.isFinite(n) || n <= 0) notFound();
   const task = getTask(n);
   if (!task) notFound();
+  // Phase 8.2: titled tasks belong to the issues UI. Prompt-only tasks keep
+  // this lightweight view.
+  if (task.title) redirect(`/issues/${task.id}`);
 
   return (
     <RunStateProvider>

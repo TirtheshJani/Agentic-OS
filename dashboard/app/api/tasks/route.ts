@@ -4,7 +4,15 @@ import type { TaskPriority, TaskStatus } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUS: TaskStatus[] = ["queued", "claimed", "running", "done", "failed"];
+const VALID_STATUS: TaskStatus[] = [
+  "backlog",
+  "queued",
+  "claimed",
+  "running",
+  "review",
+  "done",
+  "failed",
+];
 const VALID_PRIORITY: TaskPriority[] = ["low", "med", "high", "urgent"];
 
 export async function POST(req: Request) {
@@ -20,6 +28,7 @@ export async function POST(req: Request) {
     labels?: unknown;
     githubUrl?: string;
     githubNumber?: number;
+    status?: string;
   };
   try {
     body = await req.json();
@@ -79,6 +88,20 @@ export async function POST(req: Request) {
     githubNumber = body.githubNumber;
   }
 
+  // Phase 8.2: only 'queued' (default) and 'backlog' may be supplied at
+  // creation time. Backlog rows do NOT auto-spawn a run; queued rows do
+  // (preserves the legacy behavior of this endpoint).
+  let initialStatus: "queued" | "backlog" = "queued";
+  if (body.status !== undefined && body.status !== null) {
+    if (body.status !== "queued" && body.status !== "backlog") {
+      return Response.json(
+        { error: "status at creation must be 'queued' or 'backlog'" },
+        { status: 400 }
+      );
+    }
+    initialStatus = body.status;
+  }
+
   const id = createTask({
     prompt: body.prompt,
     assignee: body.assignee,
@@ -91,9 +114,10 @@ export async function POST(req: Request) {
     labels,
     githubUrl: body.githubUrl ?? null,
     githubNumber,
+    status: initialStatus,
   });
   const task = getTask(id);
-  if (task) spawnTaskIfNamed(task);
+  if (task && initialStatus === "queued") spawnTaskIfNamed(task);
   return Response.json({ id }, { status: 201 });
 }
 

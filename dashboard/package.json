@@ -10,6 +10,7 @@
     "validate:skills": "node scripts/validate-skills.mjs",
     "validate:automations": "node scripts/validate-automations.mjs",
     "validate:agents": "node scripts/validate-agents.mjs",
+    "validate:projects": "node scripts/validate-projects.mjs",
     "test:tasks": "tsx scripts/test-tasks.mjs",
     "test:threads": "tsx scripts/test-threads.mjs",
     "test:task-flow": "tsx scripts/test-task-flow.mjs"

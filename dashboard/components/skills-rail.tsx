@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Pill } from "@/components/ui/pill";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +18,26 @@ type Props = {
   onSelectProject: (slug: string | null) => void;
 };
 
+// Returns true when this skill should be visible given the selected project's
+// capabilities / allow-list. Meta skills always return true (they apply to
+// every project).
+function skillMatchesProject(skill: Skill, project: Project): boolean {
+  if (skill.isMeta) return true;
+  if (project.allowedSkills && project.allowedSkills.length > 0) {
+    return project.allowedSkills.includes(skill.name);
+  }
+  const caps = project.capabilities;
+  if (!caps || caps.length === 0) return true;
+  const capSet = new Set(caps);
+  if (capSet.has(skill.branch.family)) return true;
+  if (capSet.has(skill.branch.label)) return true;
+  // Match on any segment of the domain path (e.g. "research/physics-ml" -> ["research", "physics-ml"]).
+  for (const seg of skill.domain.split("/")) {
+    if (capSet.has(seg)) return true;
+  }
+  return false;
+}
+
 export function SkillsRail({
   skills,
   projects,
@@ -25,13 +46,39 @@ export function SkillsRail({
   onSelectSkill,
   onSelectProject,
 }: Props) {
+  const [showAll, setShowAll] = useState(false);
+
+  const activeProject = useMemo(
+    () => (selectedProject ? projects.find((p) => p.slug === selectedProject) ?? null : null),
+    [projects, selectedProject]
+  );
+
+  const { visibleSkills, hiddenSkills } = useMemo(() => {
+    if (!activeProject) {
+      return { visibleSkills: skills, hiddenSkills: [] as Skill[] };
+    }
+    const visible: Skill[] = [];
+    const hidden: Skill[] = [];
+    for (const s of skills) {
+      if (skillMatchesProject(s, activeProject)) visible.push(s);
+      else hidden.push(s);
+    }
+    return { visibleSkills: visible, hiddenSkills: hidden };
+  }, [skills, activeProject]);
+
+  const renderedSkills = showAll ? skills : visibleSkills;
+
   const byFamily = new Map<BranchFamily, Map<string, Skill[]>>();
   for (const fam of FAMILY_ORDER) byFamily.set(fam, new Map());
-  for (const s of skills) {
+  for (const s of renderedSkills) {
     const fam = byFamily.get(s.branch.family)!;
     if (!fam.has(s.branch.label)) fam.set(s.branch.label, []);
     fam.get(s.branch.label)!.push(s);
   }
+
+  // Empty state applies when filtering produced 0 visible non-meta skills.
+  const nonMetaVisible = visibleSkills.filter((s) => !s.isMeta).length;
+  const showEmptyState = activeProject !== null && nonMetaVisible === 0 && !showAll;
 
   const activeProjects = projects.filter((p) => p.status === "active");
   const dormantProjects = projects.filter((p) => p.status !== "active");
@@ -90,6 +137,12 @@ export function SkillsRail({
           )}
         </section>
 
+        {showEmptyState && (
+          <div className="text-xs text-muted-foreground px-2 py-1">
+            No skills match this project&apos;s capabilities.
+          </div>
+        )}
+
         {FAMILY_ORDER.filter((f) => f !== "project").map((fam) => {
           const groups = byFamily.get(fam)!;
           if (groups.size === 0) return null;
@@ -126,6 +179,21 @@ export function SkillsRail({
             </section>
           );
         })}
+
+        {activeProject && hiddenSkills.length > 0 && (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mono-label text-muted-foreground px-2 py-1 cursor-pointer hover:text-foreground"
+              aria-expanded={showAll}
+            >
+              {showAll
+                ? `HIDE · ${hiddenSkills.length} OFF-SCOPE`
+                : `SHOW ALL · ${hiddenSkills.length} HIDDEN`}
+            </button>
+          </div>
+        )}
       </div>
     </ScrollArea>
   );

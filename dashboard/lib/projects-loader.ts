@@ -14,6 +14,7 @@ export type ProjectFrontmatter = {
   path?: string;
   "repo-url"?: string;
   capabilities?: string[];
+  "allowed-skills"?: string[];
   agent?: string;
 };
 
@@ -26,6 +27,7 @@ export type Project = {
   path: string;
   repoUrl: string | null;
   capabilities: string[];
+  allowedSkills: string[] | null;
   agent: string | null;
   pathExists: boolean;
   projectFile: string;
@@ -76,6 +78,7 @@ export function loadProjects(): Project[] {
       path: resolvedPath,
       repoUrl: fm["repo-url"] ? String(fm["repo-url"]) : null,
       capabilities: Array.isArray(fm.capabilities) ? fm.capabilities : [],
+      allowedSkills: Array.isArray(fm["allowed-skills"]) ? fm["allowed-skills"] : null,
       agent: fm.agent ?? null,
       pathExists: safeExists(resolvedPath),
       projectFile: file,

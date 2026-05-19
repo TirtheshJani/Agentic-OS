@@ -1,17 +1,39 @@
-import { getDb, type TaskRow, type TaskStatus } from "./db";
+import { getDb, type TaskPriority, type TaskRow, type TaskStatus } from "./db";
 
 export type CreateTaskInput = {
   prompt: string;
   assignee: string;
   department?: string | null;
   parentTaskId?: number | null;
+  projectSlug?: string | null;
+  title?: string | null;
+  repo?: string | null;
+  priority?: TaskPriority | null;
+  labels?: string[] | null;
+  githubUrl?: string | null;
+  githubNumber?: number | null;
 };
 
 export function createTask(input: CreateTaskInput): number {
   const db = getDb();
+  // Title fallback policy: if title is missing/empty we store NULL rather than
+  // auto-computing the first 60 chars of `prompt`. This preserves the
+  // "filed without title" signal so display callers (board cards, etc.) can
+  // derive a fallback at read time per roadmap 8.1.
+  const title =
+    typeof input.title === "string" && input.title.trim().length > 0
+      ? input.title
+      : null;
+  const labels =
+    Array.isArray(input.labels) && input.labels.length > 0
+      ? JSON.stringify(input.labels)
+      : null;
   const stmt = db.prepare(
-    `INSERT INTO tasks (prompt, assignee, department, parent_task_id, status, created_at)
-     VALUES (?, ?, ?, ?, 'queued', ?)`
+    `INSERT INTO tasks (
+       prompt, assignee, department, parent_task_id, status, created_at,
+       project_slug, title, repo, priority, labels, github_url, github_number
+     )
+     VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   return Number(
     stmt.run(
@@ -19,7 +41,14 @@ export function createTask(input: CreateTaskInput): number {
       input.assignee,
       input.department ?? null,
       input.parentTaskId ?? null,
-      Date.now()
+      Date.now(),
+      input.projectSlug ?? null,
+      title,
+      input.repo ?? null,
+      input.priority ?? null,
+      labels,
+      input.githubUrl ?? null,
+      input.githubNumber ?? null
     ).lastInsertRowid
   );
 }

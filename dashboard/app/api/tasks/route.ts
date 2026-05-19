@@ -1,10 +1,11 @@
 import { createTask, getTask, listTasks } from "@/lib/tasks";
 import { spawnTaskIfNamed } from "@/lib/task-runner";
-import type { TaskStatus } from "@/lib/db";
+import type { TaskPriority, TaskStatus } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 const VALID_STATUS: TaskStatus[] = ["queued", "claimed", "running", "done", "failed"];
+const VALID_PRIORITY: TaskPriority[] = ["low", "med", "high", "urgent"];
 
 export async function POST(req: Request) {
   let body: {
@@ -12,6 +13,13 @@ export async function POST(req: Request) {
     assignee?: string;
     department?: string;
     parentTaskId?: number;
+    projectSlug?: string;
+    title?: string;
+    repo?: string;
+    priority?: string;
+    labels?: unknown;
+    githubUrl?: string;
+    githubNumber?: number;
   };
   try {
     body = await req.json();
@@ -27,11 +35,62 @@ export async function POST(req: Request) {
   if (body.prompt.length > 32_000) {
     return Response.json({ error: "prompt too large" }, { status: 413 });
   }
+
+  let priority: TaskPriority | null = null;
+  if (body.priority !== undefined && body.priority !== null) {
+    if (
+      typeof body.priority !== "string" ||
+      !VALID_PRIORITY.includes(body.priority as TaskPriority)
+    ) {
+      return Response.json(
+        { error: `invalid priority (must be one of ${VALID_PRIORITY.join(", ")})` },
+        { status: 400 }
+      );
+    }
+    priority = body.priority as TaskPriority;
+  }
+
+  let labels: string[] | null = null;
+  if (body.labels !== undefined && body.labels !== null) {
+    if (
+      !Array.isArray(body.labels) ||
+      !body.labels.every((l) => typeof l === "string")
+    ) {
+      return Response.json(
+        { error: "labels must be an array of strings" },
+        { status: 400 }
+      );
+    }
+    labels = body.labels as string[];
+  }
+
+  let githubNumber: number | null = null;
+  if (body.githubNumber !== undefined && body.githubNumber !== null) {
+    if (
+      typeof body.githubNumber !== "number" ||
+      !Number.isFinite(body.githubNumber) ||
+      !Number.isInteger(body.githubNumber)
+    ) {
+      return Response.json(
+        { error: "githubNumber must be a finite integer" },
+        { status: 400 }
+      );
+    }
+    githubNumber = body.githubNumber;
+  }
+
   const id = createTask({
     prompt: body.prompt,
     assignee: body.assignee,
     department: body.department ?? null,
     parentTaskId: typeof body.parentTaskId === "number" ? body.parentTaskId : null,
+    projectSlug: body.projectSlug ?? null,
+    title: body.title ?? null,
+    repo: body.repo ?? null,
+    priority,
+    labels,
+    githubUrl: body.githubUrl ?? null,
+    githubNumber,
   });
   const task = getTask(id);
   if (task) spawnTaskIfNamed(task);

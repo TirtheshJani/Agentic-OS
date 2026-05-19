@@ -82,6 +82,21 @@ function migrate(db: Database.Database) {
   addColumnIfMissing(db, "runs", "session_id", "TEXT");
   addColumnIfMissing(db, "runs", "source", "TEXT");
   db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id);`);
+
+  // Phase 7.3 + 8.1: project linkage and issue-board fields on tasks.
+  // All nullable so existing rows stay valid.
+  addColumnIfMissing(db, "tasks", "project_slug", "TEXT");
+  addColumnIfMissing(db, "tasks", "title", "TEXT");
+  addColumnIfMissing(db, "tasks", "repo", "TEXT");
+  addColumnIfMissing(db, "tasks", "priority", "TEXT");
+  // labels stored as JSON-encoded string array in a TEXT column (no join table).
+  addColumnIfMissing(db, "tasks", "labels", "TEXT");
+  addColumnIfMissing(db, "tasks", "github_url", "TEXT");
+  addColumnIfMissing(db, "tasks", "github_number", "INTEGER");
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_tasks_project_status ON tasks(project_slug, status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_github ON tasks(repo, github_number);
+  `);
 }
 
 // SQLite cannot parameterize DDL (PRAGMA, ALTER TABLE) — table/column/type
@@ -240,6 +255,8 @@ export function recordVaultChange(p: string, kind: "add" | "change" | "unlink") 
 
 export type TaskStatus = "queued" | "claimed" | "running" | "done" | "failed";
 
+export type TaskPriority = "low" | "med" | "high" | "urgent";
+
 export type TaskRow = {
   id: number;
   prompt: string;
@@ -252,4 +269,12 @@ export type TaskRow = {
   finished_at: number | null;
   run_id: number | null;
   error: string | null;
+  project_slug: string | null;
+  title: string | null;
+  repo: string | null;
+  priority: TaskPriority | null;
+  // JSON-encoded string array (e.g. '["bug","p1"]'); null when no labels.
+  labels: string | null;
+  github_url: string | null;
+  github_number: number | null;
 };

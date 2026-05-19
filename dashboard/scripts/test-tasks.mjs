@@ -72,6 +72,50 @@ try {
   const queued = tasks.listTasks({ status: "queued" });
   assert(queued.length === 1 && queued[0].id === child, "listTasks filters by status");
 
+  // Phase 7.3 + 8.1: round-trip the new issue/board fields.
+  const issueId = tasks.createTask({
+    prompt: "investigate flaky test in CI",
+    assignee: "lead:research",
+    department: "research",
+    projectSlug: "fhir-rag-paper",
+    title: "Flaky test: rag-retrieval",
+    repo: "TirtheshJani/Agentic-OS",
+    priority: "high",
+    labels: ["bug", "p1"],
+    githubUrl: "https://github.com/TirtheshJani/Agentic-OS/issues/42",
+    githubNumber: 42,
+  });
+  const issue = tasks.getTask(issueId);
+  assert(issue?.project_slug === "fhir-rag-paper", "project_slug persisted");
+  assert(issue?.title === "Flaky test: rag-retrieval", "title persisted");
+  assert(issue?.repo === "TirtheshJani/Agentic-OS", "repo persisted");
+  assert(issue?.priority === "high", "priority persisted");
+  assert(issue?.labels === JSON.stringify(["bug", "p1"]), "labels JSON-encoded");
+  assert(
+    issue?.github_url === "https://github.com/TirtheshJani/Agentic-OS/issues/42",
+    "github_url persisted"
+  );
+  assert(issue?.github_number === 42, "github_number persisted");
+
+  // Title fallback: missing title stays NULL (display-time fallback only).
+  const noTitleId = tasks.createTask({
+    prompt: "no title here",
+    assignee: "lead:research",
+  });
+  const noTitle = tasks.getTask(noTitleId);
+  assert(noTitle?.title === null, "missing title stored as null");
+  assert(noTitle?.labels === null, "missing labels stored as null");
+  assert(noTitle?.priority === null, "missing priority stored as null");
+
+  // Empty labels array also stores NULL.
+  const emptyLabelsId = tasks.createTask({
+    prompt: "empty labels",
+    assignee: "lead:research",
+    labels: [],
+  });
+  const emptyLabels = tasks.getTask(emptyLabelsId);
+  assert(emptyLabels?.labels === null, "empty labels array stored as null");
+
   console.log("\nALL PASS");
 } finally {
   try {

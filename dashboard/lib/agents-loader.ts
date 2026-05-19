@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
-import { agentsPath } from "./paths";
+import { agentsPath, repoRoot } from "./paths";
 
 export type AgentRole = "lead" | "member";
 
@@ -14,6 +14,7 @@ export type AgentFrontmatter = {
   "allowed-skills"?: string[];
   "allowed-tools"?: string;
   "system-prompt"?: string;
+  "default-repo"?: string;
 };
 
 export type Agent = {
@@ -25,8 +26,22 @@ export type Agent = {
   allowedSkills: string[];
   allowedTools: string | null;
   systemPromptPath: string | null;
+  // Phase 8.4: absolute path to the repo this agent should launch in by
+  // default when "Open in terminal" is clicked. null when unset. Resolved
+  // here (loader), validated for existence at validate-time only.
+  defaultRepo: string | null;
   folder: string;
 };
+
+// Matches resolveProjectPath in projects-loader.ts. Mirrors the same rules:
+// absolute paths resolve as-is, Windows drive-letter paths resolve as-is,
+// anything else is treated as repo-root-relative.
+function resolveDefaultRepo(raw: string): string {
+  if (!raw) return repoRoot;
+  if (path.isAbsolute(raw)) return path.resolve(raw);
+  if (/^[a-zA-Z]:[\\/]/.test(raw)) return path.resolve(raw);
+  return path.resolve(repoRoot, raw);
+}
 
 const DEPARTMENTS = [
   "research",
@@ -70,6 +85,10 @@ export function loadAgents(): Agent[] {
     const fm = matter(raw).data as AgentFrontmatter;
     if (!fm.name || !fm.department || !fm.role) continue;
     const folder = path.relative(agentsPath, path.dirname(file));
+    const rawDefaultRepo =
+      typeof fm["default-repo"] === "string" && fm["default-repo"].trim().length > 0
+        ? fm["default-repo"].trim()
+        : null;
     agents.push({
       name: fm.name,
       description: fm.description ?? "",
@@ -79,6 +98,7 @@ export function loadAgents(): Agent[] {
       allowedSkills: Array.isArray(fm["allowed-skills"]) ? fm["allowed-skills"] : [],
       allowedTools: typeof fm["allowed-tools"] === "string" ? fm["allowed-tools"] : null,
       systemPromptPath: typeof fm["system-prompt"] === "string" ? fm["system-prompt"] : null,
+      defaultRepo: rawDefaultRepo ? resolveDefaultRepo(rawDefaultRepo) : null,
       folder,
     });
   }
@@ -103,4 +123,8 @@ export function agentsByDepartment(agents: Agent[]): Map<string, Agent[]> {
 
 export function leadFor(department: string, agents: Agent[]): Agent | null {
   return agents.find((a) => a.department === department && a.role === "lead") ?? null;
+}
+
+export function agentByName(name: string): Agent | null {
+  return loadAgents().find((a) => a.name === name) ?? null;
 }

@@ -5,7 +5,9 @@ import { RunStateProvider } from "@/components/run-state";
 import { TaskChain } from "@/components/task-chain";
 import { TaskThread } from "@/components/task-thread";
 import { IssueStatusControl } from "@/components/issue-status-control";
+import { IssueLaunchButtons } from "@/components/issue-launch-buttons";
 import { Pill } from "@/components/ui/pill";
+import { agentByName } from "@/lib/agents-loader";
 import { getTask, runsForTask } from "@/lib/tasks";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +59,12 @@ export default async function IssueDetailPage({
 
   const labels = parseLabels(task.labels);
   const runs = runsForTask(task.id, 25);
+  // assignee may be "user", "lead:<dept>", or an agent name. Only resolve
+  // for plain agent names; "user" and "lead:..." cannot have a default-repo.
+  const assigneeAgent =
+    task.assignee !== "user" && !task.assignee.startsWith("lead:")
+      ? agentByName(task.assignee)
+      : null;
 
   return (
     <RunStateProvider>
@@ -94,8 +102,14 @@ export default async function IssueDetailPage({
                 </a>
               )}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <IssueStatusControl taskId={task.id} status={task.status} />
+              <IssueLaunchButtons
+                taskId={task.id}
+                assignee={task.assignee}
+                prompt={task.prompt}
+                defaultRepo={assigneeAgent?.defaultRepo ?? null}
+              />
             </div>
           </div>
 

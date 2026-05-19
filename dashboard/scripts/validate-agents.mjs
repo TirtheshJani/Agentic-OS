@@ -30,7 +30,19 @@ const ALLOWED_TOP_LEVEL = new Set([
   "allowed-skills",
   "allowed-tools",
   "system-prompt",
+  // Phase 8.4: absolute (or repo-relative) path to the agent's default
+  // working repo for "Open in terminal" launches.
+  "default-repo",
 ]);
+
+// Mirrors resolveDefaultRepo in dashboard/lib/agents-loader.ts. Kept in sync
+// by hand — the validator is a separate process and cannot import TS.
+function resolveDefaultRepoPath(raw) {
+  if (!raw) return repoRoot;
+  if (path.isAbsolute(raw)) return path.resolve(raw);
+  if (/^[a-zA-Z]:[\\/]/.test(raw)) return path.resolve(raw);
+  return path.resolve(repoRoot, raw);
+}
 
 function walkAgents(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -64,6 +76,7 @@ function collectSkillNames() {
 
 function validate(file, skillNames) {
   const errs = [];
+  const warns = [];
   const stem = path.basename(file, ".md");
   const raw = fs.readFileSync(file, "utf8");
   const fm = matter(raw).data;
@@ -114,7 +127,28 @@ function validate(file, skillNames) {
     }
   }
 
-  return errs;
+  // default-repo: WARN (not FAIL) when the resolved path is missing on disk.
+  // A non-string value is still a hard fail because the field is typed.
+  if (fm["default-repo"] !== undefined) {
+    if (typeof fm["default-repo"] !== "string") {
+      errs.push(`default-repo: must be a string (got ${typeof fm["default-repo"]})`);
+    } else if (fm["default-repo"].trim().length === 0) {
+      errs.push(`default-repo: must not be empty`);
+    } else {
+      const resolved = resolveDefaultRepoPath(fm["default-repo"].trim());
+      let ok = false;
+      try {
+        ok = fs.statSync(resolved).isDirectory();
+      } catch {
+        ok = false;
+      }
+      if (!ok) {
+        warns.push(`default-repo path does not exist (${resolved})`);
+      }
+    }
+  }
+
+  return { errs, warns };
 }
 
 function main() {
@@ -128,7 +162,7 @@ function main() {
   let bad = 0;
 
   for (const f of files) {
-    const errs = validate(f, skillNames);
+    const { errs, warns } = validate(f, skillNames);
     const rel = path.relative(repoRoot, f);
     if (errs.length === 0) {
       console.log(`OK    ${rel}`);
@@ -136,6 +170,9 @@ function main() {
       bad++;
       console.error(`FAIL  ${rel}`);
       for (const e of errs) console.error(`        - ${e}`);
+    }
+    for (const w of warns) {
+      console.warn(`WARN  ${rel}  ${w}`);
     }
     const fm = matter(fs.readFileSync(f, "utf8")).data;
     if (fm.department && fm.role === "lead") {

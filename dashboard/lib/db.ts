@@ -159,11 +159,17 @@ export function insertRun(opts: {
   cwd?: string | null;
   agent?: string | null;
   mcpServer?: string | null;
+  // Phase 8.4: 'terminal' marks rows spawned via claude-launcher in
+  // interactive mode. Stays null/unset for headless dashboard runs (which
+  // are implicitly 'dashboard'); the session-log hook uses its own values
+  // ('external', or whatever the hook payload carries).
+  source?: string | null;
+  taskId?: number | null;
 }): number {
   const db = getDb();
   const stmt = db.prepare(
-    `INSERT INTO runs (skill_slug, prompt, status, started_at, project_slug, cwd, agent, mcp_server)
-     VALUES (?, ?, 'running', ?, ?, ?, ?, ?)`
+    `INSERT INTO runs (skill_slug, prompt, status, started_at, project_slug, cwd, agent, mcp_server, source, task_id)
+     VALUES (?, ?, 'running', ?, ?, ?, ?, ?, ?, ?)`
   );
   return Number(
     stmt.run(
@@ -173,7 +179,9 @@ export function insertRun(opts: {
       opts.projectSlug ?? null,
       opts.cwd ?? null,
       opts.agent ?? null,
-      opts.mcpServer ?? null
+      opts.mcpServer ?? null,
+      opts.source ?? null,
+      opts.taskId ?? null
     ).lastInsertRowid
   );
 }

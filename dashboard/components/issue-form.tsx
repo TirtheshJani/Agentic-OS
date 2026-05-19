@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
@@ -21,9 +21,6 @@ export function IssueForm({ projects, agents }: Props) {
   const [body, setBody] = useState("");
   const [projectSlug, setProjectSlug] = useState<string>("");
   const [repo, setRepo] = useState<string>("");
-  // Tracks whether the user has manually edited the repo field. Once edited
-  // we stop auto-filling from project selection to avoid clobbering input.
-  const [repoTouched, setRepoTouched] = useState(false);
   const [assignee, setAssignee] = useState<string>("user");
   const [priority, setPriority] = useState<Priority>("med");
   const [labels, setLabels] = useState<string[]>([]);
@@ -31,27 +28,15 @@ export function IssueForm({ projects, agents }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const project = useMemo(
-    () => projects.find((p) => p.slug === projectSlug) ?? null,
-    [projects, projectSlug]
-  );
-
-  // Filter agents by the selected project's capabilities. Mirrors the
-  // team-rail/PromptPanel scoping in 7.2: when a project is chosen we
-  // restrict the picker to agents whose department matches one of the
-  // declared capabilities. With no project picked we show everyone.
-  const agentOptions = useMemo(() => {
-    if (!project || project.capabilities.length === 0) return agents;
-    const allowed = new Set(project.capabilities);
-    return agents.filter((a) => allowed.has(a.department));
-  }, [project, agents]);
+  const project = projects.find((p) => p.slug === projectSlug) ?? null;
+  const projectCaps = project?.capabilities ?? [];
+  const inScope = (dept: string) =>
+    !project || projectCaps.length === 0 || projectCaps.includes(dept);
 
   const onProjectChange = (slug: string) => {
     setProjectSlug(slug);
     const p = projects.find((x) => x.slug === slug);
-    if (!repoTouched) {
-      setRepo(p?.repoUrl ?? "");
-    }
+    setRepo(p?.repoUrl ?? "");
   };
 
   const onLabelKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -75,9 +60,6 @@ export function IssueForm({ projects, agents }: Props) {
     }
     setSubmitting(true);
     setError(null);
-    // department only travels with a real member agent — leads carry their
-    // own dept in the slug, "user" has none. This matches POST /api/tasks's
-    // shape used by the workbench dispatcher.
     const agentRow = agents.find((a) => a.name === assignee) ?? null;
     const department = agentRow?.department ?? null;
     const payload = {
@@ -173,10 +155,7 @@ export function IssueForm({ projects, agents }: Props) {
             <input
               id="issue-repo"
               value={repo}
-              onChange={(e) => {
-                setRepo(e.target.value);
-                setRepoTouched(true);
-              }}
+              onChange={(e) => setRepo(e.target.value)}
               disabled={submitting}
               placeholder="owner/name or url"
               className="mt-1 w-full rounded-sm border border-border bg-background p-2 text-sm font-mono"
@@ -198,27 +177,22 @@ export function IssueForm({ projects, agents }: Props) {
             <option value="user">user (run immediately when queued)</option>
             <optgroup label="Departments">
               {["research", "coding", "content", "business", "productivity"]
-                .filter(
-                  (d) =>
-                    !project ||
-                    project.capabilities.length === 0 ||
-                    project.capabilities.includes(d)
-                )
+                .filter(inScope)
                 .map((d) => (
                   <option key={d} value={`lead:${d}`}>
                     @{d}
                   </option>
                 ))}
             </optgroup>
-            {agentOptions.length > 0 && (
-              <optgroup label="Agents">
-                {agentOptions.map((a) => (
+            <optgroup label="Agents">
+              {agents
+                .filter((a) => inScope(a.department))
+                .map((a) => (
                   <option key={a.name} value={a.name}>
                     @{a.name} · {a.department}
                   </option>
                 ))}
-              </optgroup>
-            )}
+            </optgroup>
           </select>
         </div>
 

@@ -18,24 +18,18 @@ type Props = {
   onSelectProject: (slug: string | null) => void;
 };
 
-// Returns true when this skill should be visible given the selected project's
-// capabilities / allow-list. Meta skills always return true (they apply to
-// every project).
-function skillMatchesProject(skill: Skill, project: Project): boolean {
-  if (skill.isMeta) return true;
+// Visible iff: meta skill, OR no project selected, OR project's allowedSkills
+// includes this name, OR no allowedSkills and skill's branch.family or
+// branch.label is in the project's capabilities. Empty capabilities means
+// "show everything" (no filter).
+function skillMatchesProject(skill: Skill, project: Project | null): boolean {
+  if (!project || skill.isMeta) return true;
   if (project.allowedSkills && project.allowedSkills.length > 0) {
     return project.allowedSkills.includes(skill.name);
   }
-  const caps = project.capabilities;
-  if (!caps || caps.length === 0) return true;
-  const capSet = new Set(caps);
-  if (capSet.has(skill.branch.family)) return true;
-  if (capSet.has(skill.branch.label)) return true;
-  // Match on any segment of the domain path (e.g. "research/physics-ml" -> ["research", "physics-ml"]).
-  for (const seg of skill.domain.split("/")) {
-    if (capSet.has(seg)) return true;
-  }
-  return false;
+  if (!project.capabilities || project.capabilities.length === 0) return true;
+  const caps = new Set(project.capabilities);
+  return caps.has(skill.branch.family) || caps.has(skill.branch.label);
 }
 
 export function SkillsRail({
@@ -48,37 +42,32 @@ export function SkillsRail({
 }: Props) {
   const [showAll, setShowAll] = useState(false);
 
-  const activeProject = useMemo(
-    () => (selectedProject ? projects.find((p) => p.slug === selectedProject) ?? null : null),
-    [projects, selectedProject]
-  );
+  const activeProject =
+    selectedProject ? projects.find((p) => p.slug === selectedProject) ?? null : null;
 
-  const { visibleSkills, hiddenSkills } = useMemo(() => {
-    if (!activeProject) {
-      return { visibleSkills: skills, hiddenSkills: [] as Skill[] };
-    }
+  const { visible, hidden, byFamily } = useMemo(() => {
     const visible: Skill[] = [];
     const hidden: Skill[] = [];
+    const byFamily = new Map<BranchFamily, Map<string, Skill[]>>();
+    for (const fam of FAMILY_ORDER) byFamily.set(fam, new Map());
     for (const s of skills) {
-      if (skillMatchesProject(s, activeProject)) visible.push(s);
+      const isVisible = skillMatchesProject(s, activeProject);
+      if (isVisible) visible.push(s);
       else hidden.push(s);
+      if (isVisible || showAll) {
+        const group = byFamily.get(s.branch.family)!;
+        if (!group.has(s.branch.label)) group.set(s.branch.label, []);
+        group.get(s.branch.label)!.push(s);
+      }
     }
-    return { visibleSkills: visible, hiddenSkills: hidden };
-  }, [skills, activeProject]);
+    return { visible, hidden, byFamily };
+  }, [skills, activeProject, showAll]);
 
-  const renderedSkills = showAll ? skills : visibleSkills;
-
-  const byFamily = new Map<BranchFamily, Map<string, Skill[]>>();
-  for (const fam of FAMILY_ORDER) byFamily.set(fam, new Map());
-  for (const s of renderedSkills) {
-    const fam = byFamily.get(s.branch.family)!;
-    if (!fam.has(s.branch.label)) fam.set(s.branch.label, []);
-    fam.get(s.branch.label)!.push(s);
-  }
-
-  // Empty state applies when filtering produced 0 visible non-meta skills.
-  const nonMetaVisible = visibleSkills.filter((s) => !s.isMeta).length;
-  const showEmptyState = activeProject !== null && nonMetaVisible === 0 && !showAll;
+  // Empty state: filter ran and nothing non-meta survived.
+  const showEmptyState =
+    activeProject !== null &&
+    !showAll &&
+    visible.every((s) => s.isMeta);
 
   const activeProjects = projects.filter((p) => p.status === "active");
   const dormantProjects = projects.filter((p) => p.status !== "active");
@@ -180,7 +169,7 @@ export function SkillsRail({
           );
         })}
 
-        {activeProject && hiddenSkills.length > 0 && (
+        {activeProject && hidden.length > 0 && (
           <div className="mt-2">
             <button
               type="button"
@@ -189,8 +178,8 @@ export function SkillsRail({
               aria-expanded={showAll}
             >
               {showAll
-                ? `HIDE · ${hiddenSkills.length} OFF-SCOPE`
-                : `SHOW ALL · ${hiddenSkills.length} HIDDEN`}
+                ? `HIDE · ${hidden.length} OFF-SCOPE`
+                : `SHOW ALL · ${hidden.length} HIDDEN`}
             </button>
           </div>
         )}

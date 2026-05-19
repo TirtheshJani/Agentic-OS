@@ -27,6 +27,7 @@ const projectsRoot = path.join(repoRoot, "vault", "projects");
 const skillsRoot = path.join(repoRoot, "skills");
 
 const ALLOWED_STATUS = new Set(["active", "dormant", "archived"]);
+const ALLOWED_GITHUB_SYNC = new Set(["read-only", "write-back"]);
 const ALLOWED_BRANCH = new Set([
   "meta",
   "productivity",
@@ -125,6 +126,21 @@ function validate(entry, skillNames) {
     }
     if (!exists) {
       warns.push(`path: directory does not exist (${resolved})`);
+    }
+  }
+
+  // Phase 8.5: github-sync gating. If the key is set it must be one of
+  // the two literals. We do NOT probe `gh` availability here — the
+  // validator runs on machines without gh installed, and the runtime
+  // path handles missing gh gracefully via checkGhAvailable().
+  if (typeof fm["github-sync"] !== "undefined") {
+    if (
+      typeof fm["github-sync"] !== "string" ||
+      !ALLOWED_GITHUB_SYNC.has(fm["github-sync"])
+    ) {
+      errs.push(
+        `github-sync: "${fm["github-sync"]}" not in (${[...ALLOWED_GITHUB_SYNC].join(", ")})`
+      );
     }
   }
 

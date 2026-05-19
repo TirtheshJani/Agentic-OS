@@ -13,7 +13,8 @@
     "validate:projects": "node scripts/validate-projects.mjs",
     "test:tasks": "tsx scripts/test-tasks.mjs",
     "test:threads": "tsx scripts/test-threads.mjs",
-    "test:task-flow": "tsx scripts/test-task-flow.mjs"
+    "test:task-flow": "tsx scripts/test-task-flow.mjs",
+    "test:github-sync": "tsx scripts/test-github-sync.mjs"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",

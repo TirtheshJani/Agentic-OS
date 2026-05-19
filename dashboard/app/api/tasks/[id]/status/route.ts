@@ -1,5 +1,10 @@
+import fs from "node:fs";
+import path from "node:path";
 import { getTask, transitionTask } from "@/lib/tasks";
 import { spawnTaskIfNamed } from "@/lib/task-runner";
+import { closeIssue } from "@/lib/github-sync";
+import { projectBySlug } from "@/lib/projects-loader";
+import { threadsPath } from "@/lib/paths";
 import type { TaskStatus } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -65,5 +70,49 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (fresh) spawnTaskIfNamed(fresh);
   }
 
+  // Phase 8.5 write-back: when a card is moved to Done and the project
+  // opted into write-back, mirror that to GitHub by closing the issue.
+  // Failures land in the task thread; we never roll back the local
+  // status change.
+  if (next === "done" && task.repo && task.github_number && task.project_slug) {
+    const project = projectBySlug(task.project_slug);
+    if (project?.githubSync === "write-back") {
+      // Fire and forget; the response should not wait on a network call.
+      void (async () => {
+        const r = await closeIssue(
+          task.repo!,
+          task.github_number!,
+          "closed via dashboard"
+        );
+        if (!r.ok) {
+          appendThreadLine(
+            n,
+            `gh issue close failed for ${task.repo}#${task.github_number}: ${r.error}`
+          );
+        } else {
+          appendThreadLine(
+            n,
+            `gh issue close ok for ${task.repo}#${task.github_number}`
+          );
+        }
+      })();
+    }
+  }
+
   return Response.json({ task });
+}
+
+// Append a single-line system note to the task thread. Used by the
+// write-back hook to surface gh failures without rolling back the
+// local status change. Best-effort: filesystem errors are swallowed.
+function appendThreadLine(taskId: number, message: string): void {
+  try {
+    fs.mkdirSync(threadsPath, { recursive: true });
+    const file = path.join(threadsPath, `${taskId}.md`);
+    const line = `[${new Date().toISOString()}] system: ${message.replace(/\n/g, " ")}\n`;
+    fs.appendFileSync(file, line);
+  } catch {
+    // The thread is a convenience surface; failing to write it should
+    // never propagate to the caller of the status route.
+  }
 }

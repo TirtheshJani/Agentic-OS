@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GithubImportButton } from "@/components/github-import-button";
 import { Header } from "@/components/header";
 import { IssueStatusControlCompact } from "@/components/issue-status-control";
 import { RunStateProvider } from "@/components/run-state";
@@ -7,6 +8,7 @@ import { Starfield } from "@/components/starfield";
 import { Pill } from "@/components/ui/pill";
 import { SectionHeader } from "@/components/ui/section-header";
 import type { TaskPriority, TaskRow, TaskStatus } from "@/lib/db";
+import { parseGithubRepo } from "@/lib/github-sync";
 import { projectBySlug } from "@/lib/projects-loader";
 import { listTasks, priorityRank } from "@/lib/tasks";
 
@@ -76,6 +78,11 @@ export default async function ProjectBoardPage({
   }
   failed.sort(sortByPriorityThenCreated);
 
+  // Show the "Import from GitHub" button only when repo-url resolves
+  // to a recognized github.com path. parseGithubRepo handles both the
+  // https and ssh variants, and trims `.git` suffixes.
+  const ghRepo = parseGithubRepo(project.repoUrl);
+
   return (
     <RunStateProvider>
       <Starfield />
@@ -84,6 +91,7 @@ export default async function ProjectBoardPage({
         <header className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-semibold">{project.name}</h1>
           <Pill tone="muted">BOARD</Pill>
+          {ghRepo && <GithubImportButton slug={slug} />}
           <Link
             href={`/projects/${encodeURIComponent(slug)}`}
             className="ml-auto mono-label px-2 py-1 border border-border rounded-sm hover:bg-muted/40"

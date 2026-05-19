@@ -5,6 +5,8 @@ import { repoRoot, vaultPath } from "./paths";
 
 export type ProjectStatus = "active" | "dormant" | "archived";
 
+export type GithubSyncMode = "read-only" | "write-back";
+
 export type ProjectFrontmatter = {
   name?: string;
   slug?: string;
@@ -13,6 +15,7 @@ export type ProjectFrontmatter = {
   branch?: string;
   path?: string;
   "repo-url"?: string;
+  "github-sync"?: GithubSyncMode;
   capabilities?: string[];
   "allowed-skills"?: string[];
   agent?: string;
@@ -26,6 +29,9 @@ export type Project = {
   branch: string;
   path: string;
   repoUrl: string | null;
+  // Phase 8.5: defaults to 'read-only' when the key is missing so
+  // imports are always safe (no write-back surprises).
+  githubSync: GithubSyncMode;
   capabilities: string[];
   allowedSkills: string[] | null;
   agent: string | null;
@@ -69,6 +75,9 @@ export function loadProjects(): Project[] {
     const fm = matter(raw).data as ProjectFrontmatter;
     if (!fm.name || !fm.slug || !fm.description) continue;
     const resolvedPath = resolveProjectPath(fm.path ?? entry.name);
+    const sync = fm["github-sync"];
+    const githubSync: GithubSyncMode =
+      sync === "write-back" ? "write-back" : "read-only";
     projects.push({
       name: fm.name,
       slug: fm.slug,
@@ -77,6 +86,7 @@ export function loadProjects(): Project[] {
       branch: fm.branch ?? "other",
       path: resolvedPath,
       repoUrl: fm["repo-url"] ? String(fm["repo-url"]) : null,
+      githubSync,
       capabilities: Array.isArray(fm.capabilities) ? fm.capabilities : [],
       allowedSkills: Array.isArray(fm["allowed-skills"]) ? fm["allowed-skills"] : null,
       agent: fm.agent ?? null,

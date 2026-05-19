@@ -6,6 +6,7 @@ status: active
 branch: healthcare-ai
 path: c:/Users/TJ/Documents/GitHub/FHIR_RAG_TEST
 repo-url: https://github.com/TirtheshJani/FHIR_RAG_TEST
+github-sync: read-only
 capabilities: [healthcare-ai, research, coding]
 agent: general-purpose
 ---

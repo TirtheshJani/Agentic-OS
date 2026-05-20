@@ -1,0 +1,18 @@
+{
+  "name": "vault-recall",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local semantic search over the Agentic-OS vault.",
+  "scripts": {
+    "index": "node scripts/index.mjs",
+    "index:full": "node scripts/index.mjs --full",
+    "query": "node scripts/query.mjs",
+    "stats": "node scripts/query.mjs --stats"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.5",
+    "better-sqlite3": "^12.9.0",
+    "sqlite-vec": "^0.1.6"
+  }
+}

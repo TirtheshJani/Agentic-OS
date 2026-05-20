@@ -29,8 +29,12 @@ yarn-error.log*
 /.agentic-os/state.db-journal
 /.agentic-os/state.db-wal
 /.agentic-os/state.db-shm
+/.agentic-os/models/
 
 # Obsidian local-only files
 vault/.obsidian/workspace*
 vault/.obsidian/cache
 vault/.trash/
+
+# Design handoff bundle from claude.ai/design (reference only, not source of truth)
+.design-handoff/

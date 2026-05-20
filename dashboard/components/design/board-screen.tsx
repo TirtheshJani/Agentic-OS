@@ -4,7 +4,7 @@
 // Kanban board: 5 columns (Backlog · Queued · Running · Review · Done)
 // + collapsible Failed strip, live agent strip on top.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Avatar,
   CostMeter,
@@ -19,13 +19,14 @@ import {
 import { I } from "@/components/design/icons";
 import {
   COLUMNS,
-  failedIssues,
-  ISSUES,
-  issuesInCol,
   PRIORITIES,
+  type ColumnDef,
+  type DashboardData,
   type Issue,
+  type IssueStatus,
   type Priority,
-} from "@/lib/design/data";
+  type RunningAgent,
+} from "@/lib/design/types";
 import type { Tweaks } from "@/components/design/tweaks-panel";
 
 type Props = {
@@ -35,21 +36,109 @@ type Props = {
 
 type FilterValue = "all" | Priority;
 
+const POLL_INTERVAL_MS = 30_000;
+
 export function BoardScreen({ onOpenIssue, tweaks }: Props) {
   const [filterPriority, setFilterPriority] = useState<FilterValue>("all");
   const [view, setView] = useState<"board" | "list">("board");
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [runningAgents, setRunningAgents] = useState<RunningAgent[]>([]);
   const showLiveStrip = tweaks.showLiveStrip;
+
+  const reloadIssues = async (signal?: AbortSignal): Promise<Issue[] | null> => {
+    try {
+      const res = await fetch("/api/issues", { cache: "no-store", signal });
+      if (!res.ok) return null;
+      return (await res.json()) as Issue[];
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      const next = await reloadIssues();
+      if (!cancelled && next) {
+        setIssues(next);
+        setLoaded(true);
+      }
+    };
+    tick();
+    const id = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Live strip reuses the dashboard endpoint so we don't spin up a parallel
+  // running-agents route; we only poll when the strip is actually visible.
+  useEffect(() => {
+    if (!showLiveStrip) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/dashboard/data", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as DashboardData;
+        if (!cancelled) setRunningAgents(j.runningAgents);
+      } catch {}
+    };
+    tick();
+    const id = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [showLiveStrip]);
 
   const matchesFilter = (i: Issue) =>
     filterPriority === "all" || i.priority === filterPriority;
 
   const cols = COLUMNS.map((c) => ({
     ...c,
-    issues: issuesInCol(c.key).filter(matchesFilter),
+    issues: issues
+      .filter((i) =>
+        c.key === "queued"
+          ? i.status === "queued" || i.status === "claimed"
+          : i.status === c.key,
+      )
+      .filter(matchesFilter),
   }));
-  const failed = failedIssues().filter(matchesFilter);
-  const total = ISSUES.length;
-  const runningIssues = ISSUES.filter((i) => i.status === "running");
+  const failed = issues.filter((i) => i.status === "failed").filter(matchesFilter);
+  const total = issues.length;
+
+  const onStatusChange = async (
+    issueId: string,
+    next: IssueStatus,
+  ): Promise<{ ok: true } | { ok: false; message: string }> => {
+    const n = Number(issueId);
+    if (!Number.isFinite(n) || n <= 0) {
+      return { ok: false, message: "bad id" };
+    }
+    try {
+      const res = await fetch(`/api/tasks/${n}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) {
+        let msg = `status ${res.status}`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body.error) msg = body.error;
+        } catch {}
+        return { ok: false, message: msg };
+      }
+      const fresh = await reloadIssues();
+      if (fresh) setIssues(fresh);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    }
+  };
 
   return (
     <div className="screen">
@@ -102,9 +191,9 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
         </button>
       </div>
 
-      {showLiveStrip && runningIssues.length > 0 && (
-        <LiveStrip running={runningIssues} onOpen={onOpenIssue} />
-      )}
+      {showLiveStrip && runningAgents.length > 0 ? (
+        <LiveStrip running={runningAgents} onOpen={onOpenIssue} />
+      ) : null}
 
       <div
         className="screen-body"
@@ -119,16 +208,23 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
                   col={c}
                   onOpen={onOpenIssue}
                   tweaks={tweaks}
+                  loaded={loaded}
+                  onStatusChange={onStatusChange}
                 />
               ))}
             </div>
             {failed.length > 0 && (
-              <FailedStrip failed={failed} onOpen={onOpenIssue} tweaks={tweaks} />
+              <FailedStrip
+                failed={failed}
+                onOpen={onOpenIssue}
+                tweaks={tweaks}
+                onStatusChange={onStatusChange}
+              />
             )}
           </>
         ) : (
           <BoardListView
-            issues={ISSUES.filter(matchesFilter)}
+            issues={issues.filter(matchesFilter)}
             onOpen={onOpenIssue}
           />
         )}
@@ -141,12 +237,12 @@ function LiveStrip({
   running,
   onOpen,
 }: {
-  running: Issue[];
+  running: RunningAgent[];
   onOpen: (id: string) => void;
 }) {
-  const totalCost = running.reduce((s, i) => s + (i.cost || 0), 0);
-  const totalTps = running.reduce(
-    (s, i) => s + (i.live?.tokensPerSec || 0),
+  const totalCost = running.reduce((s, a) => s + a.costSoFar, 0);
+  const totalTokens = running.reduce(
+    (s, a) => s + a.tokensIn + a.tokensOut,
     0,
   );
   return (
@@ -158,35 +254,56 @@ function LiveStrip({
         />
         Live · {running.length} agent{running.length === 1 ? "" : "s"}
       </span>
-      {running.map((i) => (
+      {running.map((a) => (
         <button
-          key={i.id}
+          key={a.taskId}
           className="live-strip-card"
-          onClick={() => onOpen(i.id)}
+          onClick={() => onOpen(String(a.taskId))}
         >
-          <Avatar handle={i.assignee} size={20} running />
-          <span className="live-strip-id">{i.id}</span>
-          <span className="live-strip-title truncate">{i.title}</span>
-          <span className="live-strip-tps">{i.live?.tokensPerSec ?? 0} tok/s</span>
-          <span className="live-strip-cost">${i.cost.toFixed(2)}</span>
+          <Avatar handle={a.agent} size={20} running />
+          <span className="live-strip-id">#{a.taskId}</span>
+          <span className="live-strip-title truncate">{a.title}</span>
+          <span className="live-strip-tps">
+            {Math.round((a.tokensIn + a.tokensOut) / 1000)}k tok
+          </span>
+          <span className="live-strip-cost">${a.costSoFar.toFixed(2)}</span>
         </button>
       ))}
       <span className="toolbar-spacer" />
       <span className="toolbar-meta">
-        {totalTps} TOK/S · ${totalCost.toFixed(2)} BURN
+        {Math.round(totalTokens / 1000)}K TOK · ${totalCost.toFixed(2)} BURN
       </span>
     </div>
   );
 }
 
+type StatusChange = (
+  issueId: string,
+  next: IssueStatus,
+) => Promise<{ ok: true } | { ok: false; message: string }>;
+
+const STATUS_OPTIONS: IssueStatus[] = [
+  "backlog",
+  "queued",
+  "claimed",
+  "running",
+  "review",
+  "done",
+  "failed",
+];
+
 function Column({
   col,
   onOpen,
   tweaks,
+  loaded,
+  onStatusChange,
 }: {
-  col: { key: string; label: string; color: string; issues: Issue[] };
+  col: ColumnDef & { issues: Issue[] };
   onOpen: (id: string) => void;
   tweaks: Tweaks;
+  loaded: boolean;
+  onStatusChange: StatusChange;
 }) {
   const cost = col.issues.reduce((s, i) => s + (i.cost || 0), 0);
   const spark =
@@ -224,7 +341,9 @@ function Column({
       </header>
 
       <div className="col-body">
-        {col.issues.length === 0 ? (
+        {!loaded ? (
+          <div className="col-body-empty">Loading issues…</div>
+        ) : col.issues.length === 0 ? (
           <div className="col-body-empty">No issues here.</div>
         ) : (
           col.issues.map((issue) => (
@@ -233,6 +352,7 @@ function Column({
               issue={issue}
               onOpen={onOpen}
               tweaks={tweaks}
+              onStatusChange={onStatusChange}
             />
           ))
         )}
@@ -245,13 +365,29 @@ export function IssueCard({
   issue,
   onOpen,
   tweaks,
+  onStatusChange,
 }: {
   issue: Issue;
   onOpen: (id: string) => void;
   tweaks: Tweaks;
+  onStatusChange?: StatusChange;
 }) {
   const isRunning = issue.status === "running";
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const [error, setError] = useState<string | null>(null);
+
+  // Error chip auto-clears after 3s so a stale message doesn't sit on the card.
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(null), 3000);
+    return () => clearTimeout(id);
+  }, [error]);
+
+  const handleStatusSelect = async (next: IssueStatus) => {
+    if (!onStatusChange || next === issue.status) return;
+    const result = await onStatusChange(issue.id, next);
+    if (!result.ok) setError(result.message);
+  };
 
   return (
     <article
@@ -297,6 +433,31 @@ export function IssueCard({
         {tweaks.showCost && issue.cost > 0 && (
           <CostMeter cost={issue.cost} compact />
         )}
+        {onStatusChange && (
+          <select
+            value={issue.status}
+            onClick={stop}
+            onChange={(e) => {
+              e.stopPropagation();
+              void handleStatusSelect(e.target.value as IssueStatus);
+            }}
+            aria-label="Move issue"
+            style={{
+              background: "transparent",
+              color: "var(--text-soft)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              fontSize: 10.5,
+              padding: "1px 4px",
+            }}
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        )}
         <Avatar
           handle={issue.assignee}
           size={20}
@@ -304,6 +465,22 @@ export function IssueCard({
           running={isRunning}
         />
       </div>
+
+      {error && (
+        <div
+          className="pill"
+          onClick={stop}
+          style={{
+            marginTop: 4,
+            color: "var(--urgent)",
+            borderColor: "var(--urgent)",
+            fontSize: 10.5,
+          }}
+          title={error}
+        >
+          {error.slice(0, 60)}
+        </div>
+      )}
 
       {isRunning && issue.live && (
         <div className="issue-live">
@@ -322,10 +499,12 @@ function FailedStrip({
   failed,
   onOpen,
   tweaks,
+  onStatusChange,
 }: {
   failed: Issue[];
   onOpen: (id: string) => void;
   tweaks: Tweaks;
+  onStatusChange: StatusChange;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -342,7 +521,13 @@ function FailedStrip({
       {open && (
         <div className="failed-strip-list">
           {failed.map((i) => (
-            <IssueCard key={i.id} issue={i} onOpen={onOpen} tweaks={tweaks} />
+            <IssueCard
+              key={i.id}
+              issue={i}
+              onOpen={onOpen}
+              tweaks={tweaks}
+              onStatusChange={onStatusChange}
+            />
           ))}
         </div>
       )}

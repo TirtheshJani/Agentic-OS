@@ -9,7 +9,7 @@ import {
   type RunRow,
   type TaskRow,
 } from "@/lib/db";
-import { loadAgents as loadAgentsRaw } from "@/lib/agents-loader";
+import { loadAgents as loadAgentsRaw, agentByName } from "@/lib/agents-loader";
 import { loadSkills as loadSkillsRaw } from "@/lib/skills-loader";
 import { loadProjects as loadProjectsRaw } from "@/lib/projects-loader";
 import { loadSchedules } from "@/lib/schedules";
@@ -242,11 +242,20 @@ export async function loadIssue(id: string | number): Promise<IssueDetail | null
     ? fs.readFileSync(threadFile, "utf8")
     : "";
 
+  // `defaultRepo` only resolves for named-agent assignees; "user" and unset
+  // assignees stay null so the launch-button can disable terminal mode.
+  let defaultRepo: string | null = null;
+  if (task.assignee && task.assignee !== "user") {
+    defaultRepo = agentByName(task.assignee)?.defaultRepo ?? null;
+  }
+
   return {
     issue: toIssue(task),
     labels: parseLabels(task.labels),
     recentRuns,
     threadBody,
+    projectSlug: task.project_slug,
+    defaultRepo,
   };
 }
 

@@ -188,6 +188,11 @@ export type IssueDetail = {
   labels: string[];
   recentRuns: RecentRun[];
   threadBody: string;
+  projectSlug: string | null;
+  // Resolved from the assignee's agent profile (`default-repo` frontmatter).
+  // null when assignee is `user` or the agent has no default-repo. Consumed
+  // by IssueLaunchButtons to gate the "Open in terminal" action.
+  defaultRepo: string | null;
 };
 
 export type InboxItem = {

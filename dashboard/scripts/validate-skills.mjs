@@ -21,6 +21,10 @@ const ALLOWED_TOP_LEVEL = new Set([
   "metadata",
 ]);
 const RESERVED_NAME_PREFIXES = ["claude", "anthropic"];
+const ALLOWED_STATUS = new Set(["stub", "authored", "blocked"]);
+const ALLOWED_MODE = new Set(["local", "remote"]);
+const FORBIDDEN_SKILL_FILES = ["README.md", "CLAUDE.md", "CHANGELOG.md"];
+const MAX_BODY_LINES = 500;
 
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -124,9 +128,11 @@ function validate(file) {
   const slug = path.basename(folder);
   const raw = fs.readFileSync(file, "utf8");
 
-  // No README.md inside the skill folder
-  if (fs.existsSync(path.join(folder, "README.md"))) {
-    errs.push("README.md found inside skill folder (forbidden by spec)");
+  // No stray top-level files (README/CLAUDE/CHANGELOG belong in references/)
+  for (const forbidden of FORBIDDEN_SKILL_FILES) {
+    if (fs.existsSync(path.join(folder, forbidden))) {
+      errs.push(`${forbidden} found inside skill folder (forbidden by spec)`);
+    }
   }
 
   const fm = parseFrontmatter(raw);
@@ -164,6 +170,57 @@ function validate(file) {
       errs.push("description: contains forbidden < or > chars");
     }
   }
+
+  // license: required, non-empty string
+  if (!("license" in fm)) {
+    errs.push("license: required");
+  } else if (typeof fm.license !== "string" || fm.license.trim() === "") {
+    errs.push("license: must be a non-empty string");
+  }
+
+  // metadata: required object with status and mode
+  if (!("metadata" in fm)) {
+    errs.push("metadata: required");
+  } else if (
+    typeof fm.metadata !== "object" ||
+    fm.metadata === null ||
+    Array.isArray(fm.metadata)
+  ) {
+    errs.push("metadata: must be a mapping/object");
+  } else {
+    const md = fm.metadata;
+    if (!("status" in md)) {
+      errs.push("metadata.status: required");
+    } else if (!ALLOWED_STATUS.has(md.status)) {
+      errs.push(
+        `metadata.status: must be one of ${[...ALLOWED_STATUS].join(", ")} (got "${md.status}")`
+      );
+    }
+    if (!("mode" in md)) {
+      errs.push("metadata.mode: required");
+    } else if (!ALLOWED_MODE.has(md.mode)) {
+      errs.push(
+        `metadata.mode: must be one of ${[...ALLOWED_MODE].join(", ")} (got "${md.mode}")`
+      );
+    }
+  }
+
+  // Body (after closing ---) must be <= MAX_BODY_LINES
+  const norm = raw.replace(/\r\n/g, "\n");
+  if (norm.startsWith("---\n")) {
+    const end = norm.indexOf("\n---", 4);
+    if (end >= 0) {
+      // body starts after "\n---" plus the trailing newline if present
+      let bodyStart = end + 4;
+      if (norm[bodyStart] === "\n") bodyStart++;
+      const body = norm.slice(bodyStart);
+      const bodyLines = body === "" ? 0 : body.split("\n").length;
+      if (bodyLines > MAX_BODY_LINES) {
+        errs.push(`body: ${bodyLines} lines (max ${MAX_BODY_LINES})`);
+      }
+    }
+  }
+
   return errs;
 }
 

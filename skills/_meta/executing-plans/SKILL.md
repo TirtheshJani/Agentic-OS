@@ -1,12 +1,14 @@
 ---
 name: executing-plans
 description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+license: MIT
 metadata:
   status: authored
-  domain: _meta
-  mode: local
+  domain: meta
+  mode: remote
   mcp-server: none
   external-apis: []
+  outputs: []
 ---
 
 # Executing Plans

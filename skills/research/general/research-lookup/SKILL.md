@@ -5,10 +5,11 @@ allowed-tools: Read Write Edit Bash
 license: MIT
 metadata:
   status: authored
-  domain: research/general
+  domain: research
   mode: local
   mcp-server: none
   external-apis: []
+  outputs: []
   skill-author: K-Dense Inc.
   compatibility: parallel-cli required (primary); PARALLEL_API_KEY and OPENROUTER_API_KEY optional for deep/academic backends
 ---
@@ -37,17 +38,22 @@ Use this skill when you need:
 - **Market/Industry Data**: Current statistics, trends, competitive intelligence
 - **Recent Developments**: Emerging trends, breakthroughs, announcements
 
-## Visual Enhancement with Scientific Schematics
+### When to use vs other research skills
 
-**When creating documents with this skill, always consider adding scientific diagrams and schematics to enhance visual communication.**
+This is the lead skill for ad-hoc research lookups. Pick a different skill when the task is more structured:
 
-If your document does not already contain schematics or diagrams:
-- Use the **scientific-schematics** skill to generate AI-powered publication-quality diagrams
-- Simply describe your desired diagram in natural language
+- [paper-search](../paper-search/SKILL.md): when you need a single paper by DOI/OpenAlex ID, or a quick keyword query against OpenAlex (250M+ works, no API key).
+- [literature-review](../literature-review/SKILL.md): when you need a full systematic review across multiple databases with PRISMA-style screening, citation verification, and a markdown/PDF deliverable.
+- [deep-web-research](../deep-web-research/SKILL.md): when you need an extended deep-research session on a single topic that writes to `vault/wiki/research/general/`.
+- [morning-trend-scan](../morning-trend-scan/SKILL.md): when you want a recurring digest of GitHub trending plus arXiv to a daily note. Scheduled, not on-demand.
 
-```bash
-python scripts/generate_schematic.py "your diagram description" -o figures/output.png
-```
+Use `research-lookup` (this skill) for everything else: fast single-query fact-finding, citation hunting, background context, and verification.
+
+## Visual Enhancement
+
+<!-- TODO: vendor scientific-schematics skill -->
+
+When creating documents with this skill, consider adding scientific diagrams and schematics to enhance visual communication. Until a companion schematic-generation skill is vendored into this repo, draft figure intent during planning and produce figures manually.
 
 ---
 
@@ -138,7 +144,7 @@ python research_lookup.py "your query" --force-backend perplexity
 
 ## Core Capabilities
 
-### 1. General Research Queries (parallel-cli search — DEFAULT)
+### 1. General Research Queries (parallel-cli search, DEFAULT)
 
 **Primary backend.** Fast, cost-effective web search with academic source prioritization via the parallel-web skill.
 
@@ -191,7 +197,7 @@ Query Examples:
 - Key statistics and methodology highlights
 - Research gaps and future directions
 
-### 3. Deep Research (Parallel Chat API — on request only)
+### 3. Deep Research (Parallel Chat API, on request only)
 
 **Used only when user explicitly requests deep/exhaustive research.** Provides comprehensive, multi-source synthesis via the Chat API (`core` model). 60s-5min latency.
 
@@ -260,185 +266,15 @@ parallel-cli search "Global AI market size and growth projections 2025" \
 
 ## Technical Integration
 
-### Prerequisites
-
-```bash
-# Primary backend (parallel-cli) - REQUIRED
-# Install parallel-cli if not already available:
-curl -fsSL https://parallel.ai/install.sh | bash
-# Or: uv tool install "parallel-web-tools[cli]"
-
-# Authenticate:
-parallel-cli auth
-# Or: export PARALLEL_API_KEY="your_parallel_api_key"
-```
-
-### Environment Variables
-
-```bash
-# Primary backend (parallel-cli search) - REQUIRED
-export PARALLEL_API_KEY="your_parallel_api_key"
-
-# Deep research backend (Parallel Chat API) - optional, for deep research only
-# Uses the same PARALLEL_API_KEY
-
-# Academic search backend (Perplexity) - optional, for academic paper queries
-export OPENROUTER_API_KEY="your_openrouter_api_key"
-```
-
-### API Specifications
-
-**parallel-cli search (PRIMARY):**
-- Command: `parallel-cli search` with `--json` output
-- Latency: 2-10 seconds (fast)
-- Output: JSON with title, URL, publish_date, excerpts
-- Academic domains: Use `--include-domains` for scholarly sources
-- Saves results: `-o filename.json` for follow-up and reproducibility
-
-**Parallel Chat API (deep research only):**
-- Endpoint: `https://api.parallel.ai` (OpenAI SDK compatible)
-- Model: `core` (60s-5min latency, complex multi-source synthesis)
-- Output: Markdown text with inline citations
-- Citations: Research basis with URLs, reasoning, and confidence levels
-- Rate limits: 300 req/min
-- Python package: `openai`
-
-**Perplexity sonar-pro-search (academic only):**
-- Model: `perplexity/sonar-pro-search` (via OpenRouter)
-- Search mode: Academic (prioritizes peer-reviewed sources)
-- Search context: High (comprehensive research)
-- Response time: 5-15 seconds
-
-### Command-Line Usage
-
-```bash
-# Fast web search via parallel-cli (DEFAULT — recommended) — ALWAYS save to sources/
-parallel-cli search "your query" -q "keyword1" -q "keyword2" \
-  --json --max-results 10 --excerpt-max-chars-total 27000 \
-  -o sources/research_<topic>.json
-
-# Academic-focused search via parallel-cli — ALWAYS save to sources/
-parallel-cli search "your query" -q "keyword1" \
-  --json --max-results 10 --excerpt-max-chars-total 27000 \
-  --include-domains "scholar.google.com,arxiv.org,pubmed.ncbi.nlm.nih.gov,semanticscholar.org,biorxiv.org,medrxiv.org,nature.com,science.org,cell.com,pnas.org,nih.gov" \
-  -o sources/research_<topic>-academic.json
-
-# Time-sensitive search via parallel-cli
-parallel-cli search "your query" -q "keyword" \
-  --json --max-results 10 --after-date 2024-01-01 \
-  -o sources/research_<topic>.json
-
-# Extract full content from a specific URL (use parallel-web extract)
-parallel-cli extract "https://example.com/paper" --json
-
-# Force Parallel Deep Research (slow, exhaustive) — via research_lookup.py
-python research_lookup.py "your query" --force-backend parallel -o sources/research_<topic>.md
-
-# Force Perplexity academic search — via research_lookup.py
-python research_lookup.py "your query" --force-backend perplexity -o sources/papers_<topic>.md
-
-# Auto-routed via research_lookup.py (legacy) — ALWAYS save to sources/
-python research_lookup.py "your query" -o sources/research_YYYYMMDD_HHMMSS_<topic>.md
-
-# Batch queries via research_lookup.py — ALWAYS save to sources/
-python research_lookup.py --batch "query 1" "query 2" "query 3" -o sources/batch_research_<topic>.md
-```
+See [references/technical_integration.md](references/technical_integration.md) for full prerequisites, environment variable setup, per-backend API specifications (parallel-cli search, Parallel Chat API, Perplexity sonar-pro-search), and the complete command-line usage reference covering default search, academic search, time-sensitive search, URL extraction, deep research, batch queries, and forced-backend invocations.
 
 ---
 
 ## MANDATORY: Save All Results to Sources Folder
 
-**Every research-lookup result MUST be saved to the project's `sources/` folder.**
+Every research-lookup result MUST be saved to the project's `sources/` folder using the `-o` flag. This is non-negotiable: results are expensive to obtain and critical for reproducibility. Before making a new query, always `ls sources/` to check for an existing relevant result.
 
-This is non-negotiable. Research results are expensive to obtain and critical for reproducibility.
-
-### Saving Rules
-
-| Backend | `-o` Flag Target | Filename Pattern |
-|---------|-----------------|------------------|
-| parallel-cli search (default) | `sources/research_<topic>.json` | `research_<brief_topic>.json` or `research_<brief_topic>-academic.json` |
-| Parallel Deep Research | `sources/research_<topic>.md` | `research_YYYYMMDD_HHMMSS_<brief_topic>.md` |
-| Perplexity (academic) | `sources/papers_<topic>.md` | `papers_YYYYMMDD_HHMMSS_<brief_topic>.md` |
-| Batch queries | `sources/batch_<topic>.md` | `batch_research_YYYYMMDD_HHMMSS_<brief_topic>.md` |
-
-### How to Save
-
-**CRITICAL: Every search MUST save results to the `sources/` folder using the `-o` flag.**
-
-**CRITICAL: Saved files MUST preserve all citations, source URLs, and DOIs.**
-
-```bash
-# parallel-cli search (DEFAULT) — save JSON to sources/
-parallel-cli search "Recent advances in CRISPR gene editing 2025" \
-  -q "CRISPR" -q "gene editing" \
-  --json --max-results 10 --excerpt-max-chars-total 27000 \
-  --include-domains "scholar.google.com,arxiv.org,pubmed.ncbi.nlm.nih.gov,nature.com,science.org,cell.com,pnas.org,nih.gov" \
-  -o sources/research_crispr_advances-academic.json
-
-parallel-cli search "Recent advances in CRISPR gene editing 2025" \
-  -q "CRISPR" -q "gene editing" \
-  --json --max-results 10 --excerpt-max-chars-total 27000 \
-  -o sources/research_crispr_advances-general.json
-
-# Academic paper search via Perplexity — save to sources/
-python research_lookup.py "Find papers on transformer attention mechanisms in NeurIPS 2024" \
-  -o sources/papers_20250217_143500_transformer_attention.md
-
-# Deep research via Parallel Chat API — save to sources/
-python research_lookup.py "AI regulation landscape" --force-backend parallel \
-  -o sources/research_20250217_144000_ai_regulation.md
-
-# Batch queries — save to sources/
-python research_lookup.py --batch "mRNA vaccines efficacy" "mRNA vaccines safety" \
-  -o sources/batch_research_20250217_144500_mrna_vaccines.md
-```
-
-### Citation Preservation in Saved Files
-
-Each output format preserves citations differently:
-
-| Format | Citations Included | When to Use |
-|--------|-------------------|-------------|
-| parallel-cli JSON (default) | Full result objects: `title`, `url`, `publish_date`, `excerpts` | Standard use — structured, parseable, fast |
-| Text (research_lookup.py) | `Sources (N):` section with `[title] (date) + URL` + `Additional References (N):` with DOIs and academic URLs | Deep research / Perplexity — human-readable |
-| JSON (`--json` via research_lookup.py) | Full citation objects: `url`, `title`, `date`, `snippet`, `doi`, `type` | When you need maximum citation metadata from deep research |
-
-**For parallel-cli search**, saved JSON files include: full search results with title, URL, publish date, and content excerpts for each result.
-**For Parallel Chat API backend**, saved files include: research report + Sources list (title, URL) + Additional References (DOIs, academic URLs).
-**For Perplexity backend**, saved files include: academic summary + Sources list (title, date, URL, snippet) + Additional References (DOIs, academic URLs).
-
-**Use `--json` when you need to:**
-- Parse citation metadata programmatically
-- Preserve full DOI and URL data for BibTeX generation
-- Maintain the structured citation objects for cross-referencing
-
-### Why Save Everything
-
-1. **Reproducibility**: Every citation and claim can be traced back to its raw research source
-2. **Context Window Recovery**: If context is compacted, saved results can be re-read without re-querying
-3. **Audit Trail**: The `sources/` folder documents exactly how all research information was gathered
-4. **Reuse Across Sections**: Multiple sections can reference the same saved research without duplicate queries
-5. **Cost Efficiency**: Check `sources/` for existing results before making new API calls
-6. **Peer Review Support**: Reviewers can verify the research backing every citation
-
-### Before Making a New Query, Check Sources First
-
-Before calling `research_lookup.py`, check if a relevant result already exists:
-
-```bash
-ls sources/  # Check existing saved results
-```
-
-If a prior lookup covers the same topic, re-read the saved file instead of making a new API call.
-
-### Logging
-
-When saving research results, always log:
-
-```
-[HH:MM:SS] SAVED: Research lookup to sources/research_20250217_143000_crispr_advances.md (3,800 words, 8 citations)
-[HH:MM:SS] SAVED: Paper search to sources/papers_20250217_143500_transformer_attention.md (6 papers found)
-```
+See [references/sources_folder_policy.md](references/sources_folder_policy.md) for the full filename-pattern table per backend, citation-preservation guarantees per output format, the rationale (reproducibility, context-window recovery, audit trail, reuse, cost, peer review), and the standard logging format.
 
 ---
 
@@ -446,11 +282,11 @@ When saving research results, always log:
 
 This skill enhances scientific writing by providing:
 
-1. **Literature Review Support**: Gather current research for introduction and discussion — **save to `sources/`**
-2. **Methods Validation**: Verify protocols against current standards — **save to `sources/`**
-3. **Results Contextualization**: Compare findings with recent similar studies — **save to `sources/`**
-4. **Discussion Enhancement**: Support arguments with latest evidence — **save to `sources/`**
-5. **Citation Management**: Provide properly formatted citations — **save to `sources/`**
+1. **Literature Review Support**: gather current research for introduction and discussion. Save to `sources/`.
+2. **Methods Validation**: verify protocols against current standards. Save to `sources/`.
+3. **Results Contextualization**: compare findings with recent similar studies. Save to `sources/`.
+4. **Discussion Enhancement**: support arguments with latest evidence. Save to `sources/`.
+5. **Citation Management**: provide properly formatted citations. Save to `sources/`.
 
 ## Complementary Tools
 

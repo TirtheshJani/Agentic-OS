@@ -1,12 +1,14 @@
 ---
 name: paper-search
 description: Search for academic papers by keyword, or look up a specific paper by DOI or OpenAlex ID. Powered by OpenAlex (250M+ works, free, no API key).
+license: MIT
 metadata:
   status: authored
-  domain: research/general
+  domain: research
   mode: local
   mcp-server: none
   external-apis: [openalex]
+  outputs: []
 ---
 
 Search for academic papers and get details including title, authors, citation count, DOI, abstract, and open access links.
@@ -32,7 +34,7 @@ Steps:
 
 Tips:
 - Use `relevance` sort (default) for topical searches. Use `cites` when you want landmark papers.
-- Be specific with queries — "bilingual cognitive advantages executive function" beats "bilingualism brain".
+- Be specific with queries. "bilingual cognitive advantages executive function" beats "bilingualism brain".
 - Use `paper.sh` to get the full abstract when search results show "Abstract: N/A".
 - The `related_works` IDs from `paper.sh` can be fed back into `paper.sh` to explore the citation graph.
 - When the user asks for scientific backing: search broadly first, pick the most relevant/cited papers, then use `paper.sh` for full details and cite as (Author, Year, Journal).

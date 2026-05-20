@@ -10,7 +10,7 @@ allowed-skills:
   - healthcare-arxiv
 allowed-tools: "Read Write WebFetch WebSearch"
 system-prompt: ../_prompts/health-watcher.md
-default-repo: c:/Users/TJ/Documents/GitHub/Agentic-OS
+default-repo: .
 ---
 
 # Health watcher (research member)

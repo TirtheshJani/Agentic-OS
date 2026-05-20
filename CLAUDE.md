@@ -40,6 +40,10 @@ Spawns `claude -p` headlessly, streams output over SSE. Key files:
 
 Layout tokens and component conventions in `standards/dashboard-ui.md`. Use CSS variables from `app/globals.css`; no hardcoded hex.
 
+`middleware.ts` gates `/api/*`: same-origin browser fetches pass (via `Sec-Fetch-Site`), everything else needs `x-agentic-token`. Dev/start scripts bind to `127.0.0.1`. Env var:
+
+- `AGENTIC_TOKEN` (optional) — when set, `/api/*` rejects requests that aren't same-origin unless they include `x-agentic-token: <value>`. Used for server-to-server calls if you ever expose the dashboard beyond localhost.
+
 ## Skill authoring
 
 Every `SKILL.md` must pass the validator. Allowed top-level frontmatter keys: `name`, `description`, `license`, `allowed-tools`, `metadata`. Custom fields go under `metadata`.

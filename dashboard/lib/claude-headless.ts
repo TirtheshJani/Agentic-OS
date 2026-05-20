@@ -1,4 +1,6 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { repoRoot } from "./paths";
 import { isCwdAllowed } from "./run-guards";
 
@@ -6,6 +8,39 @@ import { isCwdAllowed } from "./run-guards";
 // inside the VS Code extension and not on PATH. Set CLAUDE_BIN in .env.local
 // to override (full path including .exe on Windows).
 const CLAUDE_BIN = process.env.CLAUDE_BIN ?? "claude";
+
+// Resolve CLAUDE_BIN to an absolute path once at module load. With an
+// absolute path in hand we can spawn with shell:false and pass argv cleanly,
+// avoiding cmd.exe's metachar handling for `&`, `|`, `^`, `"` on Windows.
+// If the resolver can't find the binary we fall back to the legacy
+// shell-spawn path so existing setups keep working.
+const RESOLVED_CLAUDE_BIN = resolveClaudeBin(CLAUDE_BIN);
+
+function resolveClaudeBin(bin: string): string | null {
+  // Already absolute and exists: trust the caller.
+  if (path.isAbsolute(bin) && fs.existsSync(bin)) return bin;
+  const isWin = process.platform === "win32";
+  const cmd = isWin ? "where" : "which";
+  // On Windows, `where claude` may print several lines (e.g. claude.cmd and
+  // claude). Take the first hit and prefer .cmd / .exe for argv handling.
+  try {
+    const res = spawnSync(cmd, [bin], { encoding: "utf8" });
+    if (res.status !== 0) return null;
+    const lines = res.stdout
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) return null;
+    if (isWin) {
+      const cmdHit = lines.find((l) => l.toLowerCase().endsWith(".cmd"));
+      const exeHit = lines.find((l) => l.toLowerCase().endsWith(".exe"));
+      return cmdHit ?? exeHit ?? lines[0];
+    }
+    return lines[0];
+  } catch {
+    return null;
+  }
+}
 
 export type UsageSnapshot = {
   tokens_in?: number;
@@ -63,14 +98,19 @@ export async function* runClaude(opts: {
 
   const env = { ...process.env, ...(opts.extraEnv ?? {}) };
 
-  const child = spawn(CLAUDE_BIN, args, {
+  // Prefer the resolved absolute path with shell:false so argv is passed
+  // verbatim to the binary. The legacy shell-spawn branch is only taken when
+  // we could not resolve the path at module load (e.g. fresh dev box without
+  // claude on PATH yet); in that case cmd.exe handles the .cmd shim lookup,
+  // accepting the metachar risk noted in the audit.
+  const useResolved = RESOLVED_CLAUDE_BIN !== null;
+  const child = spawn(useResolved ? RESOLVED_CLAUDE_BIN! : CLAUDE_BIN, args, {
     cwd,
     env,
     stdio: ["ignore", "pipe", "pipe"],
-    // shell: true lets Windows resolve .cmd wrappers and PATH entries that
-    // are not visible to Node's direct spawn. Only needed when CLAUDE_BIN
-    // is a plain name (not an absolute path).
-    shell: !CLAUDE_BIN.includes("/") && !CLAUDE_BIN.includes("\\"),
+    shell: useResolved
+      ? false
+      : !CLAUDE_BIN.includes("/") && !CLAUDE_BIN.includes("\\"),
   });
 
   const killChild = () => {
@@ -89,6 +129,24 @@ export async function* runClaude(opts: {
   let err: string | null = null;
   let outputPath: string | null = null;
   const fullText: string[] = [];
+
+  // Event-driven wakeup. Producers (stdout/stderr/close/error) push to the
+  // queue and call `wake()`; the consumer loop awaits `wait()` which resolves
+  // on the next wake. This replaces a 50ms setTimeout busy-wait that
+  // otherwise added latency and woke the event loop constantly even when
+  // claude was idle.
+  let wakeResolve: (() => void) | null = null;
+  const wake = () => {
+    if (wakeResolve) {
+      const r = wakeResolve;
+      wakeResolve = null;
+      r();
+    }
+  };
+  const wait = (): Promise<void> =>
+    new Promise<void>((resolve) => {
+      wakeResolve = resolve;
+    });
 
   let buf = "";
   child.stdout.on("data", (chunk: Buffer) => {
@@ -128,20 +186,24 @@ export async function* runClaude(opts: {
         fullText.push(line);
       }
     }
+    wake();
   });
 
   child.stderr.on("data", (chunk: Buffer) => {
     queue.push({ type: "delta", data: chunk.toString("utf8") });
+    wake();
   });
 
   child.on("error", (e) => {
     err = e.message;
     done = true;
+    wake();
   });
 
   child.on("close", (code) => {
     if (code !== 0 && !err) err = `claude exited with code ${code}`;
     done = true;
+    wake();
   });
 
   try {
@@ -155,12 +217,12 @@ export async function* runClaude(opts: {
         else yield { type: "done", data: { outputPath } };
         return;
       }
-      await sleep(50);
+      await wait();
     }
   } finally {
     // Runs on normal completion, generator.return() (consumer abandoned the
     // iterator), or generator.throw(). Ensures the child does not outlive
-    // the caller — even if the SSE client disconnects mid-stream.
+    // the caller, even if the SSE client disconnects mid-stream.
     opts.signal?.removeEventListener("abort", killChild);
     killChild();
   }
@@ -275,6 +337,3 @@ function scanForHandoff(
   return null;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}

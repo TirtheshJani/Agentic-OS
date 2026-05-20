@@ -18,11 +18,25 @@ function walk(dir: string, out: string[]): void {
     return;
   }
   for (const e of entries) {
+    const full = path.join(dir, e.name);
+    // Reject symlinks outright. A vault symlink pointing at /etc/passwd.md
+    // (or C:\Windows\...) would otherwise leak its contents into a snippet.
+    // We use lstat rather than stat so the link itself is inspected, not the
+    // target. Dirent.isSymbolicLink() is reliable on Node 16+ but we lstat
+    // anyway for the case where withFileTypes was satisfied by a synthetic
+    // dirent (e.g. some network filesystems).
+    let isSymlink = false;
+    try {
+      isSymlink = e.isSymbolicLink() || fs.lstatSync(full).isSymbolicLink();
+    } catch {
+      continue;
+    }
+    if (isSymlink) continue;
     if (e.isDirectory()) {
       if (SKIP_DIRS.has(e.name) || e.name.startsWith(".")) continue;
-      walk(path.join(dir, e.name), out);
+      walk(full, out);
     } else if (e.isFile() && e.name.endsWith(".md")) {
-      out.push(path.join(dir, e.name));
+      out.push(full);
     }
   }
 }

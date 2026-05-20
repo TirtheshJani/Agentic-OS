@@ -9,7 +9,17 @@ export function startVaultWatcher() {
   if (started) return;
   started = true;
   const watcher = chokidar.watch(vaultPath, {
-    ignored: (p) => p.includes("/.obsidian/") || p.endsWith(".gitkeep"),
+    ignored: (p) => {
+      // chokidar emits backslash-separated paths on Windows; normalize before
+      // running substring checks so the ignore list works cross-platform.
+      const norm = p.replace(/\\/g, "/");
+      return (
+        norm.includes("/.obsidian/") ||
+        norm.includes("/.git/") ||
+        norm.includes("/node_modules/") ||
+        norm.endsWith(".gitkeep")
+      );
+    },
     ignoreInitial: true,
     persistent: true,
   });

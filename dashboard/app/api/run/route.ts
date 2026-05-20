@@ -1,202 +1,108 @@
-import { runClaude } from "@/lib/claude-headless";
-import { finishRun, insertRun, updateRunUsage, type RunUsage } from "@/lib/db";
-import { resolveMcpForServer, type McpResolution } from "@/lib/mcp-loader";
-import { repoRoot } from "@/lib/paths";
-import { sharedVaultEnv, sharedVaultSystemPrompt } from "@/lib/shared-vault";
-import { loadSkills } from "@/lib/skills-loader";
-import { createTask, finishTask, getTask, startTask } from "@/lib/tasks";
-import { spawnTaskIfNamed } from "@/lib/task-runner";
-import { teamBySlug } from "@/lib/teams";
-import path from "node:path";
+import {
+  executeRun,
+  validateRunInput,
+  type RunExecutionEvent,
+  type RunExecutionInput,
+} from "@/lib/run-execution";
 
 export const dynamic = "force-dynamic";
 
-type RunBody = {
-  skillSlug?: string;
-  userInput?: string;
-  projectSlug?: string;
-  teamSlug?: string;
-  prompt?: string;
-  agent?: string;
-  taskId?: number;
-};
-
 export async function POST(req: Request) {
-  let body: RunBody;
+  let body: RunExecutionInput;
   try {
-    body = (await req.json()) as RunBody;
+    body = (await req.json()) as RunExecutionInput;
   } catch {
     return Response.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const { skillSlug, userInput, projectSlug, teamSlug, prompt: freeformPrompt, agent, taskId } = body;
-
-  const skill = skillSlug
-    ? loadSkills().find((s) => s.name === skillSlug)
-    : null;
-  if (skillSlug && !skill) {
-    return Response.json({ error: "unknown skill" }, { status: 404 });
-  }
-
-  // teamSlug supersedes projectSlug; either resolves to a Team (project or discovered repo).
-  const targetSlug = teamSlug ?? projectSlug ?? null;
-  const team = targetSlug ? teamBySlug(targetSlug) : null;
-  if (targetSlug && !team) {
-    return Response.json({ error: "unknown team" }, { status: 404 });
-  }
-  if (team && !team.pathExists) {
-    return Response.json(
-      { error: `team path missing: ${team.path}` },
-      { status: 412 }
-    );
-  }
-
-  if (!skill && !freeformPrompt?.trim()) {
-    return Response.json(
-      { error: "either skillSlug or prompt required" },
-      { status: 400 }
-    );
-  }
-
-  const cwd = team?.path ?? repoRoot;
-  const resolvedAgent = agent ?? skill?.agent ?? team?.agent ?? null;
-  const prompt = buildPrompt({
-    skillName: skill?.name ?? null,
-    userInput: userInput ?? null,
-    freeform: freeformPrompt ?? null,
-    projectName: team?.name ?? null,
-  });
-
-  const mcpResolution: McpResolution | null = skill?.mcpServer
-    ? resolveMcpForServer(skill.mcpServer)
-    : null;
-  const activeMcp =
-    mcpResolution && mcpResolution.kind === "ready"
-      ? { name: mcpResolution.serverName, source: mcpResolution.source }
-      : null;
-  const mcpStatus: "ready" | "cloud-only" | "not-found" | null = mcpResolution
-    ? mcpResolution.kind
-    : null;
-
-  const runId = insertRun({
-    skillSlug: skill?.name ?? "(adhoc)",
-    prompt,
-    projectSlug: team?.slug ?? null,
-    cwd,
-    agent: resolvedAgent,
-    mcpServer: activeMcp?.name ?? null,
-  });
-
-  if (taskId) {
-    try {
-      startTask(taskId, runId);
-    } catch (e) {
-      // State machine rejected (task already running/done/etc). Run still
-      // proceeds — the task->run link will just be missing.
-      console.error(
-        `[run] startTask(${taskId}) rejected: ${e instanceof Error ? e.message : String(e)}`
-      );
+  // Validate up front so we can return real HTTP status codes (404, 412, 400)
+  // instead of streaming an error event. executeRun re-validates internally
+  // and throws RunValidationError, but the route handler is the only caller
+  // that wants HTTP semantics so the second pass is intentional.
+  const validation = validateRunInput(body);
+  if (!validation.ok) {
+    switch (validation.error.kind) {
+      case "unknown-skill":
+        return Response.json({ error: "unknown skill" }, { status: 404 });
+      case "unknown-team":
+        return Response.json({ error: "unknown team" }, { status: 404 });
+      case "team-path-missing":
+        return Response.json(
+          { error: `team path missing: ${validation.error.path}` },
+          { status: 412 }
+        );
+      case "missing-prompt":
+        return Response.json(
+          { error: "either skillSlug or prompt required" },
+          { status: 400 }
+        );
     }
   }
 
   const encoder = new TextEncoder();
+  // AbortController lets the stream's cancel() callback signal the runClaude
+  // generator (via executeRun's signal option) to stop pulling from the
+  // child process. Combined with the `closed` flag, this guarantees that:
+  //   1. enqueue() after client disconnect cannot throw the SSE error
+  //   2. the spawned `claude` child does not outlive the HTTP connection
+  const streamAbort = new AbortController();
+  let closed = false;
+
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (data: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      const send = (data: RunExecutionEvent) => {
+        if (closed) return;
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+          );
+        } catch {
+          // Client disconnected between the closed check and enqueue. Flip
+          // the flag so subsequent sends short-circuit cheaply.
+          closed = true;
+        }
       };
-      send({
-        type: "started",
-        runId,
-        cwd,
-        projectSlug: team?.slug ?? null,
-        teamSlug: team?.slug ?? null,
-        teamSource: team?.source ?? null,
-        activeMcp,
-        mcpStatus,
-        requestedMcp: skill?.mcpServer ?? null,
-      });
-      let outputPath: string | null = null;
-      let error: string | null = null;
-      let usage: RunUsage = {};
-      const extraEnv: Record<string, string> = { ...sharedVaultEnv(team?.slug ?? null) };
-      if (taskId) {
-        const threadFile = path.join(repoRoot, "vault", "threads", `${taskId}.md`);
-        extraEnv.AGENTIC_OS_THREAD_PATH = threadFile;
-      }
+
+      // Merge req.signal (Next.js client disconnect) with streamAbort
+      // (ReadableStream.cancel) so either path tears the subprocess down.
+      const onAbort = () => streamAbort.abort();
+      if (req.signal.aborted) streamAbort.abort();
+      else req.signal.addEventListener("abort", onAbort);
+
       try {
-        for await (const evt of runClaude({
-          prompt,
-          cwd,
-          mcpConfigPath:
-            mcpResolution?.kind === "ready" ? mcpResolution.tmpConfigPath : undefined,
-          appendSystemPrompt: sharedVaultSystemPrompt(team?.slug ?? null),
-          extraEnv,
-          signal: req.signal,
-        })) {
-          send(evt);
-          if (evt.type === "done") outputPath = evt.data.outputPath;
-          if (evt.type === "error") error = evt.data.message;
-          if (evt.type === "usage") {
-            usage = { ...usage, ...evt.data };
-            updateRunUsage(runId, evt.data);
-          }
-          if (evt.type === "handoff") {
-            const trustedByAgent = typeof agent === "string" && agent.length > 0;
-            if (skill?.handoff !== true && !trustedByAgent) {
-              send({ type: "delta", data: `[handoff dropped — skill ${skill?.name ?? "(adhoc)"} did not opt in via metadata.handoff: true]\n` });
-              continue;
-            }
-            try {
-              // Phase 7.3: child task inherits parent's project_slug unless the
-              // handoff payload explicitly overrides it. `evt.data.projectSlug`
-              // is undefined when the payload did not specify a project, null
-              // when the operator explicitly set "no project", or a string for
-              // an explicit override (including cross-project handoffs).
-              const parentTaskId = taskId ?? evt.data.parentTaskId ?? null;
-              let childProjectSlug: string | null = null;
-              if (evt.data.projectSlug !== undefined) {
-                childProjectSlug = evt.data.projectSlug;
-              } else if (parentTaskId != null) {
-                const parent = getTask(parentTaskId);
-                if (parent?.project_slug) {
-                  childProjectSlug = parent.project_slug;
-                  console.log(
-                    `[run] handoff inheriting project_slug=${childProjectSlug} from parent task ${parentTaskId}`
-                  );
-                }
-              }
-              const childId = createTask({
-                prompt: evt.data.prompt,
-                assignee: evt.data.assignee,
-                department: evt.data.assignee.startsWith("lead:") ? evt.data.assignee.slice(5) : null,
-                parentTaskId,
-                projectSlug: childProjectSlug,
-              });
-              send({ type: "delta", data: `[handoff → task ${childId} for ${evt.data.assignee}]\n` });
-              const child = getTask(childId);
-              if (child) spawnTaskIfNamed(child);
-            } catch (e) {
-              send({ type: "delta", data: `[handoff failed: ${e instanceof Error ? e.message : String(e)}]\n` });
-            }
-          }
-        }
+        await executeRun(body, {
+          signal: streamAbort.signal,
+          onEvent: (evt) => {
+            if (!closed) send(evt);
+          },
+        });
       } catch (e) {
-        error = e instanceof Error ? e.message : String(e);
-        send({ type: "error", data: { message: error } });
+        // executeRun handles its own validation and subprocess errors
+        // (emitting events + finishRun). A throw here means something
+        // unexpected (e.g. a synchronous bug). Surface to the client.
+        if (!closed) {
+          send({
+            type: "error",
+            data: { message: e instanceof Error ? e.message : String(e) },
+          });
+        }
       } finally {
-        finishRun(runId, error ? "error" : "done", outputPath, error, usage);
-        if (taskId) {
+        req.signal.removeEventListener("abort", onAbort);
+        if (!closed) {
           try {
-            finishTask(taskId, error ? "failed" : "done", error);
-          } catch (e) {
-            console.error(
-              `[run] finishTask(${taskId}) rejected: ${e instanceof Error ? e.message : String(e)}`
-            );
+            controller.close();
+          } catch {
+            // already closed by cancel()
           }
         }
-        controller.close();
       }
+    },
+    cancel() {
+      // Client closed the SSE stream. Mark the stream as closed so any
+      // in-flight enqueue from the producer short-circuits, then signal the
+      // child subprocess via executeRun's AbortSignal hook.
+      closed = true;
+      streamAbort.abort();
     },
   });
 
@@ -207,26 +113,4 @@ export async function POST(req: Request) {
       Connection: "keep-alive",
     },
   });
-}
-
-function buildPrompt(opts: {
-  skillName: string | null;
-  userInput: string | null;
-  freeform: string | null;
-  projectName: string | null;
-}): string {
-  const parts: string[] = [];
-  if (opts.projectName) {
-    parts.push(`Working in project "${opts.projectName}".`);
-  }
-  if (opts.skillName) {
-    parts.push(`Use the ${opts.skillName} skill.`);
-  }
-  if (opts.userInput) {
-    parts.push(`Inputs:\n${opts.userInput}`);
-  }
-  if (opts.freeform) {
-    parts.push(opts.freeform);
-  }
-  return parts.join("\n\n");
 }

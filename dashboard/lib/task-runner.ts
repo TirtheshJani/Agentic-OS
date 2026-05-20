@@ -1,57 +1,34 @@
 import type { TaskRow } from "./db";
-
-const BASE = process.env.AGENTIC_OS_BASE_URL ?? "http://localhost:3000";
+import { executeRun } from "./run-execution";
 
 /**
- * Fire-and-forget POST to /api/run for a task whose assignee is a named
- * member agent. Lead-assigned tasks (`lead:*`) are routed via the manual
- * Tick button and are skipped here.
+ * Fire-and-forget spawn for a task whose assignee is a named member agent.
+ * Lead-assigned tasks (`lead:*`) are routed via the manual Tick button and
+ * are skipped here, as are tasks assigned to the human operator.
  *
- * Drains the SSE response so the /api/run stream can close cleanly. Errors
- * are logged but never propagated — the calling route should return its
- * response to the user immediately and not wait on this spawn.
+ * Calls executeRun directly so we no longer self-fetch the dashboard's own
+ * /api/run endpoint (which broke whenever `next dev` chose a port other
+ * than 3000). Errors are logged but never propagated; the calling route
+ * should return its response to the user immediately and not wait on this
+ * spawn. The subprocess outlives this function via the promise chain.
  */
 export function spawnTaskIfNamed(task: TaskRow): void {
   if (!task) return;
   if (task.assignee.startsWith("lead:")) return;
   if (task.assignee === "user") return;
 
-  const url = `${BASE}/api/run`;
-  const body = JSON.stringify({
+  void executeRun({
     prompt: task.prompt,
     agent: task.assignee,
     taskId: task.id,
+  }).catch((e) => {
+    // executeRun finishes the task row on subprocess errors. A throw here
+    // means validation failed or something unexpected blew up before the
+    // subprocess started; the task may be left in pending/running state.
+    console.error(
+      `[task-runner] spawn failed for task ${task.id} (${task.assignee}): ${
+        e instanceof Error ? e.message : String(e)
+      }`
+    );
   });
-
-  void fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-  })
-    .then(async (res) => {
-      if (!res.body) return;
-      const reader = res.body.getReader();
-      try {
-        while (true) {
-          const { done } = await reader.read();
-          if (done) break;
-        }
-      } finally {
-        try {
-          reader.releaseLock();
-        } catch {
-          // ignore
-        }
-      }
-    })
-    .catch((e) => {
-      // Server not running, port closed, or fetch failed mid-stream. The
-      // task stays in its current state; a future Tick or manual run can
-      // pick it up.
-      console.error(
-        `[task-runner] spawn failed for task ${task.id} (${task.assignee}): ${
-          e instanceof Error ? e.message : String(e)
-        }`
-      );
-    });
 }

@@ -67,47 +67,67 @@ function migrate(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at DESC);
   `);
 
-  addColumnIfMissing(db, "runs", "project_slug", "TEXT");
-  addColumnIfMissing(db, "runs", "cwd", "TEXT");
-  addColumnIfMissing(db, "runs", "agent", "TEXT");
-  addColumnIfMissing(db, "runs", "mcp_server", "TEXT");
-  addColumnIfMissing(db, "runs", "tokens_in", "INTEGER");
-  addColumnIfMissing(db, "runs", "tokens_out", "INTEGER");
-  addColumnIfMissing(db, "runs", "tokens_cache_read", "INTEGER");
-  addColumnIfMissing(db, "runs", "tokens_cache_create", "INTEGER");
-  addColumnIfMissing(db, "runs", "cost_usd", "REAL");
-  addColumnIfMissing(db, "runs", "task_id", "INTEGER REFERENCES tasks(id)");
+  _addColumnIfMissing(db, "runs", "project_slug", "TEXT");
+  _addColumnIfMissing(db, "runs", "cwd", "TEXT");
+  _addColumnIfMissing(db, "runs", "agent", "TEXT");
+  _addColumnIfMissing(db, "runs", "mcp_server", "TEXT");
+  _addColumnIfMissing(db, "runs", "tokens_in", "INTEGER");
+  _addColumnIfMissing(db, "runs", "tokens_out", "INTEGER");
+  _addColumnIfMissing(db, "runs", "tokens_cache_read", "INTEGER");
+  _addColumnIfMissing(db, "runs", "tokens_cache_create", "INTEGER");
+  _addColumnIfMissing(db, "runs", "cost_usd", "REAL");
+  _addColumnIfMissing(db, "runs", "task_id", "INTEGER REFERENCES tasks(id)");
   // For external Claude Code sessions (started outside the dashboard) that
   // report in via the global SessionStart/Stop hook.
-  addColumnIfMissing(db, "runs", "session_id", "TEXT");
-  addColumnIfMissing(db, "runs", "source", "TEXT");
+  _addColumnIfMissing(db, "runs", "session_id", "TEXT");
+  _addColumnIfMissing(db, "runs", "source", "TEXT");
   db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id);`);
 
   // Phase 7.3 + 8.1: project linkage and issue-board fields on tasks.
   // All nullable so existing rows stay valid.
-  addColumnIfMissing(db, "tasks", "project_slug", "TEXT");
-  addColumnIfMissing(db, "tasks", "title", "TEXT");
-  addColumnIfMissing(db, "tasks", "repo", "TEXT");
-  addColumnIfMissing(db, "tasks", "priority", "TEXT");
+  _addColumnIfMissing(db, "tasks", "project_slug", "TEXT");
+  _addColumnIfMissing(db, "tasks", "title", "TEXT");
+  _addColumnIfMissing(db, "tasks", "repo", "TEXT");
+  _addColumnIfMissing(db, "tasks", "priority", "TEXT");
   // labels stored as JSON-encoded string array in a TEXT column (no join table).
-  addColumnIfMissing(db, "tasks", "labels", "TEXT");
-  addColumnIfMissing(db, "tasks", "github_url", "TEXT");
-  addColumnIfMissing(db, "tasks", "github_number", "INTEGER");
+  _addColumnIfMissing(db, "tasks", "labels", "TEXT");
+  _addColumnIfMissing(db, "tasks", "github_url", "TEXT");
+  _addColumnIfMissing(db, "tasks", "github_number", "INTEGER");
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tasks_project_status ON tasks(project_slug, status);
     CREATE INDEX IF NOT EXISTS idx_tasks_github ON tasks(repo, github_number);
   `);
 }
 
-// SQLite cannot parameterize DDL (PRAGMA, ALTER TABLE) — table/column/type
-// must be interpolated. Only ever called with hardcoded literals from migrate().
-// Never expose this helper to user input.
-function addColumnIfMissing(
+// SQLite cannot parameterize DDL (PRAGMA, ALTER TABLE) so table/column/type
+// must be interpolated. Only ever called with hardcoded literals from
+// migrate(). The leading underscore + non-export marks this as internal;
+// never expose it on the module surface or feed user input to it. Defense
+// in depth: every identifier is validated against a strict regex before
+// being spliced into the DDL string.
+const _IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const _COLTYPE = /^[A-Za-z0-9_ ()]+$/;
+
+function _assertIdent(label: string, value: string): void {
+  if (!_IDENT.test(value)) {
+    throw new Error(`invalid ${label} identifier: ${value}`);
+  }
+}
+
+function _addColumnIfMissing(
   db: Database.Database,
   table: string,
   column: string,
   type: string
 ) {
+  _assertIdent("table", table);
+  _assertIdent("column", column);
+  // Column-type strings include things like "INTEGER REFERENCES tasks(id)" so
+  // a bare identifier regex is too strict. Allow letters, digits, spaces, and
+  // matched parens; reject anything else (no semicolons, quotes, dashes).
+  if (!_COLTYPE.test(type)) {
+    throw new Error(`invalid column type: ${type}`);
+  }
   const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
     name: string;
   }>;

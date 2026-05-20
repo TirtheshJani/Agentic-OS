@@ -194,9 +194,13 @@ export function isLegalTransition(from: TaskStatus, to: TaskStatus): boolean {
   return TRANSITIONS[from]?.includes(to) ?? false;
 }
 
-export function transitionTask(id: number, newStatus: TaskStatus): TaskRow | null {
+export function transitionTask(
+  id: number,
+  newStatus: TaskStatus,
+  error: string | null = null
+): TaskRow | null {
   const db = getDb();
-  const tx = db.transaction((id: number, next: TaskStatus) => {
+  const tx = db.transaction((id: number, next: TaskStatus, err: string | null) => {
     const row = db.prepare(`SELECT * FROM tasks WHERE id = ?`).get(id) as TaskRow | undefined;
     if (!row) return null;
     if (!isLegalTransition(row.status, next)) {
@@ -205,10 +209,16 @@ export function transitionTask(id: number, newStatus: TaskStatus): TaskRow | nul
       );
     }
     // Terminal stamps: any move into done/failed records finished_at. We do
-    // NOT touch started_at here — that's owned by startTask when a run
-    // begins. A backlog -> queued move with no run yet leaves started_at
-    // null until the spawned run lands a startTask call.
-    if (next === "done" || next === "failed") {
+    // NOT touch started_at here, that's owned by startTask when a run begins.
+    // A backlog -> queued move with no run yet leaves started_at null until
+    // the spawned run lands a startTask call. The optional `error` param is
+    // only recorded on a `failed` transition; ignored for other moves so a
+    // success path does not stomp a prior failure message.
+    if (next === "failed") {
+      db.prepare(
+        `UPDATE tasks SET status = ?, finished_at = ?, error = COALESCE(?, error) WHERE id = ?`
+      ).run(next, Date.now(), err, id);
+    } else if (next === "done") {
       db.prepare(
         `UPDATE tasks SET status = ?, finished_at = ? WHERE id = ?`
       ).run(next, Date.now(), id);
@@ -217,7 +227,7 @@ export function transitionTask(id: number, newStatus: TaskStatus): TaskRow | nul
     }
     return db.prepare(`SELECT * FROM tasks WHERE id = ?`).get(id) as TaskRow;
   });
-  return tx(id, newStatus);
+  return tx(id, newStatus, error);
 }
 
 // Runs linked to a given task via runs.task_id. Used by the issue detail

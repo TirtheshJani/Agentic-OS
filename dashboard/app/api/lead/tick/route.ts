@@ -64,20 +64,38 @@ export async function POST(req: Request) {
   });
 
   const encoder = new TextEncoder();
+  // Same shutdown pattern as /api/run: AbortController kills the child on
+  // either client disconnect (cancel callback) or upstream req.signal abort;
+  // `closed` flag guards every enqueue so a late event after disconnect
+  // cannot throw.
+  const streamAbort = new AbortController();
+  let closed = false;
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (closed) return;
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+          );
+        } catch {
+          closed = true;
+        }
       };
       send({ type: "started", runId, department: dept, queueDepth: queued.length });
       let error: string | null = null;
       const usage: RunUsage = {};
+      const onAbort = () => streamAbort.abort();
+      if (req.signal.aborted) streamAbort.abort();
+      else req.signal.addEventListener("abort", onAbort);
       try {
         for await (const evt of runClaude({
           prompt,
           cwd: repoRoot,
           appendSystemPrompt,
+          signal: streamAbort.signal,
         })) {
+          if (closed) break;
           send(evt);
           if (evt.type === "error") error = evt.data.message;
         }
@@ -85,9 +103,20 @@ export async function POST(req: Request) {
         error = e instanceof Error ? e.message : String(e);
         send({ type: "error", data: { message: error } });
       } finally {
+        req.signal.removeEventListener("abort", onAbort);
         finishRun(runId, error ? "error" : "done", null, error, usage);
-        controller.close();
+        if (!closed) {
+          try {
+            controller.close();
+          } catch {
+            // already closed by cancel()
+          }
+        }
       }
+    },
+    cancel() {
+      closed = true;
+      streamAbort.abort();
     },
   });
 

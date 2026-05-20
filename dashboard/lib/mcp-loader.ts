@@ -181,6 +181,40 @@ function readMcpEntry(file: string, name: string): { key: string; value: McpEntr
   }
 }
 
+// Track every tmp config we write so we can wipe them on process exit.
+// MCP entries may contain API keys; leaving them in os.tmpdir() between
+// process restarts is the leak we're closing here.
+const _tmpConfigPaths = new Set<string>();
+let _exitHookInstalled = false;
+
+function _installExitCleanup(): void {
+  if (_exitHookInstalled) return;
+  _exitHookInstalled = true;
+  const cleanup = () => {
+    for (const p of _tmpConfigPaths) {
+      try {
+        fs.unlinkSync(p);
+      } catch {
+        // already gone, permission denied, etc.
+      }
+    }
+    _tmpConfigPaths.clear();
+  };
+  process.on("exit", cleanup);
+  // Common termination signals on dev machines. Wrapping in try/catch in
+  // case a stricter sandbox blocks listener registration.
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    try {
+      process.on(sig, () => {
+        cleanup();
+        process.exit(0);
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
 function materialize(serverName: string, entry: McpEntry, source: McpSource): McpResolution {
   const hash = crypto
     .createHash("sha1")
@@ -195,5 +229,7 @@ function materialize(serverName: string, entry: McpEntry, source: McpSource): Mc
   } catch {
     // best-effort on Windows
   }
+  _tmpConfigPaths.add(file);
+  _installExitCleanup();
   return { kind: "ready", tmpConfigPath: file, source, serverName };
 }

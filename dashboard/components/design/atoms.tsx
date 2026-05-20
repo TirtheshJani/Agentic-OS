@@ -4,7 +4,7 @@
 // Visual atoms shared across screens: Avatar, PriorityBars/Chip, DeptDot/Tag,
 // SkillChip, StatusDot, Sparkline, CostMeter, SectionHead, Tip.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useAgentByHandle } from "@/lib/design/contexts";
 import {
   COLUMNS,
@@ -261,15 +261,6 @@ export function SectionHead({
       {action}
     </div>
   );
-}
-
-/* ------ Live tick (re-renders every intervalMs) ------ */
-export function useTick(intervalMs = 1000) {
-  const [, set] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => set((n) => n + 1), intervalMs);
-    return () => clearInterval(t);
-  }, [intervalMs]);
 }
 
 /* ------ Tooltip popover (hover) ------ */

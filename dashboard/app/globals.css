@@ -26,6 +26,7 @@
   --ember:      #4a8fd1;
   --ember-soft: #7fb4e8;
   --ember-deep: #3a78b8;
+  --on-ember:   #061018;
   --azure:      #6faef3;
   --teal:       #4aa896;
 
@@ -52,6 +53,17 @@
   --border:        rgba(255, 255, 255, 0.06);
   --border-lift:   rgba(255, 255, 255, 0.10);
   --border-bright: rgba(255, 255, 255, 0.18);
+
+  /* Tinted surfaces (used for inline highlight/error blocks; mirror the
+     pill-* fills in app/globals.css so component styles can avoid raw
+     rgba() literals). */
+  --ember-fill-soft:   rgba(74, 143, 209, 0.08);
+  --ember-fill-strong: rgba(74, 143, 209, 0.14);
+  --ember-line:        rgba(74, 143, 209, 0.30);
+  --ember-line-strong: rgba(74, 143, 209, 0.35);
+
+  --danger-fill: rgba(192, 57, 43, 0.08);
+  --danger-line: rgba(192, 57, 43, 0.30);
 
   --shadow-card:  0 12px 30px -16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
   --shadow-lift:  0 18px 40px -16px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07);
@@ -233,7 +245,7 @@ body::after {
 .btn-primary {
   background: var(--ember);
   border-color: var(--ember);
-  color: #061018;
+  color: var(--on-ember);
   font-weight: 600;
 }
 .btn-primary:hover {

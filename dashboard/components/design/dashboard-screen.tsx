@@ -19,6 +19,9 @@ import type {
 import type { ViewKey } from "@/components/design/app-shell";
 
 type Props = {
+  // Dashboard data is fetched once by AppContents and passed in so a single
+  // poller drives both the sidebar counts and the dashboard view.
+  data: DashboardData | null;
   onOpenIssue: (id: string) => void;
   onNavigate: (view: ViewKey) => void;
 };
@@ -30,31 +33,10 @@ type SubmitState =
   | { kind: "queued" }
   | { kind: "error"; message: string };
 
-const POLL_INTERVAL_MS = 30_000;
-
-export function DashboardScreen({ onOpenIssue, onNavigate }: Props) {
-  const [data, setData] = useState<DashboardData | null>(null);
+export function DashboardScreen({ data, onOpenIssue, onNavigate }: Props) {
   const [prompt, setPrompt] = useState("");
   const [routedTo, setRoutedTo] = useState<RouteKey>("auto");
   const [submitState, setSubmitState] = useState<SubmitState>({ kind: "idle" });
-
-  useEffect(() => {
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const res = await fetch("/api/dashboard/data", { cache: "no-store" });
-        if (!res.ok) return;
-        const j = (await res.json()) as DashboardData;
-        if (!cancelled) setData(j);
-      } catch {}
-    };
-    tick();
-    const id = setInterval(tick, POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
 
   useEffect(() => {
     if (submitState.kind !== "queued") return;
@@ -467,10 +449,10 @@ function RouteChip({
       style={{
         cursor: "pointer",
         background: active
-          ? "rgba(74,143,209,0.14)"
+          ? "var(--ember-fill-strong)"
           : "rgba(255,255,255,0.03)",
         border: active
-          ? "1px solid rgba(74,143,209,0.35)"
+          ? "1px solid var(--ember-line-strong)"
           : "1px solid var(--border)",
       }}
     >
@@ -523,7 +505,15 @@ function ProjectList({
         <div
           key={p.slug}
           className="list-row"
+          role="button"
+          tabIndex={0}
           onClick={() => onNavigate("issues")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onNavigate("issues");
+            }
+          }}
         >
           <span
             className="dept-dot"

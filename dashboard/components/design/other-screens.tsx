@@ -10,13 +10,11 @@ import {
   DeptTag,
   PriorityChip,
   SectionHead,
-  Sparkline,
   StatusDot,
 } from "@/components/design/atoms";
 import { I } from "@/components/design/icons";
 import { deptOf, type Agent, type InboxItem, type Issue, type Settings, type Skill } from "@/lib/design/types";
-
-const POLL_INTERVAL_MS = 30_000;
+import { POLL_INTERVAL_MS } from "@/lib/design/constants";
 
 /* ---------- AGENTS ---------- */
 export function AgentsScreen() {
@@ -191,16 +189,6 @@ export function SkillsScreen({ mode = "skills" }: { mode?: "skills" | "runtimes"
   const filtered =
     filter === "all" ? scoped : scoped.filter((s) => groupKey(s) === filter);
 
-  const sparkOf = (name: string, seed: number) => {
-    const arr: number[] = [];
-    let s = seed;
-    for (let i = 0; i < 7; i++) {
-      s = (s * 9301 + 49297) % 233280;
-      arr.push(Math.max(1, Math.floor((s / 233280) * 12) + 1));
-    }
-    return arr;
-  };
-
   const eyebrow = mode === "runtimes" ? "RUNTIMES · MCP SERVERS" : "SKILLS REGISTRY";
   const groupHeader = mode === "runtimes" ? "Server" : "Family";
 
@@ -246,16 +234,12 @@ export function SkillsScreen({ mode = "skills" }: { mode?: "skills" | "runtimes"
               <th style={{ width: 90 }}>Status</th>
               <th style={{ width: 70 }}>Runs</th>
               <th style={{ width: 130 }}>Last run</th>
-              <th>Recent throughput</th>
               <th style={{ width: 130 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s, idx) => {
+            {filtered.map((s) => {
               const isStub = s.status === "stub";
-              const sparkVals = isStub
-                ? [0, 0, 0, 0, 0, 0, 0]
-                : sparkOf(s.name, idx + 1);
               const groupVal = groupKey(s);
               const deptKey = s.family === "_meta" ? "infra" : s.family;
               return (
@@ -300,14 +284,6 @@ export function SkillsScreen({ mode = "skills" }: { mode?: "skills" | "runtimes"
                   <td className="font-mono muted">{s.runs}</td>
                   <td className="font-mono muted" style={{ fontSize: 11 }}>
                     {s.lastRun ? relTime(s.lastRun) : "—"}
-                  </td>
-                  <td>
-                    <Sparkline
-                      values={sparkVals}
-                      width={80}
-                      height={14}
-                      color={isStub ? "var(--text-dim)" : "var(--ember)"}
-                    />
                   </td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
@@ -617,6 +593,127 @@ function SettingRow({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   );
+}
+
+/* ---------- VAULT ---------- */
+
+type VaultChangeRow = {
+  id: number;
+  path: string;
+  kind: "add" | "change" | "unlink";
+  ts: number;
+};
+
+type VaultRecentResponse = {
+  changes: VaultChangeRow[];
+};
+
+export function VaultScreen() {
+  const [changes, setChanges] = useState<VaultChangeRow[] | null>(null);
+  const [errored, setErrored] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/vault/recent", { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setErrored(true);
+          return;
+        }
+        const j = (await res.json()) as VaultRecentResponse;
+        if (!cancelled) setChanges(Array.isArray(j.changes) ? j.changes : []);
+      } catch {
+        if (!cancelled) setErrored(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!changes && !errored) {
+    return <LoadingScreen label="Loading vault…" />;
+  }
+
+  const rows = (changes ?? []).slice(0, 20);
+
+  return (
+    <div className="screen">
+      <div className="board-toolbar">
+        <span className="t-eyebrow">VAULT · RECENT ACTIVITY</span>
+        <span className="toolbar-spacer" />
+        <span className="toolbar-meta">{rows.length} ENTRIES</span>
+      </div>
+      <div
+        className="screen-body"
+        style={{ padding: "12px 16px", overflowY: "auto" }}
+      >
+        {errored || rows.length === 0 ? (
+          <div
+            className="dim"
+            style={{ fontSize: 11.5, padding: "8px 4px" }}
+          >
+            No recent vault activity.
+          </div>
+        ) : (
+          rows.map((c) => (
+            <div
+              key={c.id}
+              className="list-row"
+              style={{
+                padding: "10px 12px",
+                borderLeft: `2px solid ${vaultKindColor(c.kind)}`,
+                background: "rgba(255,255,255,0.015)",
+                borderRadius: "0 6px 6px 0",
+                marginBottom: 4,
+              }}
+            >
+              <span className="pill pill-mono">{c.kind.toUpperCase()}</span>
+              <div className="col grow">
+                <div
+                  style={{ fontSize: 12.5, color: "var(--text-soft)" }}
+                  className="truncate"
+                >
+                  {basename(c.path)}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10.5,
+                    color: "var(--text-muted)",
+                    marginTop: 2,
+                  }}
+                  className="truncate"
+                >
+                  {c.path}
+                </div>
+              </div>
+              <span className="dim" style={{ fontSize: 10.5 }}>
+                {relTimeFromMs(c.ts)}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function vaultKindColor(kind: VaultChangeRow["kind"]): string {
+  if (kind === "add") return "var(--status-done)";
+  if (kind === "unlink") return "var(--urgent)";
+  return "var(--status-review)";
+}
+
+function basename(p: string): string {
+  const parts = p.split(/[\\/]/);
+  return parts[parts.length - 1] || p;
+}
+
+function relTimeFromMs(ms: number): string {
+  if (!Number.isFinite(ms)) return "";
+  return relTime(new Date(ms).toISOString());
 }
 
 /* ---------- shared ---------- */

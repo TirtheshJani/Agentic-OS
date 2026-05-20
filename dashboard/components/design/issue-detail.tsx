@@ -97,13 +97,19 @@ export function IssueDetail({
     const ac = new AbortController();
     let cancelled = false;
     (async () => {
-      const [d, t] = await Promise.all([
-        fetchDetail(ac.signal),
-        fetchThread(ac.signal),
-      ]);
-      if (cancelled) return;
-      setDetail(d);
-      setThread(t);
+      try {
+        const [d, t] = await Promise.all([
+          fetchDetail(ac.signal),
+          fetchThread(ac.signal),
+        ]);
+        if (cancelled) return;
+        setDetail(d);
+        setThread(t);
+      } catch (err) {
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.warn("[issue-detail] fetch failed:", err);
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -283,8 +289,8 @@ export function IssueDetail({
                 style={{
                   marginTop: 12,
                   padding: "10px 12px",
-                  background: "rgba(192,57,43,0.08)",
-                  border: "1px solid rgba(192,57,43,0.3)",
+                  background: "var(--danger-fill)",
+                  border: "1px solid var(--danger-line)",
                   borderRadius: 6,
                   color: "var(--urgent)",
                   fontFamily: "var(--font-mono)",

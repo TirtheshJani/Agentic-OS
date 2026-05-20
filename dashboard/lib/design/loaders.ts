@@ -71,7 +71,10 @@ function initialsOf(name: string): string {
 }
 
 function colorForDept(dept: DeptKey | null): string {
-  if (!dept) return "#e8eef9";
+  // Fallback when a record has no department: use the CSS token for soft
+  // text. Consumers always render this inside a styled element, so a `var()`
+  // string resolves at paint time.
+  if (!dept) return "var(--text-soft)";
   return DEPARTMENTS[dept].color;
 }
 
@@ -232,7 +235,11 @@ export async function loadSettings(): Promise<Settings> {
       version?: string;
     };
     if (typeof pkg.version === "string") dashboardVersion = pkg.version;
-  } catch {}
+  } catch (err) {
+    // Swallow: a missing or unreadable package.json just leaves the
+    // version at its default, but log so a misconfigured deploy is visible.
+    console.warn("[loaders] could not read dashboard package.json:", err);
+  }
 
   // vault_chunks_meta is created by the vault-recall indexer; treat its
   // absence as "never indexed" rather than as an error.
@@ -245,7 +252,12 @@ export async function loadSettings(): Promise<Settings> {
     if (row && typeof row.ts === "number") {
       lastVaultIndexAt = new Date(row.ts).toISOString();
     }
-  } catch {}
+  } catch (err) {
+    // Swallow: vault_chunks_meta is created lazily by the indexer; first
+    // run is expected to throw "no such table". Log so unexpected DB errors
+    // still show up in the console.
+    console.warn("[loaders] vault_chunks_meta probe failed:", err);
+  }
 
   return {
     dashboardVersion,

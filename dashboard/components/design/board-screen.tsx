@@ -27,18 +27,24 @@ import {
   type Priority,
   type RunningAgent,
 } from "@/lib/design/types";
+import { POLL_INTERVAL_MS } from "@/lib/design/constants";
 import type { Tweaks } from "@/components/design/tweaks-panel";
 
 type Props = {
   onOpenIssue: (id: string) => void;
   tweaks: Tweaks;
+  projectFilter?: string | null;
+  onClearProjectFilter?: () => void;
 };
 
 type FilterValue = "all" | Priority;
 
-const POLL_INTERVAL_MS = 30_000;
-
-export function BoardScreen({ onOpenIssue, tweaks }: Props) {
+export function BoardScreen({
+  onOpenIssue,
+  tweaks,
+  projectFilter = null,
+  onClearProjectFilter,
+}: Props) {
   const [filterPriority, setFilterPriority] = useState<FilterValue>("all");
   const [view, setView] = useState<"board" | "list">("board");
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -46,9 +52,18 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
   const [runningAgents, setRunningAgents] = useState<RunningAgent[]>([]);
   const showLiveStrip = tweaks.showLiveStrip;
 
-  const reloadIssues = async (signal?: AbortSignal): Promise<Issue[] | null> => {
+  const reloadIssues = async (
+    signal?: AbortSignal,
+    project?: string | null,
+  ): Promise<Issue[] | null> => {
     try {
-      const res = await fetch("/api/issues", { cache: "no-store", signal });
+      const qs = project
+        ? `?project=${encodeURIComponent(project)}`
+        : "";
+      const res = await fetch(`/api/issues${qs}`, {
+        cache: "no-store",
+        signal,
+      });
       if (!res.ok) return null;
       return (await res.json()) as Issue[];
     } catch {
@@ -59,7 +74,7 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
-      const next = await reloadIssues();
+      const next = await reloadIssues(undefined, projectFilter);
       if (!cancelled && next) {
         setIssues(next);
         setLoaded(true);
@@ -71,7 +86,7 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [projectFilter]);
 
   // Live strip reuses the dashboard endpoint so we don't spin up a parallel
   // running-agents route; we only poll when the strip is actually visible.
@@ -132,7 +147,7 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
         } catch {}
         return { ok: false, message: msg };
       }
-      const fresh = await reloadIssues();
+      const fresh = await reloadIssues(undefined, projectFilter);
       if (fresh) setIssues(fresh);
       return { ok: true };
     } catch (e) {
@@ -183,10 +198,59 @@ export function BoardScreen({ onOpenIssue, tweaks }: Props) {
           <I.display size={13} /> Display
         </div>
 
+        {projectFilter && (
+          <button
+            className="pill pill-ember"
+            onClick={() => onClearProjectFilter?.()}
+            title="Clear project filter"
+            style={{
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            Filtering by: {projectFilter}
+            <I.close size={10} />
+          </button>
+        )}
+
         <div className="toolbar-spacer" />
 
         <div className="toolbar-meta">{total} ISSUES · 5 COLUMNS</div>
-        <button className="btn btn-primary">
+        <button
+          className="btn btn-primary"
+          onClick={async () => {
+            const prompt = window.prompt("Issue prompt / description?");
+            if (!prompt || !prompt.trim()) return;
+            const assignee = window.prompt("Assignee handle?", "tj") || "tj";
+            try {
+              const res = await fetch("/api/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  prompt: prompt.trim(),
+                  assignee: assignee.trim(),
+                  status: "backlog",
+                  ...(projectFilter ? { projectSlug: projectFilter } : {}),
+                }),
+              });
+              if (!res.ok) {
+                const body = (await res.json().catch(() => ({}))) as {
+                  error?: string;
+                };
+                window.alert(`Create failed: ${body.error || res.status}`);
+                return;
+              }
+              const fresh = await reloadIssues(undefined, projectFilter);
+              if (fresh) setIssues(fresh);
+            } catch (e) {
+              window.alert(
+                `Create failed: ${e instanceof Error ? e.message : String(e)}`,
+              );
+            }
+          }}
+        >
           <I.plus size={13} /> New issue
         </button>
       </div>
@@ -507,9 +571,22 @@ function FailedStrip({
   onStatusChange: StatusChange;
 }) {
   const [open, setOpen] = useState(false);
+  const toggle = () => setOpen((v) => !v);
   return (
     <div className="failed-strip">
-      <div className="failed-strip-head" onClick={() => setOpen(!open)}>
+      <div
+        className="failed-strip-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
+      >
         <I.warning size={14} />
         FAILED · {failed.length}
         <span className="toolbar-spacer" />

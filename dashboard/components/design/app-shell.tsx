@@ -15,6 +15,7 @@ import {
   MyIssuesScreen,
   SettingsScreen,
   SkillsScreen,
+  VaultScreen,
 } from "@/components/design/other-screens";
 import {
   TweaksFloatingPanel,
@@ -22,6 +23,7 @@ import {
   useTweaks,
 } from "@/components/design/tweaks-panel";
 import { AgentsProvider } from "@/lib/design/contexts";
+import { POLL_INTERVAL_MS } from "@/lib/design/constants";
 import type { DashboardData } from "@/lib/design/types";
 
 export type ViewKey =
@@ -32,6 +34,7 @@ export type ViewKey =
   | "agents"
   | "skills"
   | "runtimes"
+  | "vault"
   | "settings";
 
 const VIEW_LABELS: Record<ViewKey, string> = {
@@ -42,15 +45,15 @@ const VIEW_LABELS: Record<ViewKey, string> = {
   agents: "Agents",
   skills: "Skills",
   runtimes: "Runtimes",
+  vault: "Vault",
   settings: "Settings",
 };
-
-const POLL_INTERVAL_MS = 30_000;
 
 function AppContents() {
   const [view, setView] = useState<ViewKey>("dashboard");
   const [openIssueId, setOpenIssueId] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const { tweaks } = useTweaks();
 
   useEffect(() => {
@@ -77,7 +80,17 @@ function AppContents() {
 
   return (
     <div className="app-shell">
-      <Sidebar view={view} onNav={navigate} data={data} />
+      <Sidebar
+        view={view}
+        onNav={navigate}
+        data={data}
+        projectFilter={projectFilter}
+        onSelectProject={(slug) => {
+          setProjectFilter(slug);
+          setView("issues");
+        }}
+        onClearProjectFilter={() => setProjectFilter(null)}
+      />
       <main className="screen" style={{ background: "transparent" }}>
         <TopBar view={view} />
         <div
@@ -90,17 +103,24 @@ function AppContents() {
         >
           {view === "dashboard" && (
             <DashboardScreen
+              data={data}
               onOpenIssue={openIssue}
               onNavigate={navigate}
             />
           )}
           {view === "issues" && (
-            <BoardScreen onOpenIssue={openIssue} tweaks={tweaks} />
+            <BoardScreen
+              onOpenIssue={openIssue}
+              tweaks={tweaks}
+              projectFilter={projectFilter}
+              onClearProjectFilter={() => setProjectFilter(null)}
+            />
           )}
           {view === "inbox" && <InboxScreen onOpenIssue={openIssue} />}
           {view === "agents" && <AgentsScreen />}
           {view === "skills" && <SkillsScreen mode="skills" />}
           {view === "runtimes" && <SkillsScreen mode="runtimes" />}
+          {view === "vault" && <VaultScreen />}
           {view === "settings" && <SettingsScreen />}
           {view === "myissues" && (
             <MyIssuesScreen onOpenIssue={openIssue} />
@@ -130,10 +150,16 @@ function Sidebar({
   view,
   onNav,
   data,
+  projectFilter,
+  onSelectProject,
+  onClearProjectFilter,
 }: {
   view: ViewKey;
   onNav: (v: ViewKey) => void;
   data: DashboardData | null;
+  projectFilter: string | null;
+  onSelectProject: (slug: string) => void;
+  onClearProjectFilter: () => void;
 }) {
   const counts = {
     inbox: data?.inboxCount ?? 0,
@@ -163,7 +189,7 @@ function Sidebar({
           style={{
             background:
               "linear-gradient(135deg, var(--ember), var(--ember-deep))",
-            color: "#061018",
+            color: "var(--on-ember)",
           }}
         >
           AOS
@@ -205,7 +231,10 @@ function Sidebar({
           Icon={I.issues}
           label="Issues"
           active={view === "issues"}
-          onClick={() => onNav("issues")}
+          onClick={() => {
+            onClearProjectFilter();
+            onNav("issues");
+          }}
           count={counts.issues}
         />
       </div>
@@ -235,32 +264,35 @@ function Sidebar({
         <NavItem
           Icon={I.vault}
           label="Vault"
-          active={false}
-          onClick={() => {}}
+          active={view === "vault"}
+          onClick={() => onNav("vault")}
         />
       </div>
 
       <div className="sidebar-section">
         <div className="sidebar-eyebrow">Active Projects</div>
-        {activeProjects.map((p) => (
-          <button
-            key={p.slug}
-            className="nav-item"
-            onClick={() => onNav("issues")}
-          >
-            <span
-              className="dept-dot"
-              style={{
-                width: 7,
-                height: 7,
-                background: p.color,
-                boxShadow: `0 0 6px ${p.color}80`,
-              }}
-            />
-            <span className="grow truncate">{p.name}</span>
-            <span className="nav-count">{p.open}</span>
-          </button>
-        ))}
+        {activeProjects.map((p) => {
+          const isActive = view === "issues" && projectFilter === p.slug;
+          return (
+            <button
+              key={p.slug}
+              className={"nav-item " + (isActive ? "active" : "")}
+              onClick={() => onSelectProject(p.slug)}
+            >
+              <span
+                className="dept-dot"
+                style={{
+                  width: 7,
+                  height: 7,
+                  background: p.color,
+                  boxShadow: `0 0 6px ${p.color}80`,
+                }}
+              />
+              <span className="grow truncate">{p.name}</span>
+              <span className="nav-count">{p.open}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="sidebar-foot">

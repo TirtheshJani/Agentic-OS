@@ -19,51 +19,6 @@ export type RouteFailure = {
 
 export type RouteResult = RouteDecision | RouteFailure;
 
-const STOPWORDS = new Set([
-  "the",
-  "a",
-  "an",
-  "and",
-  "or",
-  "to",
-  "of",
-  "for",
-  "in",
-  "on",
-  "with",
-  "by",
-  "at",
-  "is",
-  "are",
-  "was",
-  "were",
-  "be",
-  "been",
-  "have",
-  "has",
-  "had",
-  "do",
-  "does",
-  "did",
-  "this",
-  "that",
-  "it",
-  "from",
-  "as",
-  "we",
-  "i",
-  "my",
-]);
-
-function tokens(s: string): Set<string> {
-  return new Set(
-    s
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter((t) => t.length >= 3 && !STOPWORDS.has(t))
-  );
-}
-
 function nameVariants(team: Team): string[] {
   const out = new Set<string>();
   out.add(team.slug.toLowerCase());

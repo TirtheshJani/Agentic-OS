@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
-// Phase 8.4 launch buttons. "Run headless" hands off to the home workbench
-// by URL (the canonical run UI) — pre-fills prompt, agent, and project
+// Phase 8.4 launch buttons. "Run headless" hands off to the home shell
+// (the canonical run UI) by URL, pre-filling prompt, agent, and project
 // from the query string. "Open in terminal" POSTs /api/runs/terminal which
 // spawns wt.exe (Windows) or osascript (macOS).
 export function IssueLaunchButtons({

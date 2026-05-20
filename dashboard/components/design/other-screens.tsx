@@ -1,138 +1,196 @@
 "use client";
 
-// Ported from .design-handoff/project/other-screens.jsx + the MyIssues screen
-// from app.jsx. Inbox, MyIssues, Agents, Skills, Settings.
+// Phase 9.5/9.6: Inbox, MyIssues, Agents, Skills/Runtimes, Settings.
+// Each screen pulls from its API route. No mock data imports.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Avatar,
   CostMeter,
   DeptTag,
   PriorityChip,
   SectionHead,
-  SkillChip,
   Sparkline,
   StatusDot,
 } from "@/components/design/atoms";
 import { I } from "@/components/design/icons";
-import {
-  AGENT_BLURB,
-  AGENT_SKILLS,
-  AGENTS,
-  deptOf,
-  ISSUES,
-  SKILLS,
-  type Issue,
-} from "@/lib/design/data";
-import { useTweaks, type Tweaks } from "@/components/design/tweaks-panel";
+import { deptOf, type Agent, type InboxItem, type Issue, type Settings, type Skill } from "@/lib/design/types";
+
+const POLL_INTERVAL_MS = 30_000;
 
 /* ---------- AGENTS ---------- */
 export function AgentsScreen() {
+  const [agents, setAgents] = useState<Agent[] | null>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/agents", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as Agent[];
+        if (!cancelled) setAgents(j);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/issues", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as Issue[];
+        if (!cancelled) setIssues(j);
+      } catch {}
+    };
+    tick();
+    const id = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  if (!agents) {
+    return <LoadingScreen label="Loading agents…" />;
+  }
+
   return (
     <div className="agents-grid">
-      {AGENTS.filter((a) => a.kind === "agent").map((a) => {
-        const open = ISSUES.filter(
-          (i) =>
-            i.assignee === a.handle &&
-            i.status !== "done" &&
-            i.status !== "failed",
-        ).length;
-        const running = ISSUES.filter(
-          (i) => i.assignee === a.handle && i.status === "running",
-        ).length;
-        const allRuns = ISSUES.filter((i) => i.assignee === a.handle);
-        const totalCost = allRuns.reduce((s, i) => s + (i.cost || 0), 0);
-        return (
-          <article key={a.handle} className="agent-card">
-            {running > 0 && (
-              <span
+      {agents
+        .filter((a) => a.kind === "agent")
+        .map((a) => {
+          const mine = issues.filter((i) => i.assignee === a.handle);
+          const open = mine.filter(
+            (i) => i.status !== "done" && i.status !== "failed",
+          ).length;
+          const running = mine.filter((i) => i.status === "running").length;
+          const totalCost = mine.reduce((s, i) => s + (i.cost || 0), 0);
+          return (
+            <article key={a.handle} className="agent-card">
+              {running > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    fontSize: 9.5,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "var(--status-running)",
+                    fontFamily: "var(--font-mono)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span
+                    className="dot blink"
+                    style={{ background: "var(--status-running)" }}
+                  />{" "}
+                  Live
+                </span>
+              )}
+              <div className="agent-card-head">
+                <Avatar handle={a.handle} size={42} running={running > 0} />
+                <div className="col">
+                  <span className="agent-card-name">{a.name}</span>
+                  <span className="agent-card-handle">@{a.handle}</span>
+                </div>
+              </div>
+              <DeptTag dept={a.dept} />
+              <p
                 style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  fontSize: 9.5,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "var(--status-running)",
-                  fontFamily: "var(--font-mono)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
+                  fontSize: 11.5,
+                  color: "var(--text-muted)",
+                  lineHeight: 1.6,
+                  margin: 0,
                 }}
               >
-                <span
-                  className="dot blink"
-                  style={{ background: "var(--status-running)" }}
-                />{" "}
-                Live
-              </span>
-            )}
-            <div className="agent-card-head">
-              <Avatar handle={a.handle} size={42} running={running > 0} />
-              <div className="col">
-                <span className="agent-card-name">{a.name}</span>
-                <span className="agent-card-handle">@{a.handle}</span>
+                {a.description ?? "Specialized agent."}
+              </p>
+              <div className="agent-card-stats">
+                <div className="agent-stat">
+                  <span className="agent-stat-label">Open</span>
+                  <span className="agent-stat-value">{open}</span>
+                </div>
+                <div className="agent-stat">
+                  <span className="agent-stat-label">7d cost</span>
+                  <span className="agent-stat-value">
+                    ${totalCost.toFixed(2)}
+                  </span>
+                </div>
+                <div className="agent-stat">
+                  <span className="agent-stat-label">Skills</span>
+                  <span className="agent-stat-value">
+                    {(a.skills ?? []).length}
+                  </span>
+                </div>
               </div>
-            </div>
-            <DeptTag dept={a.dept} />
-            <p
-              style={{
-                fontSize: 11.5,
-                color: "var(--text-muted)",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
-              {AGENT_BLURB[a.handle] || "Specialized agent."}
-            </p>
-            <div className="agent-card-stats">
-              <div className="agent-stat">
-                <span className="agent-stat-label">Open</span>
-                <span className="agent-stat-value">{open}</span>
+              <div className="row" style={{ gap: 4, marginTop: 4 }}>
+                <button
+                  className="btn"
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  <I.bolt size={12} /> Run
+                </button>
+                <button
+                  className="btn"
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  <I.handoff size={12} /> Hand off
+                </button>
               </div>
-              <div className="agent-stat">
-                <span className="agent-stat-label">7d cost</span>
-                <span className="agent-stat-value">
-                  ${(totalCost * 1.4).toFixed(2)}
-                </span>
-              </div>
-              <div className="agent-stat">
-                <span className="agent-stat-label">Skills</span>
-                <span className="agent-stat-value">
-                  {AGENT_SKILLS[a.handle]?.length || 0}
-                </span>
-              </div>
-            </div>
-            <div className="row" style={{ gap: 4, marginTop: 4 }}>
-              <button
-                className="btn"
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                <I.bolt size={12} /> Run
-              </button>
-              <button
-                className="btn"
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                <I.handoff size={12} /> Hand off
-              </button>
-            </div>
-          </article>
-        );
-      })}
+            </article>
+          );
+        })}
     </div>
   );
 }
 
 /* ---------- SKILLS / RUNTIMES ---------- */
-export function SkillsScreen() {
+export function SkillsScreen({ mode = "skills" }: { mode?: "skills" | "runtimes" }) {
+  const [skills, setSkills] = useState<Skill[] | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
-  const families = Array.from(new Set(SKILLS.map((s) => s.family)));
-  const filtered =
-    filter === "all" ? SKILLS : SKILLS.filter((s) => s.family === filter);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/skills", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as Skill[];
+        if (!cancelled) setSkills(j);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  // Stable per-skill sparkline values so they do not change on every render.
+  if (!skills) {
+    return <LoadingScreen label="Loading skills…" />;
+  }
+
+  // Runtimes view = remote-mode skills grouped by their MCP server. Skills
+  // without an MCP server collapse to "(none)".
+  const scoped =
+    mode === "runtimes"
+      ? skills.filter((s) => s.mode === "remote")
+      : skills;
+
+  const groupKey = (s: Skill): string =>
+    mode === "runtimes" ? s.mcpServer ?? "(none)" : s.family;
+
+  const groups = Array.from(new Set(scoped.map(groupKey)));
+  const filtered =
+    filter === "all" ? scoped : scoped.filter((s) => groupKey(s) === filter);
+
   const sparkOf = (name: string, seed: number) => {
     const arr: number[] = [];
     let s = seed;
@@ -143,10 +201,13 @@ export function SkillsScreen() {
     return arr;
   };
 
+  const eyebrow = mode === "runtimes" ? "RUNTIMES · MCP SERVERS" : "SKILLS REGISTRY";
+  const groupHeader = mode === "runtimes" ? "Server" : "Family";
+
   return (
     <div className="screen">
       <div className="board-toolbar">
-        <span className="t-eyebrow">SKILLS REGISTRY</span>
+        <span className="t-eyebrow">{eyebrow}</span>
         <div className="toolbar-spacer" />
         <div className="row" style={{ gap: 4 }}>
           <button
@@ -155,7 +216,7 @@ export function SkillsScreen() {
           >
             All
           </button>
-          {families.map((f) => (
+          {groups.map((f) => (
             <button
               key={f}
               className={"btn " + (filter === f ? "btn-primary" : "")}
@@ -165,9 +226,11 @@ export function SkillsScreen() {
             </button>
           ))}
         </div>
-        <button className="btn btn-primary">
-          <I.plus size={13} /> New skill
-        </button>
+        {mode === "skills" && (
+          <button className="btn btn-primary">
+            <I.plus size={13} /> New skill
+          </button>
+        )}
       </div>
 
       <div
@@ -178,11 +241,11 @@ export function SkillsScreen() {
           <thead>
             <tr>
               <th style={{ width: 220 }}>Skill</th>
-              <th style={{ width: 110 }}>Family</th>
+              <th style={{ width: 130 }}>{groupHeader}</th>
               <th style={{ width: 90 }}>Cadence</th>
               <th style={{ width: 90 }}>Status</th>
               <th style={{ width: 70 }}>Runs</th>
-              <th style={{ width: 110 }}>Last run</th>
+              <th style={{ width: 130 }}>Last run</th>
               <th>Recent throughput</th>
               <th style={{ width: 130 }}>Actions</th>
             </tr>
@@ -193,7 +256,8 @@ export function SkillsScreen() {
               const sparkVals = isStub
                 ? [0, 0, 0, 0, 0, 0, 0]
                 : sparkOf(s.name, idx + 1);
-              const dept = s.family === "_meta" ? "infra" : s.family;
+              const groupVal = groupKey(s);
+              const deptKey = s.family === "_meta" ? "infra" : s.family;
               return (
                 <tr key={s.name}>
                   <td>
@@ -215,7 +279,11 @@ export function SkillsScreen() {
                     </div>
                   </td>
                   <td>
-                    {deptOf(dept) ? <DeptTag dept={dept} /> : <span className="dim">{s.family}</span>}
+                    {mode === "skills" && deptOf(deptKey) ? (
+                      <DeptTag dept={deptKey} />
+                    ) : (
+                      <span className="dim">{groupVal}</span>
+                    )}
                   </td>
                   <td>
                     <span className="pill pill-mono">
@@ -231,7 +299,7 @@ export function SkillsScreen() {
                   </td>
                   <td className="font-mono muted">{s.runs}</td>
                   <td className="font-mono muted" style={{ fontSize: 11 }}>
-                    {s.lastRun}
+                    {s.lastRun ? relTime(s.lastRun) : "—"}
                   </td>
                   <td>
                     <Sparkline
@@ -262,124 +330,169 @@ export function SkillsScreen() {
 }
 
 /* ---------- INBOX ---------- */
-export function InboxScreen({ onOpenIssue }: { onOpenIssue: (id: string) => void }) {
-  const review = ISSUES.filter((i) => i.status === "review");
-  const running = ISSUES.filter((i) => i.status === "running");
-  const failed = ISSUES.filter((i) => i.status === "failed");
+export function InboxScreen({
+  onOpenIssue,
+}: {
+  onOpenIssue: (id: string) => void;
+}) {
+  const [items, setItems] = useState<InboxItem[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/inbox", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as InboxItem[];
+        if (!cancelled) setItems(j);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!items) {
+    return <LoadingScreen label="Loading inbox…" />;
+  }
 
   return (
     <div className="screen">
       <div className="board-toolbar">
         <span className="t-eyebrow">INBOX · WHAT WANTS MY ATTENTION</span>
         <span className="toolbar-spacer" />
-        <button className="btn">Mark all read</button>
+        <span className="toolbar-meta">{items.length} TOTAL</span>
       </div>
       <div
         className="screen-body"
         style={{ padding: "12px 16px", overflowY: "auto" }}
       >
-        <SectionHead title="Awaiting Review" meta={`${review.length} items`} />
-        {review.map((i) => (
-          <InboxRow key={i.id} issue={i} onOpen={onOpenIssue} />
-        ))}
-        <div style={{ height: 18 }} />
-        <SectionHead
-          title="Live Runs · Heads-up"
-          meta={`${running.length} running`}
-        />
-        {running.map((i) => (
-          <InboxRow key={i.id} issue={i} onOpen={onOpenIssue} live />
-        ))}
-        <div style={{ height: 18 }} />
-        <SectionHead title="Recent Failures" meta={`${failed.length} failed`} />
-        {failed.map((i) => (
-          <InboxRow key={i.id} issue={i} onOpen={onOpenIssue} bad />
+        {items.length === 0 && (
+          <div
+            className="dim"
+            style={{ fontSize: 11.5, padding: "8px 4px" }}
+          >
+            Inbox empty.
+          </div>
+        )}
+        {items.map((entry) => (
+          <InboxRow key={entry.id} entry={entry} onOpenIssue={onOpenIssue} />
         ))}
       </div>
     </div>
   );
 }
 
+function inboxTaskId(entry: InboxItem): string | null {
+  if (entry.kind !== "backlog-task") return null;
+  const m = entry.id.match(/^task-(\d+)$/);
+  return m ? m[1] : null;
+}
+
+function inboxBorder(kind: InboxItem["kind"]): string {
+  if (kind === "failed-run") return "var(--urgent)";
+  if (kind === "backlog-task") return "var(--status-review)";
+  return "var(--status-backlog)";
+}
+
+function inboxLabel(kind: InboxItem["kind"]): string {
+  if (kind === "failed-run") return "FAILED";
+  if (kind === "backlog-task") return "BACKLOG";
+  return "VAULT";
+}
+
 function InboxRow({
-  issue,
-  onOpen,
-  live,
-  bad,
+  entry,
+  onOpenIssue,
 }: {
-  issue: Issue;
-  onOpen: (id: string) => void;
-  live?: boolean;
-  bad?: boolean;
+  entry: InboxItem;
+  onOpenIssue: (id: string) => void;
 }) {
-  const borderColor = bad
-    ? "var(--urgent)"
-    : live
-      ? "var(--status-running)"
-      : "var(--status-review)";
+  const taskId = inboxTaskId(entry);
+  const clickable = taskId !== null;
   return (
     <div
       className="list-row"
       style={{
         padding: "10px 12px",
-        borderLeft: `2px solid ${borderColor}`,
+        borderLeft: `2px solid ${inboxBorder(entry.kind)}`,
         background: "rgba(255,255,255,0.015)",
         borderRadius: "0 6px 6px 0",
         marginBottom: 4,
+        cursor: clickable ? "pointer" : "default",
       }}
-      onClick={() => onOpen(issue.id)}
+      onClick={() => taskId && onOpenIssue(taskId)}
     >
-      <Avatar handle={issue.assignee} size={26} running={live} />
+      <span className="pill pill-mono">{inboxLabel(entry.kind)}</span>
       <div className="col grow">
-        <div className="row" style={{ gap: 6 }}>
-          <span className="issue-id">{issue.id}</span>
-          <PriorityChip priority={issue.priority} />
-          {issue.skill && <SkillChip name={issue.skill} />}
-        </div>
         <div
-          style={{ fontSize: 12.5, marginTop: 2, color: "var(--text-soft)" }}
+          style={{ fontSize: 12.5, color: "var(--text-soft)" }}
+          className="truncate"
         >
-          {issue.title}
+          {entry.title}
         </div>
-        {bad && issue.error && (
+        {entry.subtitle && (
           <div
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10.5,
-              color: "var(--urgent)",
-              marginTop: 3,
+              color: "var(--text-muted)",
+              marginTop: 2,
             }}
+            className="truncate"
           >
-            {issue.error}
-          </div>
-        )}
-        {live && issue.live && (
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
-              color: "var(--status-running)",
-              marginTop: 3,
-            }}
-          >
-            ⟳ {issue.live.tool} · {issue.live.tokensPerSec} tok/s · $
-            {issue.cost.toFixed(2)}
+            {entry.subtitle}
           </div>
         )}
       </div>
-      <I.chevronRight size={12} style={{ color: "var(--text-dim)" }} />
+      <span className="dim" style={{ fontSize: 10.5 }}>
+        {relTime(entry.tsIso)}
+      </span>
+      {clickable && (
+        <I.chevronRight size={12} style={{ color: "var(--text-dim)" }} />
+      )}
     </div>
   );
 }
 
-/* ---------- MY ISSUES (originally in app.jsx) ---------- */
-export function MyIssuesScreen({ onOpenIssue }: { onOpenIssue: (id: string) => void }) {
-  const mine = ISSUES.filter((i) => i.reporter === "tj");
+/* ---------- MY ISSUES ---------- */
+export function MyIssuesScreen({
+  onOpenIssue,
+}: {
+  onOpenIssue: (id: string) => void;
+}) {
+  const [issues, setIssues] = useState<Issue[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/issues?assignee=user", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const j = (await res.json()) as Issue[];
+        if (!cancelled) setIssues(j);
+      } catch {}
+    };
+    tick();
+    const id = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  if (!issues) {
+    return <LoadingScreen label="Loading issues…" />;
+  }
+
   return (
     <div className="screen">
       <div className="board-toolbar">
         <span className="t-eyebrow">FILED BY ME · @tj</span>
         <span className="toolbar-spacer" />
-        <span className="toolbar-meta">{mine.length} TOTAL</span>
+        <span className="toolbar-meta">{issues.length} TOTAL</span>
       </div>
       <div
         className="screen-body"
@@ -397,7 +510,7 @@ export function MyIssuesScreen({ onOpenIssue }: { onOpenIssue: (id: string) => v
             </tr>
           </thead>
           <tbody>
-            {mine.map((i) => (
+            {issues.map((i) => (
               <tr
                 key={i.id}
                 onClick={() => onOpenIssue(i.id)}
@@ -436,7 +549,26 @@ export function MyIssuesScreen({ onOpenIssue }: { onOpenIssue: (id: string) => v
 
 /* ---------- SETTINGS ---------- */
 export function SettingsScreen() {
-  const { tweaks, setTweak } = useTweaks();
+  const [settings, setSettings] = useState<Settings | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/settings", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as Settings;
+        if (!cancelled) setSettings(j);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!settings) {
+    return <LoadingScreen label="Loading settings…" />;
+  }
 
   return (
     <div className="settings-wrap">
@@ -447,218 +579,77 @@ export function SettingsScreen() {
         Settings
       </h1>
       <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-        Local-only · changes write to{" "}
-        <span className="font-mono">.agentic-os/state.db</span> and
-        <span className="font-mono"> ~/.claude/settings.json</span>.
+        Read-only · sourced from{" "}
+        <span className="font-mono">.agentic-os/state.db</span>,{" "}
+        <span className="font-mono">skills/</span>,{" "}
+        <span className="font-mono">agents/</span>, and{" "}
+        <span className="font-mono">automations/remote/</span>.
       </p>
 
-      <SectionHead title="System" meta="DAEMON" />
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Daemon</div>
-          <div className="setting-help">
-            Background process that polls the queue and spawns runs.
-          </div>
-        </div>
-        <span className="pill pill-good">
-          <span
-            className="dot"
-            style={{ background: "var(--status-running)" }}
-          />{" "}
-          RUNNING · pid 48211
-        </span>
-        <button className="btn">Restart</button>
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Host bind</div>
-          <div className="setting-help">
-            Dashboard never exposes beyond loopback.
-          </div>
-        </div>
-        <input className="setting-input" value="127.0.0.1:3000" readOnly />
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Claude model</div>
-          <div className="setting-help">Default model for headless runs.</div>
-        </div>
-        <input className="setting-input" defaultValue="claude-sonnet-4-5" />
-      </div>
-
-      <SectionHead title="Cost guardrails" meta="LEDGER" />
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Monthly cap</div>
-          <div className="setting-help">
-            Hard stop when reached. Soft warning at 80%.
-          </div>
-        </div>
-        <input className="setting-input" defaultValue="$20.00" />
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Per-run cap</div>
-          <div className="setting-help">
-            Aborts any single run that exceeds.
-          </div>
-        </div>
-        <input className="setting-input" defaultValue="$2.00" />
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Allow Urgent override</div>
-          <div className="setting-help">
-            Urgent-priority issues bypass per-run cap.
-          </div>
-        </div>
-        <Toggle on />
-      </div>
-
-      <SectionHead title="MCP servers" meta="INTEGRATIONS" />
-      <McpRow
-        name="github"
-        url="stdio · @modelcontextprotocol/server-github"
-        status="connected"
-      />
-      <McpRow
-        name="linear"
-        url="stdio · @linear/mcp-server"
-        status="connected"
-      />
-      <McpRow
-        name="obsidian"
-        url="stdio · obsidian-mcp · vault/"
-        status="connected"
-      />
-      <McpRow
-        name="substack"
-        url="http  · https://api.substack.com/mcp"
-        status="error"
+      <SectionHead title="System" meta="STATE" />
+      <SettingRow label="Dashboard version" value={settings.dashboardVersion} />
+      <SettingRow
+        label="Last vault index"
+        value={
+          settings.lastVaultIndexAt
+            ? relTime(settings.lastVaultIndexAt)
+            : "never"
+        }
       />
 
-      <SectionHead title="Vault layout" meta="MEMORY" />
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Vault path</div>
-          <div className="setting-help">
-            Obsidian-compatible filesystem.
-          </div>
-        </div>
-        <input className="setting-input" defaultValue="~/Agentic-OS/vault" />
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Raw → Wiki promotion</div>
-          <div className="setting-help">
-            Run nightly. Drafts go to review.
-          </div>
-        </div>
-        <Toggle on />
-      </div>
-
-      <SectionHead title="Appearance" meta="LOOK & FEEL" />
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Density</div>
-          <div className="setting-help">
-            Card / row spacing for board and lists.
-          </div>
-        </div>
-        <DensityPicker
-          value={tweaks.density}
-          onChange={(v) => setTweak("density", v)}
-        />
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Starfield</div>
-          <div className="setting-help">Cosmic backdrop intensity.</div>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={tweaks.starfield}
-          onChange={(e) => setTweak("starfield", parseFloat(e.target.value))}
-          style={{ width: 220 }}
-        />
-        <span className="font-mono muted" style={{ fontSize: 11 }}>
-          {Math.round(tweaks.starfield * 100)}%
-        </span>
-      </div>
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Live pulse rings</div>
-          <div className="setting-help">
-            Animated rings on running agent avatars.
-          </div>
-        </div>
-        <Toggle
-          on={tweaks.pulse}
-          onChange={() => setTweak("pulse", !tweaks.pulse)}
-        />
-      </div>
+      <SectionHead title="Registry counts" meta="REGISTRY" />
+      <SettingRow label="Agents" value={String(settings.agentCount)} />
+      <SettingRow label="Skills" value={String(settings.skillCount)} />
+      <SettingRow label="Projects" value={String(settings.projectCount)} />
+      <SettingRow label="Schedules" value={String(settings.scheduleCount)} />
     </div>
   );
 }
 
-function McpRow({
-  name,
-  url,
-  status,
-}: {
-  name: string;
-  url: string;
-  status: "connected" | "error";
-}) {
-  const tone = status === "connected" ? "good" : "bad";
+function SettingRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="setting-row">
       <div>
-        <div className="setting-label font-mono">{name}</div>
-        <div className="setting-help font-mono">{url}</div>
+        <div className="setting-label">{label}</div>
       </div>
-      <span className={"pill pill-" + tone}>
-        <span
-          className="dot"
-          style={{
-            background:
-              status === "connected" ? "var(--teal)" : "var(--urgent)",
-          }}
-        />
-        {status.toUpperCase()}
+      <span className="font-mono muted" style={{ fontSize: 12 }}>
+        {value}
       </span>
-      <button className="btn">Test</button>
     </div>
   );
 }
 
-function Toggle({ on, onChange }: { on?: boolean; onChange?: () => void }) {
-  return <div className={"toggle " + (on ? "on" : "")} onClick={onChange} />;
-}
+/* ---------- shared ---------- */
 
-function DensityPicker({
-  value,
-  onChange,
-}: {
-  value: Tweaks["density"];
-  onChange: (v: Tweaks["density"]) => void;
-}) {
-  const opts: Tweaks["density"][] = ["compact", "comfy", "spacious"];
+function LoadingScreen({ label }: { label: string }) {
   return (
-    <div className="tab-group">
-      {opts.map((o) => (
-        <button
-          key={o}
-          className={"tab " + (value === o ? "active" : "")}
-          onClick={() => onChange(o)}
-          style={{ textTransform: "capitalize" }}
-        >
-          {o}
-        </button>
-      ))}
+    <div className="screen">
+      <div
+        className="dim"
+        style={{ padding: 24, fontSize: 12 }}
+      >
+        {label}
+      </div>
     </div>
   );
+}
+
+function relTime(iso: string): string {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return "—";
+  const diff = Date.now() - ms;
+  if (diff < 0) return "just now";
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  if (hr < 48) return "yest";
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}d ago`;
+  const mo = Math.floor(day / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  const yr = Math.floor(day / 365);
+  return `${yr}y ago`;
 }

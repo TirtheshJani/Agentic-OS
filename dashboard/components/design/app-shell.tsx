@@ -3,8 +3,8 @@
 // Ported from .design-handoff/project/app.jsx.
 // Root shell: sidebar nav + top bar + view router + global slide-over.
 
-import { useMemo, useState } from "react";
-import { Avatar, useTick } from "@/components/design/atoms";
+import { useEffect, useState } from "react";
+import { Avatar } from "@/components/design/atoms";
 import { I } from "@/components/design/icons";
 import { BoardScreen } from "@/components/design/board-screen";
 import { DashboardScreen } from "@/components/design/dashboard-screen";
@@ -21,7 +21,8 @@ import {
   TweaksProvider,
   useTweaks,
 } from "@/components/design/tweaks-panel";
-import { AGENTS, ISSUES, PROJECTS, SKILLS } from "@/lib/design/data";
+import { AgentsProvider } from "@/lib/design/contexts";
+import type { DashboardData } from "@/lib/design/types";
 
 export type ViewKey =
   | "dashboard"
@@ -44,13 +45,31 @@ const VIEW_LABELS: Record<ViewKey, string> = {
   settings: "Settings",
 };
 
+const POLL_INTERVAL_MS = 30_000;
+
 function AppContents() {
   const [view, setView] = useState<ViewKey>("dashboard");
   const [openIssueId, setOpenIssueId] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const { tweaks } = useTweaks();
 
-  // Tick to make "live" indicators feel alive (running cost counters).
-  useTick(2000);
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/dashboard/data", { cache: "no-store" });
+        if (!res.ok) return;
+        const j = (await res.json()) as DashboardData;
+        if (!cancelled) setData(j);
+      } catch {}
+    };
+    tick();
+    const id = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   const navigate = (next: ViewKey) => setView(next);
   const openIssue = (id: string) => setOpenIssueId(id);
@@ -58,7 +77,7 @@ function AppContents() {
 
   return (
     <div className="app-shell">
-      <Sidebar view={view} onNav={navigate} />
+      <Sidebar view={view} onNav={navigate} data={data} />
       <main className="screen" style={{ background: "transparent" }}>
         <TopBar view={view} />
         <div
@@ -80,7 +99,8 @@ function AppContents() {
           )}
           {view === "inbox" && <InboxScreen onOpenIssue={openIssue} />}
           {view === "agents" && <AgentsScreen />}
-          {(view === "skills" || view === "runtimes") && <SkillsScreen />}
+          {view === "skills" && <SkillsScreen mode="skills" />}
+          {view === "runtimes" && <SkillsScreen mode="runtimes" />}
           {view === "settings" && <SettingsScreen />}
           {view === "myissues" && (
             <MyIssuesScreen onOpenIssue={openIssue} />
@@ -97,8 +117,10 @@ function AppContents() {
 export function AppShell() {
   return (
     <TweaksProvider>
-      <AppContents />
-      <TweaksFloatingPanel />
+      <AgentsProvider>
+        <AppContents />
+        <TweaksFloatingPanel />
+      </AgentsProvider>
     </TweaksProvider>
   );
 }
@@ -107,22 +129,23 @@ export function AppShell() {
 function Sidebar({
   view,
   onNav,
+  data,
 }: {
   view: ViewKey;
   onNav: (v: ViewKey) => void;
+  data: DashboardData | null;
 }) {
-  const counts = useMemo(() => {
-    return {
-      inbox: ISSUES.filter((i) => i.status === "review").length,
-      myissues: ISSUES.filter((i) => i.reporter === "tj").length,
-      issues: ISSUES.length,
-      agents: AGENTS.filter((a) => a.kind === "agent").length,
-      skills: SKILLS.length,
-    };
-  }, []);
+  const counts = {
+    inbox: data?.inboxCount ?? 0,
+    myissues: data?.myIssueCount ?? 0,
+    issues: data?.issueCount ?? 0,
+    agents: data?.agentCount ?? 0,
+    skills: data?.skillCount ?? 0,
+  };
 
-  const running = ISSUES.filter((i) => i.status === "running");
-  const burn = running.reduce((s, i) => s + (i.cost || 0), 0);
+  const running = data?.runningAgents ?? [];
+  const burn = running.reduce((s, a) => s + (a.costSoFar || 0), 0);
+  const activeProjects = (data?.projects ?? []).filter((p) => p.active);
 
   return (
     <aside className="sidebar">
@@ -219,7 +242,7 @@ function Sidebar({
 
       <div className="sidebar-section">
         <div className="sidebar-eyebrow">Active Projects</div>
-        {PROJECTS.filter((p) => p.active).map((p) => (
+        {activeProjects.map((p) => (
           <button
             key={p.slug}
             className="nav-item"
@@ -235,9 +258,7 @@ function Sidebar({
               }}
             />
             <span className="grow truncate">{p.name}</span>
-            <span className="nav-count">
-              {p.slug === "agentic-os" ? counts.issues : p.open}
-            </span>
+            <span className="nav-count">{p.open}</span>
           </button>
         ))}
       </div>
@@ -252,20 +273,20 @@ function Sidebar({
               />
               {running.length} live · ${burn.toFixed(2)}
             </div>
-            {running.slice(0, 3).map((i) => (
-              <div key={i.id} className="live-rail-row">
-                <Avatar handle={i.assignee} size={14} />
+            {running.slice(0, 3).map((a) => (
+              <div key={a.taskId} className="live-rail-row">
+                <Avatar handle={a.agent} size={14} />
                 <span
                   className="dim font-mono"
                   style={{ fontSize: 9.5 }}
                 >
-                  {i.id}
+                  #{a.taskId}
                 </span>
                 <span
                   className="truncate"
                   style={{ fontSize: 10.5, color: "var(--text-muted)" }}
                 >
-                  {i.live?.tool}
+                  {a.title}
                 </span>
               </div>
             ))}

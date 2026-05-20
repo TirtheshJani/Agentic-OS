@@ -30,6 +30,7 @@ import {
   type Project,
   type RecentRun,
   type RunningAgent,
+  type Settings,
   type Skill,
   type VaultItem,
 } from "./types";
@@ -186,6 +187,16 @@ export async function loadDashboard(): Promise<DashboardData> {
       open: openBySlug.get(p.slug) ?? 0,
     }));
 
+  const agentCount = loadAgentsRaw().length;
+  const skillCount = loadSkillsRaw().length;
+  const issueCount = (db
+    .prepare(`SELECT COUNT(*) AS n FROM tasks`)
+    .get() as { n: number }).n;
+  const myIssueCount = (db
+    .prepare(`SELECT COUNT(*) AS n FROM tasks WHERE assignee = 'user'`)
+    .get() as { n: number }).n;
+  const inboxCount = await loadInboxCount();
+
   return {
     heroMetrics,
     runningAgents,
@@ -193,6 +204,56 @@ export async function loadDashboard(): Promise<DashboardData> {
     vaultRecents,
     openIssueCounts,
     projects,
+    agentCount,
+    skillCount,
+    inboxCount,
+    myIssueCount,
+    issueCount,
+  };
+}
+
+async function loadInboxCount(): Promise<number> {
+  const items = await loadInbox();
+  return items.length;
+}
+
+export async function loadSettings(): Promise<Settings> {
+  const agents = loadAgentsRaw();
+  const skills = loadSkillsRaw();
+  const projects = loadProjectsRaw();
+  const schedules = loadSchedules();
+
+  // Read the dashboard version from package.json at runtime; the file lives
+  // beside the running Next process so process.cwd() resolves correctly.
+  let dashboardVersion = "0.0.0";
+  try {
+    const pkgPath = path.join(process.cwd(), "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+      version?: string;
+    };
+    if (typeof pkg.version === "string") dashboardVersion = pkg.version;
+  } catch {}
+
+  // vault_chunks_meta is created by the vault-recall indexer; treat its
+  // absence as "never indexed" rather than as an error.
+  let lastVaultIndexAt: string | null = null;
+  try {
+    const db = getDb();
+    const row = db
+      .prepare(`SELECT MAX(indexed_at) AS ts FROM vault_chunks_meta`)
+      .get() as { ts: number | null } | undefined;
+    if (row && typeof row.ts === "number") {
+      lastVaultIndexAt = new Date(row.ts).toISOString();
+    }
+  } catch {}
+
+  return {
+    dashboardVersion,
+    agentCount: agents.length,
+    skillCount: skills.length,
+    projectCount: projects.length,
+    scheduleCount: schedules.length,
+    lastVaultIndexAt,
   };
 }
 
@@ -273,6 +334,8 @@ export async function loadAgents(): Promise<Agent[]> {
       initials: initialsOf(a.name),
       color: colorForDept(dept),
       dept,
+      description: a.description,
+      skills: a.allowedSkills,
     };
   });
 }
@@ -302,6 +365,8 @@ export async function loadSkills(): Promise<Skill[]> {
       cadence: cadenceBySkill.get(s.name) ?? null,
       runs: stats?.runs ?? 0,
       lastRun: stats?.lastRunMs ? new Date(stats.lastRunMs).toISOString() : "",
+      mode: s.mode ?? null,
+      mcpServer: s.mcpServer ?? null,
     };
   });
 }
@@ -452,4 +517,4 @@ async function loadRecentRuns(limit: number): Promise<RecentRun[]> {
   return runs.map((r) => toRecentRun(r, taskById));
 }
 
-export type { DashboardData, IssueDetail, InboxItem, RunningAgent };
+export type { DashboardData, IssueDetail, InboxItem, RunningAgent, Settings };

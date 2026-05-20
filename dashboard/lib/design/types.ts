@@ -21,6 +21,9 @@ export const DEPARTMENTS: Record<DeptKey, Department> = {
   infra:        { label: "Infra",        color: "var(--dept-infra)",        glyph: "⚙" },
 };
 
+export const deptOf = (d: string | null): Department | null =>
+  d && d in DEPARTMENTS ? DEPARTMENTS[d as DeptKey] : null;
+
 export type AgentKind = "human" | "agent";
 
 export type Agent = {
@@ -30,6 +33,8 @@ export type Agent = {
   initials: string;
   color: string;
   dept: DeptKey | null;
+  description: string;
+  skills: string[];
 };
 
 export type Skill = {
@@ -39,6 +44,9 @@ export type Skill = {
   cadence: string | null;
   runs: number;
   lastRun: string;
+  // Phase 9.5: needed for the Runtimes view (filter to remote, group by server).
+  mode: string | null;
+  mcpServer: string | null;
 };
 
 export type Project = {
@@ -181,6 +189,23 @@ export type DashboardData = {
   vaultRecents: VaultItem[];
   openIssueCounts: OpenIssueCount[];
   projects: Project[];
+  // Phase 9.5/9.6: sidebar counts. Computed server-side so the shell does
+  // not need to fan out to /api/agents, /api/skills, /api/inbox just for
+  // counts.
+  agentCount: number;
+  skillCount: number;
+  inboxCount: number;
+  myIssueCount: number;
+  issueCount: number;
+};
+
+export type Settings = {
+  dashboardVersion: string;
+  agentCount: number;
+  skillCount: number;
+  projectCount: number;
+  scheduleCount: number;
+  lastVaultIndexAt: string | null;
 };
 
 export type IssueDetail = {

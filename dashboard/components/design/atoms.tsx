@@ -5,14 +5,14 @@
 // SkillChip, StatusDot, Sparkline, CostMeter, SectionHead, Tip.
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useAgentByHandle } from "@/lib/design/contexts";
 import {
-  agentByHandle,
   COLUMNS,
   deptOf,
   PRIORITIES,
   type IssueStatus,
   type Priority,
-} from "@/lib/design/data";
+} from "@/lib/design/types";
 
 /* ------ Avatar ------ */
 export function Avatar({
@@ -28,7 +28,7 @@ export function Avatar({
   running?: boolean;
   title?: string;
 }) {
-  const a = agentByHandle(handle);
+  const a = useAgentByHandle(handle);
   if (!a) {
     return (
       <span

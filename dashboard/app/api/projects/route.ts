@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { listProjects } from "@/lib/projects";
-import { createProjectFromExistingFolder } from "@/lib/projectMutations";
+import { cloneAndCreateProject, createProjectFromExistingFolder } from "@/lib/projectMutations";
 import { VAULT_PROJECTS_DIR } from "@/lib/paths";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,22 @@ export async function POST(req: Request) {
     }
   }
 
-  // Clone mode handled in Task 4. Return 501 for now.
-  return NextResponse.json({ error: "clone mode not implemented yet" }, { status: 501 });
+  // Clone mode
+  try {
+    const settings = getSettings();
+    const result = cloneAndCreateProject({
+      name: parsed.data.name,
+      repoUrl: parsed.data.repoUrl,
+      workspaceRoot: settings.workspaceRoot,
+      vaultProjectsDir: VAULT_PROJECTS_DIR,
+      slug: parsed.data.slug,
+      capabilities: parsed.data.capabilities,
+    });
+    return NextResponse.json(
+      { slug: result.slug, projectFilePath: result.projectFilePath },
+      { status: 201 }
+    );
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
 }

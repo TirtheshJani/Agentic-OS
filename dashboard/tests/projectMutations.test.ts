@@ -5,6 +5,7 @@ import os from "node:os";
 import matter from "gray-matter";
 import {
   createProjectFromExistingFolder,
+  extractRepoNameFromUrl,
   slugify,
   updateProjectCrew,
 } from "@/lib/projectMutations";
@@ -119,5 +120,16 @@ body
     const parsed = matter(fs.readFileSync(projectFile, "utf8"));
     expect(parsed.data.crew).toEqual(["c", "d", "e"]);
     expect(parsed.content.trim()).toBe("body");
+  });
+});
+
+describe("extractRepoNameFromUrl", () => {
+  it("pulls the repo name from a GitHub URL", () => {
+    expect(extractRepoNameFromUrl("https://github.com/foo/bar.git")).toBe("bar");
+    expect(extractRepoNameFromUrl("https://github.com/foo/bar")).toBe("bar");
+    expect(extractRepoNameFromUrl("git@github.com:foo/bar.git")).toBe("bar");
+  });
+  it("returns null for non-repo URLs", () => {
+    expect(extractRepoNameFromUrl("https://example.com")).toBeNull();
   });
 });

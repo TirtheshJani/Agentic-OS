@@ -84,3 +84,55 @@ export function updateProjectFields(
   const data: Record<string, unknown> = { ...parsed.data, ...patch };
   fs.writeFileSync(projectFilePath, matter.stringify(parsed.content, data));
 }
+
+import { spawnSync } from "node:child_process";
+
+export function extractRepoNameFromUrl(url: string): string | null {
+  // Handles https://github.com/foo/bar(.git) and git@github.com:foo/bar(.git).
+  // Requires an owner/repo pair so plain hostnames like "https://example.com"
+  // return null.
+  const match = url.match(/[/:][^/:]+\/([^/:]+?)(?:\.git)?\/?$/);
+  return match ? match[1] : null;
+}
+
+interface CloneOpts {
+  name: string;
+  repoUrl: string;
+  workspaceRoot: string;
+  vaultProjectsDir: string;
+  slug?: string;
+  capabilities?: string[];
+}
+
+export function cloneAndCreateProject(opts: CloneOpts): CreateResult {
+  if (!fs.existsSync(opts.workspaceRoot)) {
+    fs.mkdirSync(opts.workspaceRoot, { recursive: true });
+  }
+
+  const slug = opts.slug ?? slugify(opts.name);
+  const targetDir = path.join(opts.workspaceRoot, slug);
+
+  if (fs.existsSync(targetDir)) {
+    throw new Error(`Target directory already exists: ${targetDir}`);
+  }
+
+  // Prefer gh if available; fall back to git.
+  const useGh = spawnSync("gh", ["--version"], { stdio: "ignore" }).status === 0;
+  const cmd = useGh ? "gh" : "git";
+  const args = useGh
+    ? ["repo", "clone", opts.repoUrl, targetDir]
+    : ["clone", opts.repoUrl, targetDir];
+
+  const result = spawnSync(cmd, args, { stdio: "pipe", encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(`Clone failed (${cmd} exit ${result.status}): ${result.stderr || result.stdout}`);
+  }
+
+  return createProjectFromExistingFolder({
+    name: opts.name,
+    folderPath: targetDir,
+    vaultProjectsDir: opts.vaultProjectsDir,
+    slug,
+    capabilities: opts.capabilities,
+  });
+}

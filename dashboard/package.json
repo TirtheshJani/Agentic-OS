@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate": "tsx scripts/migrate-to-0002.ts"
+    "migrate": "tsx scripts/migrate-to-0002.ts",
+    "migrate:threads": "tsx scripts/migrate-threads.ts"
   },
   "dependencies": {
     "better-sqlite3": "11.7.0",

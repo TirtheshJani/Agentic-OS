@@ -8,6 +8,7 @@ import { KanbanBoard } from "@/components/project/KanbanBoard";
 import { NewIssueDialog } from "@/components/project/NewIssueDialog";
 import { CrewPickerDrawer } from "@/components/project/CrewPickerDrawer";
 import { IssueDrawer } from "@/components/issue/IssueDrawer";
+import { WorktreeList } from "@/components/project/WorktreeList";
 
 interface ProjectData {
   slug: string;
@@ -83,6 +84,8 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
         <KanbanBoard projectSlug={slug} onOpenIssue={setOpenIssueId} />
         <CrewSidebar crew={crewDisplay} onEditCrew={() => setShowCrewPicker(true)} />
       </div>
+
+      <WorktreeList projectSlug={slug} />
 
       {showNewIssue && (
         <NewIssueDialog

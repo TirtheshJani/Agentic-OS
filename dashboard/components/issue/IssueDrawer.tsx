@@ -6,7 +6,7 @@ import { IssueHeader } from "./IssueHeader";
 import { IssueBodyEditor } from "./IssueBodyEditor";
 import { ThreadList } from "./ThreadList";
 import { ThreadComposer } from "./ThreadComposer";
-import { RunsTabStub } from "./RunsTabStub";
+import { RunsTab } from "./RunsTab";
 import { useStream } from "@/hooks/useStream";
 
 interface IssueData {
@@ -115,7 +115,12 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
 
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Runs</h3>
-        <RunsTabStub />
+        <RunsTab
+          issueId={issue.id}
+          projectSlug={issue.projectSlug}
+          issueStatus={issue.status}
+          hasAssignee={issue.assigneeSlug != null}
+        />
       </section>
     </Drawer>
   );

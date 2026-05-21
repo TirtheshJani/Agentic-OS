@@ -1,0 +1,133 @@
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { useRunsForIssue } from "@/hooks/useRun";
+import { RunTerminal } from "./RunTerminal";
+import { RunHeader } from "./RunHeader";
+import { StartButton } from "./StartButton";
+import { StopButton } from "./StopButton";
+
+interface Props {
+  issueId: number;
+  projectSlug: string;
+  issueStatus: "backlog" | "queued" | "running" | "review" | "done" | "failed";
+  hasAssignee: boolean;
+}
+
+interface CapState {
+  projectActive: number;
+  globalActive: number;
+}
+
+interface CapLimits {
+  perProjectMax: number;
+  globalMax: number;
+}
+
+export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Props) {
+  const { runs, reload } = useRunsForIssue(issueId);
+  const [capStatus, setCapStatus] = useState<CapState | null>(null);
+  const [capLimits, setCapLimits] = useState<CapLimits | null>(null);
+
+  const refreshCaps = useCallback(async () => {
+    const [capRes, settingsRes] = await Promise.all([
+      fetch(`/api/projects/${projectSlug}/capacity`, { cache: "no-store" }),
+      fetch(`/api/settings`, { cache: "no-store" }),
+    ]);
+    if (capRes.ok) setCapStatus(await capRes.json());
+    if (settingsRes.ok) {
+      const s = await settingsRes.json();
+      setCapLimits({
+        perProjectMax: s.concurrency.perProjectMax,
+        globalMax: s.concurrency.globalMax,
+      });
+    }
+  }, [projectSlug]);
+
+  useEffect(() => {
+    refreshCaps();
+  }, [refreshCaps, runs?.length]);
+
+  if (!runs) return <p className="text-sm text-gray-400">Loading runs...</p>;
+
+  const activeRun = runs.find(r => r.endedAt == null);
+
+  const atProjectCap = capLimits != null && capStatus != null && capStatus.projectActive >= capLimits.perProjectMax;
+  const atGlobalCap = capLimits != null && capStatus != null && capStatus.globalActive >= capLimits.globalMax;
+
+  const capReason = atProjectCap
+    ? `At project concurrency cap (${capStatus!.projectActive}/${capLimits!.perProjectMax})`
+    : atGlobalCap
+    ? `At global concurrency cap (${capStatus!.globalActive}/${capLimits!.globalMax})`
+    : null;
+
+  const startDisabled =
+    !hasAssignee ||
+    activeRun != null ||
+    issueStatus === "done" ||
+    capReason != null;
+
+  const disabledReason = !hasAssignee
+    ? "Assign an agent before starting"
+    : activeRun != null
+    ? "Run already in progress"
+    : issueStatus === "done"
+    ? "Issue is marked done"
+    : capReason;
+
+  async function openInTerminal(runId: number) {
+    const res = await fetch(`/api/runs/${runId}/open-terminal`, { method: "POST" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(`Failed to open terminal: ${data.error ?? res.status}`);
+    }
+  }
+
+  function onStarted() {
+    reload();
+    refreshCaps();
+  }
+
+  function onStopped() {
+    reload();
+    refreshCaps();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          {runs.length === 0 ? "No runs yet." : `${runs.length} run${runs.length === 1 ? "" : "s"}`}
+        </div>
+        <div className="flex items-center gap-2">
+          {activeRun && <StopButton runId={activeRun.id} onStopped={onStopped} />}
+          <StartButton
+            issueId={issueId}
+            disabled={startDisabled}
+            disabledReason={disabledReason}
+            onStarted={onStarted}
+          />
+        </div>
+      </div>
+
+      {activeRun && (
+        <section>
+          <RunHeader run={activeRun} onOpenInTerminal={() => openInTerminal(activeRun.id)} />
+          <RunTerminal runId={activeRun.id} active />
+        </section>
+      )}
+
+      {runs.filter(r => r.endedAt != null).length > 0 && (
+        <section>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Previous runs</h4>
+          <ul className="space-y-2">
+            {runs.filter(r => r.endedAt != null).map(r => (
+              <li key={r.id} className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                #{r.id} {r.exitStatus} ({new Date(r.startedAt).toLocaleString()} → {r.endedAt ? new Date(r.endedAt).toLocaleString() : "?"})
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}

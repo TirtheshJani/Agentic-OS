@@ -1,7 +1,17 @@
 import path from "node:path";
 import os from "node:os";
 
-export const REPO_ROOT = path.resolve(__dirname, "..", "..");
+// __dirname is unreliable in Next.js bundled server output. Derive the repo
+// root from cwd (dashboard scripts run from dashboard/), with an env override
+// for tests or unusual deployments.
+function resolveRepoRoot(): string {
+  if (process.env.AGENTIC_OS_REPO_ROOT) return process.env.AGENTIC_OS_REPO_ROOT;
+  const cwd = process.cwd();
+  if (path.basename(cwd) === "dashboard") return path.resolve(cwd, "..");
+  return cwd;
+}
+
+export const REPO_ROOT = resolveRepoRoot();
 
 export const VAULT_DIR = path.join(REPO_ROOT, "vault");
 export const VAULT_PROJECTS_DIR = path.join(VAULT_DIR, "projects");

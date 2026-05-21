@@ -1,24 +1,21 @@
 import path from "node:path";
+import os from "node:os";
 
-export const repoRoot = path.resolve(process.cwd(), "..");
-export const skillsPath = path.join(repoRoot, "skills");
-export const vaultPath = process.env.VAULT_PATH
-  ? path.resolve(repoRoot, process.env.VAULT_PATH)
-  : path.join(repoRoot, "vault");
-export const automationsRemotePath = path.join(repoRoot, "automations", "remote");
-export const dbPath = process.env.AGENTIC_OS_DB
-  ? path.resolve(repoRoot, process.env.AGENTIC_OS_DB)
-  : path.join(repoRoot, ".agentic-os", "state.db");
-export const agentsPath = path.join(repoRoot, "agents");
-export const agentPromptsPath = path.join(agentsPath, "_prompts");
-export const threadsPath = path.join(vaultPath, "threads");
+export const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
-// Parent directory scanned for sibling git repos. Override with
-// AGENTIC_OS_DISCOVERY_ROOT. Default matches the user's GitHub clone root.
-export const discoveryRoot = process.env.AGENTIC_OS_DISCOVERY_ROOT
-  ? path.resolve(process.env.AGENTIC_OS_DISCOVERY_ROOT)
-  : path.resolve(repoRoot, "..");
+export const VAULT_DIR = path.join(REPO_ROOT, "vault");
+export const VAULT_PROJECTS_DIR = path.join(VAULT_DIR, "projects");
+export const AGENTS_DIR = path.join(REPO_ROOT, "agents");
+export const SKILLS_DIR = path.join(REPO_ROOT, "skills");
 
-export function normalizeCwd(p: string): string {
-  return path.resolve(p).toLowerCase();
+export const STATE_DIR = path.join(REPO_ROOT, ".agentic-os");
+export const STATE_DB_PATH = path.join(STATE_DIR, "state.db");
+export const SETTINGS_PATH = path.join(STATE_DIR, "settings.json");
+export const MIGRATIONS_DIR = path.join(STATE_DIR, "migrations");
+
+export function defaultWorkspaceRoot(): string {
+  if (process.platform === "win32") {
+    return path.join(os.homedir(), "code");
+  }
+  return path.join(os.homedir(), "code");
 }

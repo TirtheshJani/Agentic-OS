@@ -1,0 +1,46 @@
+{
+  "name": "dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint",
+    "validate:skills": "node scripts/validate-skills.mjs",
+    "validate:automations": "node scripts/validate-automations.mjs",
+    "validate:agents": "node scripts/validate-agents.mjs",
+    "validate:projects": "node scripts/validate-projects.mjs",
+    "test:tasks": "tsx scripts/test-tasks.mjs",
+    "test:threads": "tsx scripts/test-threads.mjs",
+    "test:task-flow": "tsx scripts/test-task-flow.mjs",
+    "test:github-sync": "tsx scripts/test-github-sync.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-slot": "^1.2.4",
+    "better-sqlite3": "^12.9.0",
+    "chokidar": "^5.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "tsx": "^4.22.0",
+    "typescript": "^5"
+  }
+}

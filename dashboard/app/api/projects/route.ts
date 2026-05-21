@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { listProjects } from "@/lib/projects";
+import { cloneAndCreateProject, createProjectFromExistingFolder } from "@/lib/projectMutations";
+import { VAULT_PROJECTS_DIR } from "@/lib/paths";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -23,5 +27,70 @@ export async function GET() {
       { error: (err as Error).message },
       { status: 500 }
     );
+  }
+}
+
+const PostBodySchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("link"),
+    name: z.string().min(1),
+    folderPath: z.string().min(1),
+    slug: z.string().optional(),
+    capabilities: z.array(z.string()).optional(),
+  }),
+  z.object({
+    mode: z.literal("clone"),
+    name: z.string().min(1),
+    repoUrl: z.string().url(),
+    slug: z.string().optional(),
+    capabilities: z.array(z.string()).optional(),
+  }),
+]);
+
+export async function POST(req: Request) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = PostBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "invalid request", issues: parsed.error.issues }, { status: 400 });
+  }
+
+  if (parsed.data.mode === "link") {
+    try {
+      const result = createProjectFromExistingFolder({
+        name: parsed.data.name,
+        folderPath: parsed.data.folderPath,
+        vaultProjectsDir: VAULT_PROJECTS_DIR,
+        slug: parsed.data.slug,
+        capabilities: parsed.data.capabilities,
+      });
+      return NextResponse.json({ slug: result.slug, projectFilePath: result.projectFilePath }, { status: 201 });
+    } catch (err) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+    }
+  }
+
+  // Clone mode
+  try {
+    const settings = getSettings();
+    const result = cloneAndCreateProject({
+      name: parsed.data.name,
+      repoUrl: parsed.data.repoUrl,
+      workspaceRoot: settings.workspaceRoot,
+      vaultProjectsDir: VAULT_PROJECTS_DIR,
+      slug: parsed.data.slug,
+      capabilities: parsed.data.capabilities,
+    });
+    return NextResponse.json(
+      { slug: result.slug, projectFilePath: result.projectFilePath },
+      { status: 201 }
+    );
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
 }

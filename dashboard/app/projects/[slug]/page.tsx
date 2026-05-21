@@ -1,61 +1,112 @@
+"use client";
+import { use, useEffect, useState, useCallback } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { getProject } from "@/lib/projects";
+import { useStream } from "@/hooks/useStream";
+import { ProjectHeader } from "@/components/project/ProjectHeader";
+import { CrewSidebar } from "@/components/project/CrewSidebar";
+import { KanbanBoard } from "@/components/project/KanbanBoard";
+import { NewIssueDialog } from "@/components/project/NewIssueDialog";
+import { CrewPickerDrawer } from "@/components/project/CrewPickerDrawer";
+import { IssueDrawer } from "@/components/issue/IssueDrawer";
 
-export const dynamic = "force-dynamic";
+interface ProjectData {
+  slug: string;
+  name: string;
+  path: string;
+  repo: string | null;
+  crew: string[];
+  capabilities: string[];
+  runtimeDefault: string;
+}
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const project = getProject(slug);
-  if (!project) notFound();
+interface AgentDetail {
+  slug: string;
+  name: string;
+  skills: string[];
+}
+
+export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  const [project, setProject] = useState<ProjectData | null>(null);
+  const [agents, setAgents] = useState<AgentDetail[] | null>(null);
+  const [openIssueId, setOpenIssueId] = useState<number | null>(null);
+  const [showNewIssue, setShowNewIssue] = useState(false);
+  const [showCrewPicker, setShowCrewPicker] = useState(false);
+  const [notFoundFlag, setNotFoundFlag] = useState(false);
+
+  const reloadProject = useCallback(async () => {
+    const res = await fetch(`/api/projects/${slug}`, { cache: "no-store" });
+    if (res.status === 404) {
+      setNotFoundFlag(true);
+      return;
+    }
+    if (!res.ok) return;
+    const data = await res.json();
+    setProject(data);
+  }, [slug]);
+
+  const reloadAgents = useCallback(async () => {
+    const res = await fetch("/api/agents", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    setAgents(data.agents);
+  }, []);
+
+  useEffect(() => {
+    reloadProject();
+    reloadAgents();
+  }, [reloadProject, reloadAgents]);
+
+  useStream((event) => {
+    if (event.kind === "project.changed" && (event as any).slug === slug) reloadProject();
+    if (event.kind === "agent.changed") reloadAgents();
+  });
+
+  if (notFoundFlag) notFound();
+  if (!project || !agents) return <p className="p-6 text-sm text-gray-500">Loading...</p>;
+
+  const crewDisplay: AgentDetail[] = project.crew
+    .map(s => agents.find(a => a.slug === s))
+    .filter((a): a is AgentDetail => Boolean(a));
 
   return (
-    <main className="max-w-5xl mx-auto p-6">
-      <nav className="text-sm text-gray-500 mb-4">
-        <Link href="/" className="hover:underline">Home</Link>
-        <span className="mx-2">/</span>
-        <span>{project.slug}</span>
-      </nav>
+    <main className="max-w-7xl mx-auto p-6">
+      <ProjectHeader
+        name={project.name}
+        slug={project.slug}
+        path={project.path}
+        repo={project.repo}
+        runtimeDefault={project.runtimeDefault}
+        onNewIssue={() => setShowNewIssue(true)}
+      />
+      <div className="grid grid-cols-[1fr_280px] gap-6">
+        <KanbanBoard projectSlug={slug} onOpenIssue={setOpenIssueId} />
+        <CrewSidebar crew={crewDisplay} onEditCrew={() => setShowCrewPicker(true)} />
+      </div>
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">{project.name}</h1>
-        <p className="text-sm text-gray-500 mt-1" title={project.path}>{project.path}</p>
-        {project.repo && (
-          <a href={project.repo} className="text-sm text-blue-600 hover:underline mt-1 inline-block" target="_blank" rel="noreferrer">
-            {project.repo}
-          </a>
-        )}
-      </header>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Crew</h2>
-          {project.crew.length === 0 ? (
-            <p className="text-sm text-gray-400">No crew yet. Crew editing ships in Phase 2.</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {project.crew.map(s => <li key={s} className="font-mono">{s}</li>)}
-            </ul>
-          )}
-        </div>
-        <div>
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Capabilities</h2>
-          {project.capabilities.length === 0 ? (
-            <p className="text-sm text-gray-400">No capabilities tagged.</p>
-          ) : (
-            <div className="flex gap-1 flex-wrap">
-              {project.capabilities.map(c => (
-                <span key={c} className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-900">{c}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Kanban</h2>
-        <p className="text-sm text-gray-400">Issues board ships in Phase 2.</p>
-      </section>
+      {showNewIssue && (
+        <NewIssueDialog
+          projectSlug={slug}
+          crew={crewDisplay}
+          onClose={() => setShowNewIssue(false)}
+        />
+      )}
+      {showCrewPicker && (
+        <CrewPickerDrawer
+          projectSlug={slug}
+          projectCapabilities={project.capabilities}
+          currentCrew={project.crew}
+          allAgents={agents}
+          onClose={() => setShowCrewPicker(false)}
+        />
+      )}
+      {openIssueId !== null && (
+        <IssueDrawer
+          issueId={openIssueId}
+          crew={crewDisplay}
+          onClose={() => setOpenIssueId(null)}
+        />
+      )}
     </main>
   );
 }

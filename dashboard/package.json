@@ -12,12 +12,13 @@
     "migrate": "tsx scripts/migrate-to-0002.ts"
   },
   "dependencies": {
+    "better-sqlite3": "11.7.0",
+    "chokidar": "4.0.1",
+    "clsx": "^2.1.1",
+    "gray-matter": "4.0.3",
     "next": "15.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "better-sqlite3": "11.7.0",
-    "gray-matter": "4.0.3",
-    "chokidar": "4.0.1",
     "zod": "3.23.8"
   },
   "devDependencies": {
@@ -25,12 +26,12 @@
     "@types/node": "22.10.2",
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.2",
+    "@vitest/ui": "2.1.8",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
     "tsx": "4.19.2",
     "typescript": "5.6.3",
-    "vitest": "2.1.8",
-    "@vitest/ui": "2.1.8"
+    "vitest": "2.1.8"
   }
 }

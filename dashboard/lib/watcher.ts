@@ -1,5 +1,6 @@
 import chokidar, { FSWatcher } from "chokidar";
 import { VAULT_PROJECTS_DIR, AGENTS_DIR } from "@/lib/paths";
+import { publish } from "@/lib/stream";
 
 interface StartOptions {
   projectsRoot?: string;
@@ -24,12 +25,20 @@ export async function startWatcher(opts: StartOptions = {}): Promise<void> {
     }
   );
 
-  watcher.on("all", (_event, filePath) => {
+  watcher.on("all", (event, filePath) => {
     if (!filePath.endsWith(".md")) return;
     if (filePath.endsWith("PROJECT.md") && filePath.startsWith(projectsRoot)) {
       counts.project += 1;
+      const parts = filePath.split(/[/\\]/);
+      const projectsIdx = parts.findIndex(p => p === "projects");
+      const slug = projectsIdx >= 0 ? parts[projectsIdx + 1] : "unknown";
+      const reason = event === "add" ? "create" : event === "unlink" ? "delete" : "update";
+      publish({ kind: "project.changed", slug, reason });
     } else if (filePath.startsWith(agentsRoot)) {
       counts.agent += 1;
+      const slug = filePath.split(/[/\\]/).pop()!.replace(/\.md$/, "");
+      const reason = event === "add" ? "create" : event === "unlink" ? "delete" : "update";
+      publish({ kind: "agent.changed", slug, reason });
     }
   });
 

@@ -30,7 +30,7 @@ export async function startWatcher(opts: StartOptions = {}): Promise<void> {
     if (filePath.endsWith("PROJECT.md") && filePath.startsWith(projectsRoot)) {
       counts.project += 1;
       const parts = filePath.split(/[/\\]/);
-      const projectsIdx = parts.findIndex(p => p === "projects");
+      const projectsIdx = parts.findIndex((p: string) => p === "projects");
       const slug = projectsIdx >= 0 ? parts[projectsIdx + 1] : "unknown";
       const reason = event === "add" ? "create" : event === "unlink" ? "delete" : "update";
       publish({ kind: "project.changed", slug, reason });

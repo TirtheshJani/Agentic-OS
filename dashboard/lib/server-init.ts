@@ -1,7 +1,6 @@
-// dashboard/lib/server-init.ts
-// Lazily boots server-side singletons on first request.
-// Next.js spins up handlers on demand, so we need a sentinel.
 import { startWatcher } from "@/lib/watcher";
+import { registerRuntime } from "@/lib/runtime/registry";
+import { claudeCodeRuntime } from "@/lib/runtime/claude-code";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -11,6 +10,7 @@ export async function ensureServerBooted(): Promise<void> {
   if (bootPromise) return bootPromise;
   bootPromise = (async () => {
     await startWatcher();
+    registerRuntime(claudeCodeRuntime);
     booted = true;
   })();
   return bootPromise;

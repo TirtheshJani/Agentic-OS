@@ -11,8 +11,15 @@ export async function GET() {
 
   const stream = new ReadableStream({
     start(controller) {
+      let closed = false;
       const send = (event: StreamEvent | { kind: "ping" }) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        } catch {
+          closed = true;
+          (controller as any)._cleanup?.();
+        }
       };
 
       // Initial ping so the client sees a successful connection.
@@ -23,9 +30,8 @@ export async function GET() {
       // Keepalive ping every 25s; some proxies kill idle SSE connections.
       const interval = setInterval(() => send({ kind: "ping" }), 25_000);
 
-      // Clean up when the client disconnects. Next.js exposes this via the
-      // ReadableStream cancel callback.
       (controller as any)._cleanup = () => {
+        closed = true;
         clearInterval(interval);
         unsubscribe();
       };

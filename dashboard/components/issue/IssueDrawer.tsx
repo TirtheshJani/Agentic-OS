@@ -97,18 +97,7 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
       }
     >
       <section className="space-y-4">
-        <IssueBodyEditor title={issue.title} body={issue.body} onSave={patch} />
         <IssueHeader issue={issue} crew={crew} onPatch={patch} />
-      </section>
-
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
-
-      <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Thread</h3>
-        <ThreadList issueId={issue.id} />
-        <div className="mt-3">
-          <ThreadComposer issueId={issue.id} />
-        </div>
       </section>
 
       <hr className="my-6 border-gray-200 dark:border-gray-800" />
@@ -121,6 +110,22 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
           issueStatus={issue.status}
           hasAssignee={issue.assigneeSlug != null}
         />
+      </section>
+
+      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+
+      <section>
+        <IssueBodyEditor title={issue.title} body={issue.body} onSave={patch} />
+      </section>
+
+      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Thread</h3>
+        <ThreadList issueId={issue.id} />
+        <div className="mt-3">
+          <ThreadComposer issueId={issue.id} />
+        </div>
       </section>
     </Drawer>
   );

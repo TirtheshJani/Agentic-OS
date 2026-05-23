@@ -1,8 +1,22 @@
 import type { SpawnedRun } from "@/lib/runtime/types";
 import { attachSessionId } from "@/lib/runs";
 
-const live = new Map<number, SpawnedRun>();
-const sidWaiters = new Map<number, Array<(sid: string) => void>>();
+// In Next.js dev, the App Router loads modules in its own ESM/CJS graph while
+// the custom server (server.ts) loads via tsx. Each ends up with its own copy
+// of this module, so a Map declared at module scope would not be visible
+// across the two — POST /api/runs writes into the API-route instance, but the
+// WebSocket upgrade handler in server.ts reads from the tsx instance. Hoist
+// the state onto globalThis so both halves observe the same Map.
+const globalKey = Symbol.for("agentic-os.liveRuns");
+type LiveStore = {
+  live: Map<number, SpawnedRun>;
+  sidWaiters: Map<number, Array<(sid: string) => void>>;
+};
+const g = globalThis as unknown as Record<symbol, LiveStore | undefined>;
+if (!g[globalKey]) {
+  g[globalKey] = { live: new Map(), sidWaiters: new Map() };
+}
+const { live, sidWaiters } = g[globalKey]!;
 
 /**
  * Track a spawned run for the lifetime of its PTY. Wires the runtime's session_id

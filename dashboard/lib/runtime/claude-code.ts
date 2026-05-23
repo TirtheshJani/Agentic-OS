@@ -9,8 +9,15 @@ import { REPO_ROOT } from "@/lib/paths";
 
 const HOOK_SCRIPT_PATH = path.join(REPO_ROOT, "dashboard", "scripts", "claude-session-hook.js");
 
+// On Windows, npm-installed CLIs are .cmd shims, not .exe. node-pty's
+// CreateProcess can launch .cmd files when given the explicit name (or full
+// path), but plain "claude" looks for claude.exe and fails with error code 2.
+const CLAUDE_BIN = process.platform === "win32" ? "claude.cmd" : "claude";
+
 function detectClaude(): RuntimeAvailability {
-  const r = spawnSync("claude", ["--version"], { encoding: "utf8" });
+  // spawnSync accepts shell:true on Windows so the .cmd shim resolves; pty
+  // calls below use the resolved binary name directly.
+  const r = spawnSync(CLAUDE_BIN, ["--version"], { encoding: "utf8", shell: process.platform === "win32" });
   if (r.status !== 0) {
     return { available: false, version: null, error: r.stderr || "claude not on PATH" };
   }
@@ -37,7 +44,12 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
   });
 
   // 2. Spawn claude in the worktree.
-  const term = pty.spawn("claude", [], {
+  // --dangerously-skip-permissions bypasses the first-run workspace trust
+  // dialog and per-tool permission prompts. The operator is delegating to the
+  // agent specifically to take actions in this worktree, so a blocking
+  // permission TUI here just deadlocks the run. The worktree is isolated from
+  // the canonical repo, so the blast radius is bounded.
+  const term = pty.spawn(CLAUDE_BIN, ["--dangerously-skip-permissions"], {
     name: "xterm-color",
     cols: opts.cols ?? 120,
     rows: opts.rows ?? 30,
@@ -72,17 +84,33 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
     .then(fireSessionId)
     .catch(() => undefined); // hook may have already won; that's fine
 
-  // 4. Wait for the agent's prompt to be ready, then send the issue body.
-  // The 1200ms delay is empirical and may need tuning per machine. The fix-it
-  // path is to bump PROMPT_READY_DELAY_MS, not to add prompt-marker detection
-  // (which would be runtime-specific and brittle).
-  const PROMPT_READY_DELAY_MS = 1200;
+  // 4. First-run-per-worktree trust prompt: claude shows a "Quick safety check"
+  // dialog with option 1 ("Yes, I trust this folder") pre-selected, and the
+  // session does not start until Enter is pressed. We can't reliably parse the
+  // PTY stream for the marker (chunked, ANSI-interleaved), so just send Enter
+  // blindly after spawn. If the prompt is up, this accepts it. If the regular
+  // input prompt is up, this submits an empty line which is a no-op.
+  const TRUST_ACCEPT_DELAY_MS = 1500;
   setTimeout(() => {
     try {
-      const body = opts.initialPrompt.trim();
+      console.log(`[claude-code] run ${opts.runId}: sending blind Enter for possible trust prompt`);
+      term.write("\r");
+    } catch { /* PTY dead */ }
+  }, TRUST_ACCEPT_DELAY_MS);
+
+  // 5. Wait for the input prompt to be ready (post-trust-accept), then send
+  // the issue body. Delay covers the trust-prompt acceptance path: 1.5s blind
+  // Enter + ~3s for claude to initialize the session = ~4.5s total.
+  const PROMPT_READY_DELAY_MS = 5000;
+  setTimeout(() => {
+    try {
+      // Collapse newlines: Claude's TUI treats embedded \n as "newline within
+      // input" and stays in multi-line mode, so a single trailing \r doesn't
+      // submit. Replace runs of whitespace (including newlines) with a single
+      // space to keep the prompt as one logical line that submits on Enter.
+      const body = opts.initialPrompt.replace(/\s+/g, " ").trim();
       if (body.length > 0) {
         console.log(`[claude-code] run ${opts.runId}: writing initial prompt (${body.length} chars) to PTY`);
-        // Carriage return is what cooked-mode terminal driver maps to newline.
         term.write(body + "\r");
       }
     } catch (err) {

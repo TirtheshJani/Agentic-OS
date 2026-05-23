@@ -29,7 +29,7 @@ export function Drawer({ title, width = "md", onClose, children, footer }: Drawe
     <div className="fixed inset-0 z-40 flex">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className={clsx(
-        "ml-auto bg-white dark:bg-gray-950 border-l border-gray-200 dark:border-gray-800 h-full flex flex-col w-full",
+        "relative ml-auto bg-white dark:bg-gray-950 border-l border-gray-200 dark:border-gray-800 h-full flex flex-col w-full",
         widthMap[width]
       )}>
         <header className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">

@@ -107,11 +107,16 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
       // Collapse newlines: Claude's TUI treats embedded \n as "newline within
       // input" and stays in multi-line mode, so a single trailing \r doesn't
       // submit. Replace runs of whitespace (including newlines) with a single
-      // space to keep the prompt as one logical line that submits on Enter.
+      // space to keep the prompt as one logical line.
       const body = opts.initialPrompt.replace(/\s+/g, " ").trim();
       if (body.length > 0) {
         console.log(`[claude-code] run ${opts.runId}: writing initial prompt (${body.length} chars) to PTY`);
-        term.write(body + "\r");
+        term.write(body);
+        // Send Enter as a separate write after the body. When body + "\r" is
+        // written in one call, node-pty/ConPTY can deliver it as a single
+        // chunk and the TUI does not register the final byte as a discrete
+        // Enter keypress. A delayed second write of just "\r" submits.
+        setTimeout(() => { try { term.write("\r"); } catch { /* PTY dead */ } }, 250);
       }
     } catch (err) {
       console.error(`[claude-code] run ${opts.runId}: PTY write failed:`, err);

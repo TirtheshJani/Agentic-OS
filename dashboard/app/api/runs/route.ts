@@ -19,6 +19,8 @@ openDb();
 
 const PostSchema = z.object({
   issueId: z.number().int().positive(),
+  /** Per-run override; falls back to the agent's runtime, then the project default. */
+  runtimeId: z.string().min(1).optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,9 +43,9 @@ export async function POST(req: Request) {
   const agent = getAgent(issue.assigneeSlug);
   if (!agent) return NextResponse.json({ error: "assignee agent not found" }, { status: 404 });
 
-  const runtimeId = agent.runtime || project["runtime-default"];
+  const runtimeId = parsed.data.runtimeId ?? (agent.runtime || project["runtime-default"]);
   const runtime = getRuntime(runtimeId);
-  if (!runtime) return NextResponse.json({ error: `runtime not registered: ${runtimeId}` }, { status: 500 });
+  if (!runtime) return NextResponse.json({ error: `runtime not registered: ${runtimeId}` }, { status: 400 });
 
   const settings = getSettings();
   try {

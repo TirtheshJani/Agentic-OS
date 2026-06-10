@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRunsForIssue } from "@/hooks/useRun";
+import { useRuntimes } from "@/hooks/useRuntimes";
 import { RunTerminal } from "./RunTerminal";
 import { RunHeader } from "./RunHeader";
 import { StartButton } from "./StartButton";
@@ -25,8 +26,11 @@ interface CapLimits {
 
 export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Props) {
   const { runs, reload } = useRunsForIssue(issueId);
+  const runtimes = useRuntimes();
   const [capStatus, setCapStatus] = useState<CapState | null>(null);
   const [capLimits, setCapLimits] = useState<CapLimits | null>(null);
+  // "" means "agent default": no override sent with the start request.
+  const [runtimeOverride, setRuntimeOverride] = useState("");
 
   const refreshCaps = useCallback(async () => {
     const [capRes, settingsRes] = await Promise.all([
@@ -100,10 +104,26 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
         </div>
         <div className="flex items-center gap-2">
           {activeRun && <StopButton runId={activeRun.id} onStopped={onStopped} />}
+          {!activeRun && runtimes && runtimes.length > 1 && (
+            <select
+              value={runtimeOverride}
+              onChange={(e) => setRuntimeOverride(e.target.value)}
+              className="text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1"
+              title="Runtime for the next run"
+            >
+              <option value="">Agent default</option>
+              {runtimes.map((rt) => (
+                <option key={rt.id} value={rt.id} disabled={!rt.availability.available}>
+                  {rt.displayName}{rt.availability.available ? "" : " (not installed)"}
+                </option>
+              ))}
+            </select>
+          )}
           <StartButton
             issueId={issueId}
             disabled={startDisabled}
             disabledReason={disabledReason}
+            runtimeId={runtimeOverride || undefined}
             onStarted={onStarted}
           />
         </div>

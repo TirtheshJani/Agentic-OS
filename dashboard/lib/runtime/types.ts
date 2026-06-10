@@ -26,10 +26,25 @@ export interface SpawnedRun {
   cleanup: () => Promise<void>;
 }
 
+export interface RuntimeCapabilities {
+  /** Session can be re-attached via formatResumeCommand. */
+  sessionResume: boolean;
+  /** Emits a stable session ID we can capture (via hook, file watch, or self-assignment). */
+  sessionIdCapture: boolean;
+  /** Supports Claude Code-style hook events (SessionStart etc.). */
+  hooks: boolean;
+  /** Exposes parseable usage data for cost computation. */
+  transcriptCostParsing: boolean;
+  /** Can be opened in an external terminal mid-run via formatResumeCommand. */
+  externalTerminalEscape: boolean;
+}
+
 export interface Runtime {
   /** Stable identifier, e.g. "claude-code". Matches `runtime-default` and `runtime` frontmatter values. */
   id: string;
   displayName: string;
+  /** Static declaration of what this runtime supports. The UI consults these to hide or degrade features; each runtime's spawn flow owns its own gating. */
+  capabilities: RuntimeCapabilities;
   /** Returns availability + version. Used by the dashboard to show "claude-code 0.5.3" etc. */
   detect(): Promise<RuntimeAvailability>;
   /** Spawn a session in the given worktree and arrange for the initial prompt to be delivered. */

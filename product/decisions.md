@@ -133,6 +133,10 @@ Cost: each agent description must be curated as a routing signal, not just
 human-facing prose. Validator does not enforce this; failures show up as
 "no teammate matched — holding" thread notes.
 
+---
+
+## ADR-005 — Skill frontmatter restricted to spec keys
+
 **Date:** 2026-05-10
 
 **Context.** Skills shipped non-compliantly drift from Claude Code's
@@ -148,3 +152,32 @@ on every build.
 **Consequences.** All ~25 stub skills pass the spec validator from day one.
 Cost: dashboard has to read `metadata.status`/`metadata.domain` instead of
 the top level. Negligible.
+
+---
+
+## ADR-008 — Gemini CLI replaces Codex as the second runtime
+
+**Date:** 2026-06-10
+
+**Context.** Spec 0006 (D9) locked Codex as the second runtime, chosen for
+paradigm similarity and abstraction stress-testing. Since then the operator
+confirmed two paid plans to put to work: Claude Max (drives claude-code via
+the logged-in CLI) and Google AI Pro (raises Gemini CLI limits via personal
+Google OAuth). Codex would require a third subscription with no existing
+entitlement. Gemini CLI v0.46.0 verified locally: interactive TUI under a
+PTY like claude-code, `--yolo` auto-approval, `--skip-trust` suppresses the
+workspace trust dialog, `--session-id <uuid>` allows self-assigned session
+ids, MCP server support.
+
+**Decision.** Supersede spec 0006 D9: `gemini-cli` is the second runtime
+(spec 0007). Capabilities declared honestly: `hooks: false`,
+`transcriptCostParsing: false`, `externalTerminalEscape: false`,
+`sessionResume: false` (resume-by-UUID unverified; `--resume` takes
+"latest" or an index), `sessionIdCapture: true` via self-assigned
+`--session-id`. Codex remains a candidate third runtime; nothing in the
+registry design blocks it.
+
+**Consequences.** Agent runs can target either paid plan from the same
+kanban. Runtime-capability gating (spec 0006's design) ships unchanged; the
+codex.ts implementation file is simply replaced by gemini-cli.ts. Features
+relying on hooks or transcripts degrade visibly for gemini runs.

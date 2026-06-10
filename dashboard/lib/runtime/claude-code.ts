@@ -146,6 +146,14 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
 export const claudeCodeRuntime: Runtime = {
   id: "claude-code",
   displayName: "Claude Code",
+  capabilities: {
+    sessionResume: true,
+    sessionIdCapture: true,
+    hooks: true,
+    // No transcript cost parser is implemented yet; flip when lib/usage lands.
+    transcriptCostParsing: false,
+    externalTerminalEscape: true,
+  },
   detect: async () => detectClaude(),
   spawn: spawnClaude,
   formatResumeCommand: (sid) => `claude --resume ${sid}`,

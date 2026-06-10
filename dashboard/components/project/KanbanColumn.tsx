@@ -4,15 +4,18 @@ import { useDroppable } from "@dnd-kit/core";
 import clsx from "clsx";
 import { IssueCard } from "./IssueCard";
 import type { IssueSummary } from "@/hooks/useIssues";
+import type { AgentDisplay } from "./KanbanBoard";
 
 interface Props {
   status: IssueSummary["status"];
   title: string;
   issues: IssueSummary[];
   onOpenIssue: (id: number) => void;
+  showProject?: boolean;
+  agents?: AgentDisplay[];
 }
 
-export function KanbanColumn({ status, title, issues, onOpenIssue }: Props) {
+export function KanbanColumn({ status, title, issues, onOpenIssue, showProject, agents }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `col:${status}` });
 
   return (
@@ -30,7 +33,13 @@ export function KanbanColumn({ status, title, issues, onOpenIssue }: Props) {
       <SortableContext items={issues.map(i => i.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2 flex-1">
           {issues.map(issue => (
-            <IssueCard key={issue.id} issue={issue} onOpen={onOpenIssue} />
+            <IssueCard
+              key={issue.id}
+              issue={issue}
+              onOpen={onOpenIssue}
+              showProject={showProject}
+              agents={agents}
+            />
           ))}
         </div>
       </SortableContext>

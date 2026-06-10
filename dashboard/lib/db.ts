@@ -79,6 +79,38 @@ CREATE TABLE IF NOT EXISTS schedule_state (
   console.log("[db] applied schema migration v3 (parent_issue_id, schedule_state)");
 }
 
+// V4: vault knowledge index (notes, wikilink graph, full-text search).
+function applyV4(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 4").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS notes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  path        TEXT UNIQUE NOT NULL,
+  basename    TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  folder      TEXT NOT NULL,
+  tags        TEXT,
+  mtime       INTEGER NOT NULL,
+  indexed_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS notes_folder_idx ON notes(folder);
+CREATE INDEX IF NOT EXISTS notes_basename_idx ON notes(basename);
+
+CREATE TABLE IF NOT EXISTS note_links (
+  source_id   INTEGER NOT NULL,
+  target_id   INTEGER,
+  target_raw  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS note_links_source_idx ON note_links(source_id);
+CREATE INDEX IF NOT EXISTS note_links_target_idx ON note_links(target_id);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(title, body, path UNINDEXED);
+`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (4, ?)").run(Date.now());
+  console.log("[db] applied schema migration v4 (notes, note_links, notes_fts)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -91,6 +123,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
     db.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (1, ?)").run(Date.now());
   }
   applyV3(db);
+  applyV4(db);
   return db;
 }
 

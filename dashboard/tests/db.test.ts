@@ -31,9 +31,9 @@ describe("db", () => {
     expect(names).toContain("schedule_state");
   });
 
-  it("applies v1 and v3 migrations on first open", () => {
+  it("applies all migrations on first open", () => {
     openDb(dbPath);
-    expect(getMigrationVersion()).toBe(3);
+    expect(getMigrationVersion()).toBe(4);
   });
 
   it("is idempotent on second open", () => {
@@ -41,10 +41,10 @@ describe("db", () => {
     closeDb();
     const db2 = openDb(dbPath);
     const count = (db2.prepare("SELECT COUNT(*) as n FROM schema_migrations").get() as { n: number }).n;
-    expect(count).toBe(2); // versions 1 and 3
+    expect(count).toBe(3); // versions 1, 3, 4
   });
 
-  it("upgrades a v1 database in place", () => {
+  it("upgrades an older database in place", () => {
     // Simulate a pre-v3 database: open, then strip the v3 artifacts.
     const db = openDb(dbPath);
     db.exec("DROP TABLE schedule_state");
@@ -52,7 +52,7 @@ describe("db", () => {
     closeDb();
 
     const db2 = openDb(dbPath);
-    expect(getMigrationVersion()).toBe(3);
+    expect(getMigrationVersion()).toBe(4);
     const cols = db2.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
     expect(cols.some(c => c.name === "parent_issue_id")).toBe(true);
   });

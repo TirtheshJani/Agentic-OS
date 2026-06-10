@@ -4,6 +4,8 @@ import { claudeCodeRuntime } from "@/lib/runtime/claude-code";
 import { geminiCliRuntime } from "@/lib/runtime/gemini-cli";
 import { startAutoRouter } from "@/lib/orchestrator/autoRoute";
 import { startScheduler } from "@/lib/scheduler";
+import { openDb } from "@/lib/db";
+import { indexVault, startVaultWatcher } from "@/lib/vault/indexer";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -12,14 +14,22 @@ export async function ensureServerBooted(): Promise<void> {
   if (booted) return;
   if (bootPromise) return bootPromise;
   bootPromise = (async () => {
+    openDb();
     await startWatcher();
     registerRuntime(claudeCodeRuntime);
     registerRuntime(geminiCliRuntime);
-    // Both are singleton-guarded via globalThis and no-op while the autonomy
-    // kill switch is off. server.ts triggers this boot with a warm-up request
-    // so they start without waiting for the first human page load.
+    // Singleton-guarded via globalThis; the router and scheduler no-op while
+    // the autonomy kill switch is off. server.ts triggers this boot with a
+    // warm-up request so nothing waits for the first human page load.
     startAutoRouter();
     startScheduler();
+    try {
+      const stats = indexVault();
+      console.log(`[vault] indexed: ${stats.notes} notes, ${stats.links} links`);
+    } catch (err) {
+      console.error("[vault] initial index failed:", err);
+    }
+    startVaultWatcher();
     booted = true;
   })();
   return bootPromise;

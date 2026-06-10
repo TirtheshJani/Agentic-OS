@@ -2,7 +2,8 @@ export type StreamEvent =
   | { kind: "project.changed"; slug: string; reason: "create" | "update" | "delete" }
   | { kind: "agent.changed"; slug: string; reason: "create" | "update" | "delete" }
   | { kind: "issue.changed"; id: number; projectSlug: string; reason: "create" | "update" | "delete" | "status" }
-  | { kind: "thread.appended"; issueId: number };
+  | { kind: "thread.appended"; issueId: number }
+  | { kind: "vault.indexed"; notes: number; links: number };
 
 type Listener = (event: StreamEvent) => void;
 

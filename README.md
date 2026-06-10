@@ -35,6 +35,26 @@ npm run dev          # http://localhost:3000
 #    skill-creator) and writes the result under skills/<domain>/<name>/.
 ```
 
+## Launch like a desktop app
+
+```powershell
+# One-time: create the Start Menu entry "Agentic OS".
+powershell -ExecutionPolicy Bypass -File bin/install-shortcut.ps1
+
+# Every launch after that: click "Agentic OS" in the Start Menu.
+# It installs deps on first run, starts (or reuses) the server, and opens
+# an app-frame browser window. Useful switches:
+bin/launch-dashboard.ps1 -Stop    # stop the background server
+bin/launch-dashboard.ps1 -Prod    # run the production build instead of dev
+```
+
+The dashboard is also an installable PWA: open http://localhost:3000 in
+Edge/Chrome and use the install-app affordance in the address bar.
+
+Runtimes: agent runs spawn your locally installed CLIs, so log each one in
+once manually first (`claude` for the Max plan, `gemini` for Google AI Pro
+after `npm i -g @google/gemini-cli`). The /runtimes view shows status.
+
 ## Vendored reference skills
 
 - `skills/_meta/skill-creator/` — from

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const slugRegex = /^[a-z0-9][a-z0-9-]*$/;
+export const slugRegex = /^[a-z0-9][a-z0-9-]*$/;
 
 // gray-matter parses unquoted YAML dates to JS Date. Coerce to YYYY-MM-DD string.
 const DateLike = z.preprocess(
@@ -29,6 +29,8 @@ export function parseProjectFrontmatter(raw: unknown): ProjectFrontmatter {
 export const AgentFrontmatterSchema = z.object({
   name: z.string().min(1),
   slug: z.string().regex(slugRegex),
+  // Routing signal (ADR-007): leads score teammates by description keywords.
+  description: z.string().optional(),
   runtime: z.string().default("claude-code"),
   "allowed-tools": z.array(z.string()).default([]),
   skills: z.array(z.string()).default([]),

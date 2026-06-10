@@ -59,6 +59,26 @@ CREATE TABLE IF NOT EXISTS settings_kv (
 );
 `;
 
+// V3 (V2 was a file-layout migration, no DB change): issue handoff chains and
+// in-dashboard scheduler state.
+function applyV3(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 3").get() as { n: number };
+  if (row.n > 0) return;
+  const cols = d.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === "parent_issue_id")) {
+    d.exec("ALTER TABLE issues ADD COLUMN parent_issue_id INTEGER");
+  }
+  d.exec(`
+CREATE TABLE IF NOT EXISTS schedule_state (
+  file          TEXT PRIMARY KEY,
+  last_run_at   INTEGER NOT NULL,
+  last_status   TEXT,
+  last_issue_id INTEGER
+);`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (3, ?)").run(Date.now());
+  console.log("[db] applied schema migration v3 (parent_issue_id, schedule_state)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -70,6 +90,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (row.n === 0) {
     db.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (1, ?)").run(Date.now());
   }
+  applyV3(db);
   return db;
 }
 

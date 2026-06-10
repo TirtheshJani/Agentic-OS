@@ -3,6 +3,17 @@ import path from "node:path";
 import { z } from "zod";
 import { defaultWorkspaceRoot, STATE_DIR as DEFAULT_STATE_DIR, SETTINGS_PATH as DEFAULT_SETTINGS_PATH } from "@/lib/paths";
 
+const AutonomySchema = z.object({
+  /** Global kill switch: when false, the auto-router and scheduler no-op. */
+  enabled: z.boolean().default(false),
+  /** Allow one tiny headless claude -p call as a routing fallback (credit-pool cost). */
+  llmRouting: z.boolean().default(false),
+  /** Fire automations/remote/*.md cron specs from inside the dashboard. */
+  schedulerEnabled: z.boolean().default(false),
+  /** Max ancestors a handoff-created issue may have before it is forced to backlog. */
+  maxChainDepth: z.number().int().positive().default(3),
+});
+
 const SettingsSchema = z.object({
   workspaceRoot: z.string(),
   concurrency: z.object({
@@ -10,6 +21,12 @@ const SettingsSchema = z.object({
     globalMax: z.number().int().positive(),
   }),
   theme: z.enum(["light", "dark", "system"]).default("system"),
+  autonomy: AutonomySchema.default({
+    enabled: false,
+    llmRouting: false,
+    schedulerEnabled: false,
+    maxChainDepth: 3,
+  }),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -29,6 +46,7 @@ function defaults(): Settings {
     workspaceRoot: defaultWorkspaceRoot(),
     concurrency: { perProjectMax: 3, globalMax: 5 },
     theme: "system",
+    autonomy: { enabled: false, llmRouting: false, schedulerEnabled: false, maxChainDepth: 3 },
   };
 }
 
@@ -53,6 +71,7 @@ export function setSettings(patch: Partial<Settings>): Settings {
     ...current,
     ...patch,
     concurrency: { ...current.concurrency, ...(patch.concurrency ?? {}) },
+    autonomy: { ...current.autonomy, ...(patch.autonomy ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

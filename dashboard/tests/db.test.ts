@@ -28,11 +28,12 @@ describe("db", () => {
     expect(names).toContain("hook_events");
     expect(names).toContain("settings_kv");
     expect(names).toContain("schema_migrations");
+    expect(names).toContain("schedule_state");
   });
 
-  it("records the initial migration version", () => {
+  it("applies v1 and v3 migrations on first open", () => {
     openDb(dbPath);
-    expect(getMigrationVersion()).toBe(1);
+    expect(getMigrationVersion()).toBe(3);
   });
 
   it("is idempotent on second open", () => {
@@ -40,6 +41,19 @@ describe("db", () => {
     closeDb();
     const db2 = openDb(dbPath);
     const count = (db2.prepare("SELECT COUNT(*) as n FROM schema_migrations").get() as { n: number }).n;
-    expect(count).toBe(1);
+    expect(count).toBe(2); // versions 1 and 3
+  });
+
+  it("upgrades a v1 database in place", () => {
+    // Simulate a pre-v3 database: open, then strip the v3 artifacts.
+    const db = openDb(dbPath);
+    db.exec("DROP TABLE schedule_state");
+    db.prepare("DELETE FROM schema_migrations WHERE version = 3").run();
+    closeDb();
+
+    const db2 = openDb(dbPath);
+    expect(getMigrationVersion()).toBe(3);
+    const cols = db2.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
+    expect(cols.some(c => c.name === "parent_issue_id")).toBe(true);
   });
 });

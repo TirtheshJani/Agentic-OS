@@ -181,3 +181,54 @@ registry design blocks it.
 kanban. Runtime-capability gating (spec 0006's design) ships unchanged; the
 codex.ts implementation file is simply replaced by gemini-cli.ts. Features
 relying on hooks or transcripts degrade visibly for gemini runs.
+
+---
+
+## ADR-009 — In-dashboard scheduler narrows ADR-002
+
+**Date:** 2026-06-10
+
+**Context.** ADR-002 ruled out local cron because no always-on host exists
+and cross-machine cron management is friction. Since then the dashboard
+became a long-running local process (custom server.ts) that is already up
+whenever the laptop is. Scheduled work currently only runs via remote
+Claude Code scheduled tasks, which cannot file issues on the local kanban
+or spawn local PTY runs.
+
+**Decision.** The dashboard process runs its own 60-second scheduler tick
+(`lib/scheduler.ts`) that fires `automations/remote/*.md` cron specs by
+filing queued issues. No OS cron, no extra daemon: the schedule dies with
+the dashboard, which is the ADR-002 spirit. Specs opt in via a `project:`
+frontmatter key; fires missed by more than 6 hours are skipped. Remote
+scheduled tasks remain the path for work that must run while the laptop is
+off.
+
+**Consequences.** One automation spec can now drive both paths. The
+scheduler is doubly gated (autonomy kill switch AND a scheduler toggle)
+and records state in SQLite (`schedule_state`), so re-runs are exactly
+once per scheduled fire.
+
+---
+
+## ADR-010 — Agent handoff via local HTTP API, not stdout parsing
+
+**Date:** 2026-06-10
+
+**Context.** Roadmap Phase 6 designed a `next-task:` stdout protocol for
+cross-agent handoffs. The current runtime renders agents in interactive
+TUIs inside PTYs; their stdout is ANSI-interleaved screen painting, not a
+parseable event stream. The v1 headless pipeline that could parse it is
+deprecated.
+
+**Decision.** Handoffs are HTTP: when autonomy is on, every spawned prompt
+includes instructions to POST `/api/issues` with `parentIssueId` and
+`status: "queued"`. The API is local-only, already validated, and the
+chain is capped by `autonomy.maxChainDepth` (children past the cap land in
+backlog for a human). The auto-router picks up queued children like any
+other issue.
+
+**Consequences.** Handoffs are observable (thread events, parent links in
+SQLite) and survive TUI rendering changes. Cost: agents must be able to
+make local HTTP calls (claude-code agents can, via Bash with curl or
+WebFetch on localhost); a runtime without that ability simply cannot hand
+off, which degrades gracefully.

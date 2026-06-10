@@ -7,6 +7,12 @@ interface SettingsData {
   workspaceRoot: string;
   concurrency: { perProjectMax: number; globalMax: number };
   theme: "light" | "dark" | "system";
+  autonomy: {
+    enabled: boolean;
+    llmRouting: boolean;
+    schedulerEnabled: boolean;
+    maxChainDepth: number;
+  };
 }
 
 export default function SettingsPage() {
@@ -95,6 +101,56 @@ export default function SettingsPage() {
             <option value="dark">dark</option>
           </select>
         </Field>
+
+        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Autonomy</h2>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autonomy.enabled}
+              onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, enabled: e.target.checked } })}
+            />
+            <span>
+              <span className="font-medium">Enable autonomy</span>
+              <span className="text-gray-500"> (kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog)</span>
+            </span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autonomy.schedulerEnabled}
+              onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, schedulerEnabled: e.target.checked } })}
+            />
+            <span>
+              <span className="font-medium">In-dashboard scheduler</span>
+              <span className="text-gray-500"> (fires automations/remote/*.md crons as queued issues)</span>
+            </span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autonomy.llmRouting}
+              onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, llmRouting: e.target.checked } })}
+            />
+            <span>
+              <span className="font-medium">LLM routing fallback</span>
+              <span className="text-gray-500"> (reserved; one headless claude call when keyword routing finds nothing)</span>
+            </span>
+          </label>
+          <Field label="Max handoff chain depth" hint="Children past this depth go to backlog instead of auto-running.">
+            <Input
+              type="number"
+              min={1}
+              value={settings.autonomy.maxChainDepth}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  autonomy: { ...settings.autonomy, maxChainDepth: parseInt(e.target.value, 10) || 1 },
+                })
+              }
+            />
+          </Field>
+        </section>
         <div className="flex items-center gap-3">
           <Button variant="primary" onClick={save} disabled={saving}>
             {saving ? "Saving..." : "Save"}

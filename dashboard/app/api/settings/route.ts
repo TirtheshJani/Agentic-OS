@@ -15,6 +15,14 @@ const PatchSchema = z.object({
     })
     .optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
+  autonomy: z
+    .object({
+      enabled: z.boolean(),
+      llmRouting: z.boolean(),
+      schedulerEnabled: z.boolean(),
+      maxChainDepth: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

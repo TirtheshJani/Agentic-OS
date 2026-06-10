@@ -16,6 +16,7 @@ export interface Issue {
   labels: string[];
   githubUrl: string | null;
   githubNumber: number | null;
+  parentIssueId: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -31,6 +32,7 @@ interface CreateOpts {
   labels?: string[];
   githubUrl?: string | null;
   githubNumber?: number | null;
+  parentIssueId?: number | null;
 }
 
 function rowToIssue(row: any): Issue {
@@ -46,6 +48,7 @@ function rowToIssue(row: any): Issue {
     labels: row.labels ? JSON.parse(row.labels) : [],
     githubUrl: row.github_url,
     githubNumber: row.github_number,
+    parentIssueId: row.parent_issue_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -56,8 +59,8 @@ export function createIssue(opts: CreateOpts): number {
   const now = Date.now();
   const info = db.prepare(`
     INSERT INTO issues
-      (project_slug, title, body, assignee_slug, status, mode, priority, labels, github_url, github_number, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (project_slug, title, body, assignee_slug, status, mode, priority, labels, github_url, github_number, parent_issue_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     opts.projectSlug,
     opts.title,
@@ -69,10 +72,32 @@ export function createIssue(opts: CreateOpts): number {
     opts.labels ? JSON.stringify(opts.labels) : null,
     opts.githubUrl ?? null,
     opts.githubNumber ?? null,
+    opts.parentIssueId ?? null,
     now,
     now
   );
   return Number(info.lastInsertRowid);
+}
+
+/**
+ * Number of ancestors above this issue (0 for a root issue). Used to cap
+ * autonomous handoff chains. Cycle-safe via a visited set.
+ */
+export function chainDepth(issueId: number): number {
+  const db = getDb();
+  const seen = new Set<number>([issueId]);
+  let depth = 0;
+  let current = issueId;
+  while (depth < 100) {
+    const row = db.prepare("SELECT parent_issue_id FROM issues WHERE id = ?").get(current) as
+      | { parent_issue_id: number | null }
+      | undefined;
+    if (!row || row.parent_issue_id == null || seen.has(row.parent_issue_id)) return depth;
+    seen.add(row.parent_issue_id);
+    current = row.parent_issue_id;
+    depth++;
+  }
+  return depth;
 }
 
 export function getIssue(id: number): Issue | null {

@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "migrate": "tsx scripts/migrate-to-0002.ts",
-    "migrate:threads": "tsx scripts/migrate-threads.ts"
+    "migrate:threads": "tsx scripts/migrate-threads.ts",
+    "validate:skills": "node scripts/validate-skills.mjs",
+    "validate:automations": "node scripts/validate-automations.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -19,6 +21,7 @@
     "better-sqlite3": "^12.10.0",
     "chokidar": "4.0.1",
     "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
     "gray-matter": "4.0.3",
     "next": "15.1.0",
     "node-pty": "^1.0.0",

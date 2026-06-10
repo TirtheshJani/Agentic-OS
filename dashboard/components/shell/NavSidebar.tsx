@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { AutonomyPill } from "@/components/shell/AutonomyPill";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
@@ -19,9 +20,12 @@ export function NavSidebar() {
   const pathname = usePathname();
   return (
     <nav className="w-48 shrink-0 border-r border-gray-200 dark:border-gray-800 p-3 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto">
-      <Link href="/" className="px-2 py-2 mb-2 font-semibold text-sm">
+      <Link href="/" className="px-2 py-2 font-semibold text-sm">
         Agentic OS
       </Link>
+      <div className="px-2 mb-2">
+        <AutonomyPill />
+      </div>
       {NAV_ITEMS.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (

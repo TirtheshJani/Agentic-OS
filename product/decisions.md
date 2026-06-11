@@ -255,3 +255,34 @@ not page-load time. Acceptable for a personal dashboard, and it keeps one
 credential boundary: connectors authenticate agents, not the web server.
 Reversal: if near-real-time mail becomes necessary, add a read-only MCP
 client in the server behind its own ADR.
+
+---
+
+## ADR-012 — One-shot orchestrator draft + deterministic create pipeline
+
+**Date:** 2026-06-10
+
+**Context.** The `/new` tab (spec 0012) turns a prompt into a repo, a
+vault project, an agent crew, and kickoff issues. Two designs considered:
+spawn an interactive orchestrator agent in a PTY that performs the steps
+itself, or make one headless `claude -p` call for the plan and execute
+everything else in plain TypeScript. Headless subscription calls draw
+from the monthly Agent SDK credit pool; PTY agents emit ANSI screen
+painting, not parseable events (the ADR-010 lesson).
+
+**Decision.** Exactly one headless call (the orchestrator draft) returns
+project meta + 2-4 agent profiles + 2-5 seed issues as JSON; the
+pipeline (`lib/createProject/pipeline.ts`) is deterministic: preflight
+before the credit is spent, `gh repo create --source . --push` for the
+remote, reuse of the existing project/agent/issue mutation utilities. No
+rollback: failures leave completed artifacts and report them. Existing
+agent slugs are reused, never duplicated; colliding project slugs get a
+numeric suffix. gh failure degrades to local-only with a warning rather
+than failing the job.
+
+**Consequences.** Cost is fixed at one credit per create; every step is
+testable with injected exec/draft fakes (34 tests); progress is
+observable over the existing SSE bus. The draft's quality bounds the
+crew's quality — the agent editor remains the correction path. Companion
+cleanup in the same build: `dashboard-v1/` (deprecated first build) was
+deleted from the working tree; it remains in git history.

@@ -13,6 +13,7 @@ export const ProjectFrontmatterSchema = z.object({
   slug: z.string().regex(slugRegex, "slug must be lowercase letters, digits, and hyphens"),
   path: z.string().min(1),
   repo: z.preprocess(v => (v === "" || v == null ? undefined : v), z.string().url().optional()),
+  description: z.string().optional(),
   crew: z.array(z.string().regex(slugRegex)).default([]),
   "runtime-default": z.string().default("claude-code"),
   capabilities: z.array(z.string()).default([]),

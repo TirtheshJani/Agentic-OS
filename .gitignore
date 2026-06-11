@@ -25,6 +25,8 @@ yarn-error.log*
 *.swp
 
 # Agentic-OS runtime state (SQLite db, transient artifacts)
+/.agentic-os/settings.json
+/.agentic-os/migrations/
 /.agentic-os/state.db
 /.agentic-os/state.db-journal
 /.agentic-os/state.db-wal

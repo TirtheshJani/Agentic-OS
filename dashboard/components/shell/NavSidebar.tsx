@@ -6,6 +6,7 @@ import { AutonomyPill } from "@/components/shell/AutonomyPill";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
+  { href: "/new", label: "New Project" },
   { href: "/issues", label: "Issues" },
   { href: "/inbox", label: "Inbox" },
   { href: "/agents", label: "Agents" },

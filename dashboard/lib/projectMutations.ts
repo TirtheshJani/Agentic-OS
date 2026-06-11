@@ -24,6 +24,8 @@ interface CreateFromFolderOpts {
   vaultProjectsDir: string;
   capabilities?: string[];
   slug?: string;
+  description?: string;
+  runtimeDefault?: string;
 }
 
 interface CreateResult {
@@ -53,11 +55,12 @@ export function createProjectFromExistingFolder(opts: CreateFromFolderOpts): Cre
     slug,
     path: opts.folderPath,
     crew: [],
-    "runtime-default": "claude-code",
+    "runtime-default": opts.runtimeDefault ?? "claude-code",
     capabilities: opts.capabilities ?? [],
     created: new Date().toISOString().slice(0, 10),
   };
   if (repoUrl) frontmatter.repo = repoUrl;
+  if (opts.description?.trim()) frontmatter.description = opts.description.trim();
 
   const body = `# ${opts.name}\n\nProject notes go here. The dashboard does not render this body.\n`;
   const content = matter.stringify(body, frontmatter);

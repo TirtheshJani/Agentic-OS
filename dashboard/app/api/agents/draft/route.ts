@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { spawnSync } from "node:child_process";
 import { z } from "zod";
 import { listSkills } from "@/lib/skills";
+import { extractJsonObject } from "@/lib/llm/extractJson";
 
 // Same .cmd shim handling as lib/runtime/claude-code.ts.
 const CLAUDE_BIN = process.platform === "win32" ? "claude.cmd" : "claude";
@@ -20,17 +21,6 @@ const DraftSchema = z.object({
 });
 
 const KNOWN_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "WebSearch"];
-
-function extractJsonObject(text: string): unknown | null {
-  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  try { return JSON.parse(cleaned); } catch { /* fall through */ }
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start >= 0 && end > start) {
-    try { return JSON.parse(cleaned.slice(start, end + 1)); } catch { /* fall through */ }
-  }
-  return null;
-}
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -58,8 +48,11 @@ export async function POST(req: Request) {
 
   // ONE headless call per click. Headless subscription use draws from the
   // monthly Agent SDK credit pool (policy effective 2026-06-15), so this
-  // endpoint must never loop or retry.
-  const r = spawnSync(CLAUDE_BIN, ["-p", prompt, "--output-format", "json"], {
+  // endpoint must never loop or retry. Prompt over STDIN: with shell:true
+  // (needed for the .cmd shim on Windows) argv is concatenated unquoted, so
+  // a prompt passed as an argument would be split at the first space.
+  const r = spawnSync(CLAUDE_BIN, ["-p", "--output-format", "json"], {
+    input: prompt,
     encoding: "utf8",
     shell: process.platform === "win32",
     timeout: 60_000,

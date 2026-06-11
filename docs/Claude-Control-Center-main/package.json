@@ -1,9 +1,0 @@
-{
-  "name": "claude-control-center-tools",
-  "private": true,
-  "version": "1.0.0",
-  "scripts": {
-    "qmd": "node ./tools/qmd-runner.mjs",
-    "qmd:list": "node ./tools/qmd-runner.mjs list"
-  }
-}

@@ -1,6 +1,11 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display, Montserrat, Oswald } from "next/font/google";
 import { AppShell } from "@/components/shell/AppShell";
+
+const display = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-display" });
+const body = Montserrat({ subsets: ["latin"], variable: "--font-body" });
+const label = Oswald({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-label" });
 
 export const metadata: Metadata = {
   title: "Agentic OS",
@@ -12,9 +17,16 @@ export const viewport: Viewport = {
   themeColor: "#0b0b0d",
 };
 
+// Runs before paint so the chosen theme never flashes. localStorage wins;
+// otherwise follow the OS preference.
+const themeInit = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){}})()`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${label.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>
         <AppShell>{children}</AppShell>
       </body>

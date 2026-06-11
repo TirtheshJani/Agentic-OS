@@ -2,8 +2,8 @@
 import clsx from "clsx";
 
 const RUNTIME_STYLES: Record<string, string> = {
-  "claude-code": "bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100",
-  "gemini-cli": "bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100",
+  "claude-code": "bg-accent-bg text-accent-ink",
+  "gemini-cli": "bg-ok-bg text-ok",
 };
 
 const RUNTIME_LABELS: Record<string, string> = {
@@ -12,7 +12,7 @@ const RUNTIME_LABELS: Record<string, string> = {
 };
 
 export function RuntimeBadge({ runtimeId }: { runtimeId: string }) {
-  const style = RUNTIME_STYLES[runtimeId] ?? "bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+  const style = RUNTIME_STYLES[runtimeId] ?? "bg-surface2 text-ink2";
   const label = RUNTIME_LABELS[runtimeId] ?? runtimeId;
   return (
     <span

@@ -2,10 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens from docs/designs/Agentic OS.dc.html. Light on :root, dark
+   overrides on [data-theme="dark"] (set pre-hydration by the inline script
+   in app/layout.tsx). Tailwind maps these in tailwind.config.ts; components
+   use the mapped utilities (bg-surface, text-ink2, border-line, ...). */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --raise: #f7f9fb;
+  --border: rgba(13, 22, 40, 0.1);
+  --border-2: rgba(13, 22, 40, 0.16);
+  --text: #0d1628;
+  --text-2: #5a6270;
+  --text-3: #8b93a1;
+  --accent: #2f72b8;
+  --accent-ink: #2f72b8;
+  --accent-bg: rgba(74, 143, 209, 0.1);
+  --accent-line: rgba(74, 143, 209, 0.32);
+  --ok: #2c8a72;
+  --ok-bg: rgba(44, 138, 114, 0.1);
+  --danger: #c0392b;
+  --danger-bg: rgba(192, 57, 43, 0.08);
+  --shadow: 0 1px 2px rgba(13, 22, 40, 0.04), 0 8px 24px -18px rgba(13, 22, 40, 0.3);
+  --shadow-lg: 0 24px 60px -28px rgba(13, 22, 40, 0.45);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #060b14;
+  --surface: #0c1322;
+  --surface-2: #121b2c;
+  --raise: #101a2b;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-2: rgba(255, 255, 255, 0.16);
+  --text: #f3f5f8;
+  --text-2: #b3bac6;
+  --text-3: #7a8294;
+  --accent: #6faef3;
+  --accent-ink: #9cc6f6;
+  --accent-bg: rgba(74, 143, 209, 0.16);
+  --accent-line: rgba(74, 143, 209, 0.4);
+  --ok: #5bc2a4;
+  --ok-bg: rgba(74, 168, 150, 0.16);
+  --danger: #e0796d;
+  --danger-bg: rgba(192, 57, 43, 0.16);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px -20px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 70px -30px rgba(0, 0, 0, 0.85);
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }

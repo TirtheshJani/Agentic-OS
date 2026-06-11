@@ -21,8 +21,10 @@ A persistent left nav sidebar plus a full-width content pane:
 ## Components
 
 - Shared primitives live in `components/common/`: `Button` (variants
-  `primary`, `ghost`), `Modal`, `Drawer`, `Field`/`Input`/`Textarea`,
-  `EmptyState`, `RuntimeBadge`.
+  `primary`, `secondary`, `ghost`, `danger`), `Modal`, `Drawer`,
+  `Field`/`Input`/`Textarea`, `EmptyState`, `RuntimeBadge`, plus the
+  design-system primitives `Card`, `Pill`, `StatusDot`, `Switch`,
+  `SectionHeader`, `StatCard`.
 - Domain components group by feature folder: `project/` (kanban),
   `issue/` (drawer, runs, terminal), `home/`, `shell/`.
 - **Kanban** — `project/KanbanBoard.tsx` with @dnd-kit. Five columns:
@@ -38,11 +40,26 @@ A persistent left nav sidebar plus a full-width content pane:
 
 ## Color and dark mode
 
-Tailwind utility classes with explicit `dark:` variants (the codebase does
-not use shadcn token variables). Grays for chrome, one accent per meaning:
-green (running/ok), red (error/failed), yellow (priority), blue (action),
-purple (project chip), orange (claude), blue (gemini). Never hex values in
-components.
+Design tokens (from `docs/designs/Agentic OS.dc.html`) as CSS variables in
+`app/globals.css`: light on `:root`, dark overrides on
+`[data-theme="dark"]`. Tailwind maps them in `tailwind.config.ts`:
+
+- Backgrounds: `bg-canvas` (page), `bg-surface` (cards), `bg-surface2`
+  (chrome fills), `bg-raise` (lifted panels).
+- Borders: `border-line` (default), `border-line2` (inputs/emphasis).
+- Text: `text-ink` / `text-ink2` / `text-ink3` (primary/secondary/muted).
+- Semantic: `accent` (+ `accent-ink`, `accent-bg`, `accent-line`), `ok`
+  (+ `ok-bg`), `danger` (+ `danger-bg`).
+- Fonts: `font-display` (Playfair Display, headings), `font-sans`
+  (Montserrat, body), `font-label` (Oswald, uppercase labels/pills).
+- `rounded-card` (12px), `shadow-card` / `shadow-card-lg`.
+
+Dark mode is selector-based (`darkMode: ["selector", '[data-theme="dark"]']`);
+a pre-hydration script in `app/layout.tsx` sets `data-theme` from
+`localStorage.theme`, falling back to the OS preference. Var-backed colors
+do not support `/opacity` modifiers; use the `*-bg` rgba tokens. Never hex
+values in components; legacy `dark:` classes are tolerated only on views
+not yet migrated to tokens.
 
 ## States
 

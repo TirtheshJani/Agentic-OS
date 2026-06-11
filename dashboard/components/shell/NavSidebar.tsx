@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: "/agents", label: "Agents" },
   { href: "/skills", label: "Skills" },
   { href: "/graph", label: "Graph" },
+  { href: "/docker", label: "Docker" },
   { href: "/runtimes", label: "Runtimes" },
   { href: "/connections", label: "Connections" },
   { href: "/settings", label: "Settings" },

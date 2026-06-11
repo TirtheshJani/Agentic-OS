@@ -420,3 +420,30 @@ per-run and sequential batch grading. Judge input is capped at 24k chars
 risk; judged grades are explicit, attributable spend labeled subjective
 in the UI. Re-grades replace (no history). Reversal: add a grade-history
 table if longitudinal judge-drift analysis becomes a need.
+
+
+---
+
+## ADR-017 — Docker management: CLI wrapper, allowlist-gated mutations, off by default
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0021 adds compose stack visibility and lifecycle control.
+Options: a Docker socket library (dockerode) versus shelling out to the
+docker CLI; and how much mutation power the dashboard gets.
+
+**Decision.** Plain `docker` CLI subprocesses with JSON output parsing
+(array or NDJSON, with a `{{json .}}` fallback) — the binary abstracts the
+Windows named-pipe transport that varies by engine mode, and spawnSync
+matches the repo's exec posture. Reads are unrestricted; start/stop/
+restart require the compose project name to be on
+`settings.docker.allowlist`, names are regex-validated before argv, and
+the entire feature sits behind `settings.docker.enabled` (default false).
+Logs render as an ANSI-stripped tail, not a PTY.
+
+**Consequences.** Zero new dependencies; detection cleanly splits
+binary-present from daemon-reachable (Docker Desktop stopped is a normal
+state on this machine). Cost: a 30s timeout bounds long compose
+operations, and per-container lifecycle is deliberately absent until
+needed. Reversal: adopt dockerode behind the same lib/docker.ts surface
+if streaming logs or events become requirements.

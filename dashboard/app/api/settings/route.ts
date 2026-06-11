@@ -50,6 +50,12 @@ const PatchSchema = z.object({
       batchLimit: z.number().int().positive(),
     })
     .optional(),
+  docker: z
+    .object({
+      enabled: z.boolean(),
+      allowlist: z.array(z.string()),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

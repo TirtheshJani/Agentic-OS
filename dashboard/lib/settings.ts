@@ -68,6 +68,13 @@ const SettingsSchema = z.object({
       batchLimit: z.number().int().positive().default(10),
     })
     .default({ judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 }),
+  docker: z
+    .object({
+      enabled: z.boolean().default(false),
+      /** Compose project names whose start/stop/restart is permitted. */
+      allowlist: z.array(z.string()).default([]),
+    })
+    .default({ enabled: false, allowlist: [] }),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -92,6 +99,7 @@ function defaults(): Settings {
     lightrag: { baseUrl: "http://localhost:9621", autoIngest: false },
     export: { notebookLmDir: "" },
     evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 },
+    docker: { enabled: false, allowlist: [] },
   };
 }
 
@@ -121,6 +129,7 @@ export function setSettings(patch: Partial<Settings>): Settings {
     lightrag: { ...current.lightrag, ...(patch.lightrag ?? {}) },
     export: { ...current.export, ...(patch.export ?? {}) },
     evals: { ...current.evals, ...(patch.evals ?? {}) },
+    docker: { ...current.docker, ...(patch.docker ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

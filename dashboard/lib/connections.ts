@@ -96,6 +96,37 @@ function checkMcp(id: string, label: string, recommended: string): ConnectionSta
   };
 }
 
+function checkDocker(): ConnectionStatus {
+  const v = cli("docker", ["--version"]);
+  if (!v.ok) {
+    return {
+      id: "docker",
+      label: "Docker",
+      status: "unavailable",
+      detail: "docker not found on PATH",
+      setup: ["Install Docker Desktop.", "Enable docker management in Settings."],
+    };
+  }
+  const version = v.out.match(/(\d+\.\d+\.\d+)/)?.[1];
+  const info = cli("docker", ["info", "--format", "{{json .ServerVersion}}"]);
+  if (!info.ok) {
+    return {
+      id: "docker",
+      label: "Docker",
+      status: "not-configured",
+      detail: `CLI v${version ?? "?"} installed but the daemon is not reachable.`,
+      setup: ["Start Docker Desktop."],
+    };
+  }
+  return {
+    id: "docker",
+    label: "Docker",
+    status: "connected",
+    detail: `CLI v${version ?? "?"}; daemon reachable. Manage stacks at /docker (allowlist-gated).`,
+    setup: [],
+  };
+}
+
 async function checkLightRag(): Promise<ConnectionStatus> {
   const baseUrl = getSettings().lightrag.baseUrl;
   let reachable = false;
@@ -146,6 +177,7 @@ export async function getConnectionStatuses(): Promise<ConnectionStatus[]> {
     checkClaude(),
     checkGemini(),
     checkGitHub(),
+    checkDocker(),
     await checkLightRag(),
     checkMcp("gmail", "Gmail (MCP, multi-account)", "GongRzhe/Gmail-MCP-Server (one entry per account)"),
     checkMcp("calendar", "Google Calendar (MCP)", "a Google Calendar MCP server"),

@@ -23,8 +23,16 @@ export function buildWorktreeContext(opts: {
   issueTitle: string;
   instructions: string;
   chunks: RetrievedChunk[];
+  agentSystemPrompt?: string;
 }): WorktreeContextParts {
+  const agentPrompt = opts.agentSystemPrompt?.trim() ?? "";
   const sections: string[] = [`# Agent context for ${opts.projectSlug}`, ""];
+
+  // Agent profile goes first so the size cap truncates knowledge chunks
+  // before it.
+  if (agentPrompt) {
+    sections.push("## Agent profile", "", agentPrompt, "");
+  }
 
   if (opts.instructions.trim()) {
     sections.push("## Project instructions", "", opts.instructions.trim(), "");
@@ -49,13 +57,16 @@ export function buildWorktreeContext(opts: {
     contextFileBody = `${contextFileBody.slice(0, MAX_CONTEXT_CHARS)}\n\n(truncated)`;
   }
 
-  const instructionsSection = opts.instructions.trim()
-    ? `\n\n${SECTION_MARKER}\n\n${opts.instructions.trim()}\n`
+  const memoryParts: string[] = [];
+  if (agentPrompt) memoryParts.push(`### Agent profile\n\n${agentPrompt}`);
+  if (opts.instructions.trim()) memoryParts.push(opts.instructions.trim());
+  const instructionsSection = memoryParts.length > 0
+    ? `\n\n${SECTION_MARKER}\n\n${memoryParts.join("\n\n")}\n`
     : "";
 
   return {
     contextFileBody,
-    promptSuffix: ` Read ${CONTEXT_FILE} in this directory before starting; it contains project instructions and relevant knowledge.`,
+    promptSuffix: ` Read ${CONTEXT_FILE} in this directory before starting; it contains your agent profile, project instructions, and relevant knowledge.`,
     instructionsSection,
   };
 }

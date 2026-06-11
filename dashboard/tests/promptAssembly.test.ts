@@ -41,6 +41,50 @@ describe("buildWorktreeContext", () => {
     expect(parts.promptSuffix).toContain("AGENT_CONTEXT.md");
   });
 
+  it("puts the agent profile first in the context body and in the memory section", () => {
+    const parts = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "Use strict mode.",
+      chunks: [CHUNK],
+      agentSystemPrompt: "You are the research lead. Always cite sources.",
+    });
+    const profileIdx = parts.contextFileBody.indexOf("## Agent profile");
+    expect(profileIdx).toBeGreaterThan(-1);
+    expect(profileIdx).toBeLessThan(parts.contextFileBody.indexOf("## Project instructions"));
+    expect(parts.contextFileBody).toContain("Always cite sources.");
+    expect(parts.instructionsSection).toContain("### Agent profile");
+    expect(parts.instructionsSection).toContain("Always cite sources.");
+    expect(parts.instructionsSection).toContain("Use strict mode.");
+  });
+
+  it("omits the agent profile when the prompt is empty or absent", () => {
+    const absent = buildWorktreeContext({ projectSlug: "p1", issueTitle: "t", instructions: "Rule.", chunks: [] });
+    expect(absent.contextFileBody).not.toContain("Agent profile");
+    const blank = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "",
+      chunks: [],
+      agentSystemPrompt: "   ",
+    });
+    expect(blank.contextFileBody).not.toContain("Agent profile");
+    expect(blank.instructionsSection).toBe("");
+  });
+
+  it("survives the size cap when chunks are huge (profile is before chunks)", () => {
+    const big: RetrievedChunk = { ...CHUNK, content: "y".repeat(50_000) };
+    const parts = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "",
+      chunks: [big],
+      agentSystemPrompt: "You are the research lead.",
+    });
+    expect(parts.contextFileBody).toContain("You are the research lead.");
+    expect(parts.contextFileBody).toContain("(truncated)");
+  });
+
   it("caps the context body size", () => {
     const big: RetrievedChunk = { ...CHUNK, content: "y".repeat(50_000) };
     const parts = buildWorktreeContext({
@@ -74,6 +118,24 @@ describe("installWorktreeContext", () => {
     installWorktreeContext(worktree, "claude-code", parts);
     const again = fs.readFileSync(path.join(worktree, "CLAUDE.md"), "utf8");
     expect(again.match(/Project instructions \(Agentic-OS\)/g)?.length).toBe(1);
+  });
+
+  it("appends the agent profile to the memory file when there are no project instructions", () => {
+    const parts = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "",
+      chunks: [],
+      agentSystemPrompt: "You are the coding lead.",
+    });
+    installWorktreeContext(worktree, "claude-code", parts);
+    const claudeMd = fs.readFileSync(path.join(worktree, "CLAUDE.md"), "utf8");
+    expect(claudeMd).toContain("### Agent profile");
+    expect(claudeMd).toContain("You are the coding lead.");
+
+    installWorktreeContext(worktree, "claude-code", parts);
+    const again = fs.readFileSync(path.join(worktree, "CLAUDE.md"), "utf8");
+    expect(again.match(/### Agent profile/g)?.length).toBe(1);
   });
 
   it("targets GEMINI.md for the gemini runtime and skips the memory file without instructions", () => {

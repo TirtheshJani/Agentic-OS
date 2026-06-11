@@ -130,12 +130,13 @@ export async function startRunForIssue(
     });
     const MIN_CHUNK_SCORE = 0.005; // drop weak matches; RRF scores are small
     const chunks = kn.chunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
-    if (instructions.trim() || chunks.length > 0) {
+    if (instructions.trim() || chunks.length > 0 || agent.systemPrompt.trim()) {
       const parts = buildWorktreeContext({
         projectSlug: project.slug,
         issueTitle: issue.title,
         instructions,
         chunks,
+        agentSystemPrompt: agent.systemPrompt,
       });
       installWorktreeContext(worktreePath, runtimeId, parts);
       contextPromptSuffix = parts.promptSuffix;

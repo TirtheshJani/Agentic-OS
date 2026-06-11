@@ -22,7 +22,7 @@ Desktop-style launch: `bin/launch-dashboard.ps1` (and `bin/install-shortcut.ps1`
 
 ## Repo layers
 
-- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard. Current architecture: specs 0007-0011; decisions in `product/decisions.md`.
+- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard. Current architecture: specs 0007-0012; decisions in `product/decisions.md`. Operator docs in `docs/` (setup, troubleshooting, runtimes-and-clis).
 - **`skills/`** — one folder per skill with a `SKILL.md`. No `README.md` inside skill folders.
 - **`agents/`** — one `<slug>.md` per agent (frontmatter: name, slug, description, runtime, skills, allowed-tools + `# System Prompt` body). Managed from the `/agents` view; archived agents move to `agents/_archive/`.
 - **`automations/local/`** — shell scripts, laptop-only. **`automations/remote/`** — markdown cron specs; with a `project:` key the in-dashboard scheduler files them as queued issues (spec 0009).
@@ -31,7 +31,7 @@ Desktop-style launch: `bin/launch-dashboard.ps1` (and `bin/install-shortcut.ps1`
 
 ## Dashboard architecture
 
-Agent runs are interactive CLI sessions in PTYs (node-pty), one git worktree per issue, streamed to xterm.js in the browser over a WebSocket. Claude Code runs bill the operator's Max plan via the logged-in CLI; Gemini CLI runs use the Google AI Pro account. Headless `claude -p` is reserved for tiny one-shot calls (agent drafting) because subscription headless use draws from the monthly Agent SDK credit pool.
+Agent runs are interactive CLI sessions in PTYs (node-pty), one git worktree per issue, streamed to xterm.js in the browser over a WebSocket. Claude Code runs bill the operator's Max plan via the logged-in CLI; Gemini CLI runs use the Google AI Pro account. Headless `claude -p` is reserved for tiny one-shot calls because subscription headless use draws from the monthly Agent SDK credit pool — exactly two call sites: agent drafting (`app/api/agents/draft`) and the create-project orchestrator draft (`lib/createProject/draft.ts`). Neither may loop or retry.
 
 Key paths (all under `dashboard/`):
 
@@ -41,11 +41,14 @@ Key paths (all under `dashboard/`):
 - `lib/settings.ts` — file-backed settings incl. the `autonomy` kill switch (off by default)
 - `lib/vault/indexer.ts` — vault index full-rebuilds (boot + chokidar debounce)
 - `lib/mcp.ts` + `lib/connections.ts` — MCP templates in gitignored `.agentic-os/mcp/`, injected into worktrees per `PROJECT.md` `mcp-servers:`; connector status detectors
-- `server.ts` — HTTP + WebSocket (`/api/runtime/socket/:runId`) + warm-up request that boots `ensureServerBooted` (watcher, runtimes, router, scheduler, vault index)
+- `lib/createProject/` — the `/new` pipeline (spec 0012): `draft.ts` (one-shot orchestrator draft), `pipeline.ts` (deterministic steps incl. `gh repo create`), `jobs.ts` (globalThis job store), `preflight.ts`, `steps.ts`; `lib/llm/extractJson.ts` is the shared headless-reply parser
+- `server.ts` — HTTP + WebSocket (`/api/runtime/socket/:runId`) + warm-up request that boots `ensureServerBooted` (watcher, runtimes, router, scheduler, vault index); listen has EADDRINUSE retry + already-running detection
 - `lib/stream.ts` — in-process event bus (globalThis-shared across the tsx/Next module graphs) feeding `GET /api/stream` SSE
-- Views: `/` projects, `/issues` global kanban, `/agents` creator, `/skills`, `/graph`, `/inbox`, `/runtimes`, `/connections`, `/settings`
+- Views: `/` projects, `/new` create-project orchestrator, `/issues` global kanban, `/agents` creator, `/skills`, `/graph`, `/inbox`, `/runtimes`, `/connections`, `/settings`
 
 UI conventions in `standards/dashboard-ui.md`. No auth layer: localhost, single operator.
+
+Env vars (all optional): `PORT` (3000), `AGENTIC_OS_REPO_ROOT` (auto from cwd), `AGENTIC_OS_STATE_DIR` (`.agentic-os/`), `AGENTIC_OS_PUBLIC_URL` (hook callback base), `TERMINAL` (open-in-terminal). Mirrored in `dashboard/.env.example`.
 
 Gotchas that have bitten before: xterm and sigma must be imported dynamically inside `useEffect` (module scope breaks SSR); anything stateful shared between `server.ts` and API routes needs the `globalThis Symbol.for` hoist (see `liveRuns.ts`); ConPTY needs Enter sent as a separate delayed write after a prompt body.
 

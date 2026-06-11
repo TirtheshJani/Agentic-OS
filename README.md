@@ -4,10 +4,12 @@ A personal "Agentic OS" built on top of Claude Code: a single repo that holds
 your agents, skills, automations, memory, and a local command center for
 delegating recurring work to autonomous agents.
 
-> **Status:** command center shipped (June 2026, specs 0007-0011): kanban
+> **Status:** command center shipped (June 2026, specs 0007-0012): kanban
 > agent assignment, dual runtimes (Claude Code on the Max plan + Gemini CLI
 > on Google AI Pro), agent creator with AI draft, autonomy with a kill
-> switch, vault knowledge graph, connections hub.
+> switch, vault knowledge graph, connections hub, and a create-project
+> orchestrator (`/new`: prompt → repo + GitHub remote + agent crew +
+> kickoff issues).
 
 ## Layers
 
@@ -24,6 +26,10 @@ delegating recurring work to autonomous agents.
 
 ## Quickstart
 
+Prerequisites: Node 22+, git, and the CLIs you plan to use logged in once
+(`claude` for the Max plan; optional `gemini` for Google AI Pro; `gh` for
+repo creation). Full walkthrough: `docs/setup.md`.
+
 ```bash
 # 1. Skills + memory are filesystem-only — nothing to install for those.
 
@@ -38,6 +44,21 @@ npm run dev          # http://localhost:3000
 #    This delegates to skills/_meta/skill-creator (Anthropic's production
 #    skill-creator) and writes the result under skills/<domain>/<name>/.
 ```
+
+## Views
+
+| View | What it is |
+|---|---|
+| `/` | Projects (vault-discovered) + new-project menu (clone / link) |
+| `/new` | Create-project orchestrator: prompt → repo, GitHub remote, agent crew, kickoff issues (`instructions/create-project.md`) |
+| `/issues` | Global kanban: Backlog → Queued → Running → Review → Done |
+| `/inbox` | Issues in review, failed runs, recent vault captures |
+| `/agents` | Agent profiles with AI draft assist |
+| `/skills` | Skill inventory across `skills/` |
+| `/graph` | Vault knowledge graph (wikilinks, tags, FTS search) |
+| `/runtimes` | CLI runtimes, versions, capability flags |
+| `/connections` | claude / gemini / gh / MCP template status |
+| `/settings` | workspaceRoot, concurrency caps, theme, autonomy kill switch |
 
 ## Launch like a desktop app
 
@@ -58,6 +79,9 @@ Edge/Chrome and use the install-app affordance in the address bar.
 Runtimes: agent runs spawn your locally installed CLIs, so log each one in
 once manually first (`claude` for the Max plan, `gemini` for Google AI Pro
 after `npm i -g @google/gemini-cli`). The /runtimes view shows status.
+`docs/runtimes-and-clis.md` maps every feature to the CLI it needs;
+`docs/troubleshooting.md` covers the common failure modes (port 3000 in
+use, gh scopes, lost create jobs).
 
 ## Vendored reference skills
 

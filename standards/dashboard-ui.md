@@ -11,8 +11,9 @@ A persistent left nav sidebar plus a full-width content pane:
 ```
 
 - `components/shell/AppShell.tsx` wraps every page via `app/layout.tsx`.
-- `components/shell/NavSidebar.tsx` owns the nav items: Dashboard, Issues,
-  Inbox, Agents, Skills, Graph, Runtimes, Connections, Settings.
+- `components/shell/NavSidebar.tsx` owns the nav items: Dashboard, New
+  Project, Issues, Inbox, Agents, Skills, Graph, Runtimes, Connections,
+  Settings.
 - Active item: prefix match on the pathname (`/` requires exact match).
 - Pages own their inner width: `max-w-5xl` for list/detail views,
   `max-w-7xl` for boards, `max-w-2xl` for forms, with `mx-auto p-6`.

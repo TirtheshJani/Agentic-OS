@@ -1,22 +1,27 @@
 # Agentic-OS
 
 A personal "Agentic OS" built on top of Claude Code: a single repo that holds
-your skills, automations, memory, and a local dashboard for delegating
-recurring work.
+your agents, skills, automations, memory, and a local command center for
+delegating recurring work to autonomous agents.
 
-> **Status:** scaffolding bootstrap. ~25 domain skills exist as spec-compliant
-> stubs; author them interactively via `/new-skill`. See `plan.md` for the
-> full design.
+> **Status:** command center shipped (June 2026, specs 0007-0011): kanban
+> agent assignment, dual runtimes (Claude Code on the Max plan + Gemini CLI
+> on Google AI Pro), agent creator with AI draft, autonomy with a kill
+> switch, vault knowledge graph, connections hub. `dashboard-v1/` is the
+> deprecated first build.
 
 ## Layers
 
 1. **Spec layer** — `product/`, `standards/`, `instructions/`, `specs/`
    (agent-os conventions for *how* we build).
-2. **Architecture layer** — `skills/` (Anthropic Skills spec) and
-   `automations/`.
-3. **Memory layer** — `vault/` (Obsidian: `raw/` → `wiki/` → `outputs/`).
-4. **Observability layer** — `dashboard/` (Next.js 15 + Tailwind + shadcn/ui +
-   SQLite). Spawns `claude -p` headless and streams output back over SSE.
+2. **Architecture layer** — `agents/` (one markdown profile per agent),
+   `skills/` (Anthropic Skills spec), and `automations/`.
+3. **Memory layer** — `vault/` (Obsidian: `raw/` → `wiki/` → `outputs/`),
+   indexed into SQLite for graph view and full-text search.
+4. **Command center** — `dashboard/` (Next.js 15 + React 19 + SQLite +
+   node-pty). Issues move across a kanban; agents run as real CLI sessions
+   in per-issue git worktrees, streamed to in-browser terminals; an
+   orchestrator routes queued work when autonomy is on.
 
 ## Quickstart
 

@@ -42,7 +42,14 @@ Use `/new-skill` to fill stubs in priority order:
 - Vault search card.
 - Optional: hook into Spotify/Canva MCPs for content workflows.
 
-## Phase 6 — Multi-agent teams
+> **Note (2026-06-10):** Phases 6 through 9 below were written against the
+> v1 dashboard (`dashboard-v1/`, headless `claude -p`, `tasks` table,
+> `lib/design/` mock shell). That architecture is deprecated. Their goals
+> shipped, re-derived for the current PTY/issues dashboard, as Phase 10
+> (specs 0007-0011). The sections are kept verbatim for historical context;
+> do not implement from them.
+
+## Phase 6 — Multi-agent teams (superseded by Phase 10 / spec 0009)
 
 Borrow the agents-as-teammates model from
 [multica](https://github.com/TirtheshJani/multicaproject) (squads under a
@@ -159,7 +166,7 @@ pending operator execution; chain is structurally ready.
 - Agent-to-agent direct messaging outside of tasks. Threads are the only
   channel; keeps the audit trail intact.
 
-## Phase 7 — Projects, load-bearing
+## Phase 7 — Projects, load-bearing (superseded by Phase 10)
 
 PROJECT.md, projects-loader, and the rail's PROJECTS section all shipped
 during phase 5/6. The work in front of us is making projects do something:
@@ -279,7 +286,7 @@ validator passes on all 12 PROJECT.md files.
 - Project lifecycle automation (status transitions, archival). The
   `status` field is human-edited.
 
-## Phase 8 — Issues board
+## Phase 8 — Issues board (superseded by Phase 10; GitHub sync still open)
 
 Tasks, agents, and projects all exist. What's missing is the GitHub-issues
 ergonomic: a titled ticket filed against a repo, assigned to an agent, lived
@@ -440,7 +447,7 @@ issue body as the opening prompt and the run logged back to the dashboard.
 - Non-GitHub issue trackers (Linear, Jira). GitHub-only until a second
   tracker becomes load-bearing for an actual project.
 
-## Phase 9 — Design shell wire-up
+## Phase 9 — Design shell wire-up (superseded by Phase 10 / spec-less shell)
 
 A design handoff from claude.ai/design replaced the 3-column workbench with a
 sidebar-nav app shell: eight views (dashboard, issues, inbox, my-issues,
@@ -656,3 +663,42 @@ and validators all exit 0.
   separate mock library to maintain.
 - Theming variants. Single dark cosmic theme; tokens are tunable but no
   light mode.
+
+## Phase 10 — Command center (shipped 2026-06-10)
+
+The "executable Claude dashboard" build: specs 0007 through 0011, commits
+f1ce55e..84a2ec4. Re-derived the goals of phases 6-9 on the current
+dashboard (PTY runtimes, issues/runs SQLite, worktree isolation).
+
+What shipped:
+
+- **Second runtime: Gemini CLI** (spec 0007, ADR-008). Runtime capability
+  flags on the contract, /api/runtimes, RuntimeBadge, per-run override.
+  Claude Max and Google AI Pro drive runs side by side.
+- **App shell** with global cross-project kanban (/issues, quick-assign on
+  cards), plus runtimes/skills/settings views.
+- **Agent creator** (spec 0008): CRUD over agents/<slug>.md with
+  validation and a one-call Draft-with-AI assist.
+- **Packaging**: PowerShell launcher, Start Menu shortcut, installable
+  PWA (bin/launch-dashboard.ps1, bin/install-shortcut.ps1).
+- **Autonomy** (spec 0009, ADR-009/010): deterministic auto-routing of
+  queued issues, HTTP handoff chains capped by depth, in-dashboard cron
+  scheduler for automations/remote, spawn-time run-exit persistence,
+  global kill switch with nav pill. Validators ported to the live package.
+- **Knowledge layer** (spec 0010): SQLite index of vault notes, wikilinks,
+  tags; FTS5 search; interactive sigma.js graph at /graph with Obsidian
+  deep links.
+- **Connections hub + inbox** (spec 0011, ADR-011): live status for
+  Claude/Gemini/GitHub, MCP templates in .agentic-os/mcp/ injected into
+  run worktrees per project frontmatter, vault-backed inbox.
+
+Deferred, in rough priority order:
+
+- GitHub issue sync (phase 8.5 design still applies; gh CLI is ready).
+- Cost/usage analytics (transcriptCostParsing capability flagged false on
+  both runtimes until a parser exists).
+- Gemini session resume + per-workspace Gemini MCP config (open questions
+  in spec 0007/0011).
+- LLM routing fallback (flag exists, default off, unimplemented).
+- LinkedIn connector (deferred by decision; slot documented in spec 0011).
+- Events tab + synthetic lifecycle events from spec 0006.

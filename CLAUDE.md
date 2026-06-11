@@ -4,45 +4,50 @@ Guidance for Claude Code in this repo.
 
 ## What this repo is
 
-"Agentic OS": a personal command center delegating recurring research, content, coding, business, and productivity work to Claude Code. Four layers (spec, skills, memory, observability), each enforced by validators.
+"Agentic OS": a personal command center delegating recurring research, content, coding, business, and productivity work to autonomous agents. Layers: spec, skills, agents, memory (vault + SQLite knowledge index), and the dashboard that runs it all. `dashboard-v1/` is the deprecated first build; reference only, never extend it.
 
 ## Commands
 
 All JS commands run from `dashboard/` (no top-level `package.json`):
 
 ```bash
-npm run dev                    # Next.js dev at http://localhost:3000
-npm run build                  # Production build
-npm run lint                   # ESLint via next lint
+npm run dev                    # custom server (tsx watch server.ts) at http://localhost:3000
+npm test                       # vitest suite
 npm run validate:skills        # run before committing any SKILL.md
 npm run validate:automations   # run before committing any automation
+npm run build                  # next build (server still starts via tsx server.ts)
 ```
+
+Desktop-style launch: `bin/launch-dashboard.ps1` (and `bin/install-shortcut.ps1` for the Start Menu entry). The dashboard is an installable PWA.
 
 ## Repo layers
 
-- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard.
+- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard. Current architecture: specs 0007-0011; decisions in `product/decisions.md`.
 - **`skills/`** — one folder per skill with a `SKILL.md`. No `README.md` inside skill folders.
-- **`skills/_meta/`** — framework-level meta-skills (`skill-creator`, `karpathy-guidelines`, `executing-plans`, `writing-plans`, `verification-before-completion`). Apply on any task.
-- **`automations/local/`** — shell scripts, laptop-only, no cron. **`automations/remote/`** — markdown specs for the scheduled task runner.
-- **`vault/`** — Obsidian vault (memory). See `vault/CLAUDE.md` for conventions.
-- **`dashboard/`** — Next.js 15 + shadcn/ui. SQLite at `.agentic-os/state.db`.
+- **`agents/`** — one `<slug>.md` per agent (frontmatter: name, slug, description, runtime, skills, allowed-tools + `# System Prompt` body). Managed from the `/agents` view; archived agents move to `agents/_archive/`.
+- **`automations/local/`** — shell scripts, laptop-only. **`automations/remote/`** — markdown cron specs; with a `project:` key the in-dashboard scheduler files them as queued issues (spec 0009).
+- **`vault/`** — Obsidian vault (memory). See `vault/CLAUDE.md`. Indexed into SQLite (notes, wikilinks, tags, FTS) for `/graph`, `/api/search`, and the inbox.
+- **`dashboard/`** — Next.js 15 + React 19 + Tailwind, custom `server.ts` run via tsx. SQLite at `.agentic-os/state.db` (WAL; tables: issues, runs, hook_events, settings_kv, schedule_state, notes, note_links, notes_fts). Migrations apply on boot in `lib/db.ts`.
 
 ## Dashboard architecture
 
-Spawns `claude -p` headlessly, streams output over SSE. Key files:
+Agent runs are interactive CLI sessions in PTYs (node-pty), one git worktree per issue, streamed to xterm.js in the browser over a WebSocket. Claude Code runs bill the operator's Max plan via the logged-in CLI; Gemini CLI runs use the Google AI Pro account. Headless `claude -p` is reserved for tiny one-shot calls (agent drafting) because subscription headless use draws from the monthly Agent SDK credit pool.
 
-- `lib/claude-headless.ts` — spawns `claude -p <prompt> --output-format stream-json --verbose`, parses JSONL events (`assistant`, `tool_use`, `delta`), emits SSE
-- `lib/skills-loader.ts` — walks `skills/`, parses `SKILL.md` frontmatter via gray-matter, returns sorted `Skill[]`
-- `lib/db.ts` — better-sqlite3 (WAL). Tables: `runs`, `vault_changes`, `schedules`. Migrations on boot.
-- `lib/schedules.ts` — parses `automations/remote/*.md` cron for the Forecast card
-- `app/api/run/route.ts` — POST endpoint, spawns skill run, streams SSE
-- `app/page.tsx` — 3-column grid: 280px skills | 1fr prompt+output | 320px right rail
+Key paths (all under `dashboard/`):
 
-Layout tokens and component conventions in `standards/dashboard-ui.md`. Use CSS variables from `app/globals.css`; no hardcoded hex.
+- `lib/runtime/` — Runtime contract with capability flags (`types.ts`), `claude-code.ts` and `gemini-cli.ts` implementations, registry, liveRuns (globalThis-shared), concurrency caps, hook installer
+- `lib/startRun.ts` — the run pipeline (resolve, capacity, worktree, MCP injection, spawn, exit persistence); `POST /api/runs` is a thin wrapper
+- `lib/orchestrator/` — deterministic issue router (ADR-007 scoring) + auto-router; `lib/scheduler.ts` — 60s cron tick over `automations/remote`
+- `lib/settings.ts` — file-backed settings incl. the `autonomy` kill switch (off by default)
+- `lib/vault/indexer.ts` — vault index full-rebuilds (boot + chokidar debounce)
+- `lib/mcp.ts` + `lib/connections.ts` — MCP templates in gitignored `.agentic-os/mcp/`, injected into worktrees per `PROJECT.md` `mcp-servers:`; connector status detectors
+- `server.ts` — HTTP + WebSocket (`/api/runtime/socket/:runId`) + warm-up request that boots `ensureServerBooted` (watcher, runtimes, router, scheduler, vault index)
+- `lib/stream.ts` — in-process event bus (globalThis-shared across the tsx/Next module graphs) feeding `GET /api/stream` SSE
+- Views: `/` projects, `/issues` global kanban, `/agents` creator, `/skills`, `/graph`, `/inbox`, `/runtimes`, `/connections`, `/settings`
 
-`middleware.ts` gates `/api/*`: same-origin browser fetches pass (via `Sec-Fetch-Site`), everything else needs `x-agentic-token`. Dev/start scripts bind to `127.0.0.1`. Env var:
+UI conventions in `standards/dashboard-ui.md`. No auth layer: localhost, single operator.
 
-- `AGENTIC_TOKEN` (optional) — when set, `/api/*` rejects requests that aren't same-origin unless they include `x-agentic-token: <value>`. Used for server-to-server calls if you ever expose the dashboard beyond localhost.
+Gotchas that have bitten before: xterm and sigma must be imported dynamically inside `useEffect` (module scope breaks SSR); anything stateful shared between `server.ts` and API routes needs the `globalThis Symbol.for` hoist (see `liveRuns.ts`); ConPTY needs Enter sent as a separate delayed write after a prompt body.
 
 ## Skill authoring
 
@@ -72,20 +77,20 @@ metadata:
 ## Automation authoring
 
 - **Local** (`automations/local/<skill-slug>.sh`): plain shell, `set -euo pipefail`, resolves repo root via `dirname`, invokes one skill. No cron.
-- **Remote** (`automations/remote/<skill-slug>-<cadence>.md`): YAML frontmatter with `schedule` (cron), `skill`, `inputs`. Document the failure mode. Run `npm run validate:automations` after adding.
+- **Remote** (`automations/remote/<skill-slug>-<cadence>.md`): YAML frontmatter with `schedule` (cron), `skill`, `inputs`, optional `project` (vault project slug; required for the in-dashboard scheduler to file issues) and `agent` (pre-assign; otherwise the auto-router picks). Document the failure mode. Run `npm run validate:automations` after adding.
 
 ## Workflow
 
 1. Identify which layer the task touches.
-2. Read the relevant `instructions/*.md` (`add-skill.md`, `add-automation.md`, `add-dashboard-card.md`, `promote-raw-to-wiki.md`).
-3. New skill → `/new-skill`.
+2. Read the relevant `instructions/*.md` and the governing spec under `specs/`.
+3. New skill → `/new-skill`. New agent → the `/agents` view (or hand-write `agents/<slug>.md`).
 4. Code changes → follow karpathy-guidelines (surface assumptions, surgical edits, minimum code).
-5. Run the relevant validator before committing.
+5. Run `npm test` plus the relevant validator before committing.
 
 ## Code conventions
 
 From `standards/code-style.md`:
 - TypeScript strict, named exports, type-only imports, kebab-case filenames
-- React Server Components by default; `"use client"` only when needed; Server Actions for mutations
+- React Server Components by default; `"use client"` only when needed
 - Prepared statements only for SQL; no raw string interpolation
 - Catch errors at system boundaries; throw internally

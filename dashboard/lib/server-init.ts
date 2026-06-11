@@ -11,6 +11,7 @@ import { startEmbedWorker } from "@/lib/rag/embedWorker";
 import { startLightragIngestWorker } from "@/lib/lightrag/ingestWorker";
 import { startSessionScanner } from "@/lib/sessions/service";
 import { startEvalAutoGrade } from "@/lib/evals/autoGrade";
+import { reconcileOrphanedRuns } from "@/lib/startRun";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -20,6 +21,12 @@ export async function ensureServerBooted(): Promise<void> {
   if (bootPromise) return bootPromise;
   bootPromise = (async () => {
     openDb();
+    try {
+      const reconciled = reconcileOrphanedRuns();
+      if (reconciled > 0) console.log(`[runs] marked ${reconciled} orphaned run(s) failed after restart`);
+    } catch (err) {
+      console.error("[runs] orphan reconciliation failed:", err);
+    }
     await startWatcher();
     registerRuntime(claudeCodeRuntime);
     registerRuntime(geminiCliRuntime);

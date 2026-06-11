@@ -3,7 +3,7 @@ import { getProject } from "@/lib/projects";
 import { getAgent } from "@/lib/agents";
 import { getRuntime } from "@/lib/runtime/registry";
 import { assertCapacity } from "@/lib/runtime/concurrencyCap";
-import { createRun, getRun, updateRun } from "@/lib/runs";
+import { createRun, getRun, updateRun, listActiveRuns } from "@/lib/runs";
 import { createWorktree, worktreePathFor } from "@/lib/worktrees";
 import { registerLiveRun, dropLiveRun } from "@/lib/runtime/liveRuns";
 import { getSettings } from "@/lib/settings";
@@ -57,6 +57,22 @@ export function finalizeRunExit(runId: number, exitCode: number, signal?: number
     publish({ kind: "thread.appended", issueId: issue.id });
     publish({ kind: "run.finalized", runId, issueId: issue.id, projectSlug: issue.projectSlug, exitStatus });
   }
+}
+
+/**
+ * Mark runs orphaned by a crash or restart as failed. PTYs die with the
+ * server process and nothing else ever sets ended_at, so each orphan would
+ * otherwise show as active forever and permanently consume concurrency
+ * capacity (assertCapacity counts ended_at-IS-NULL rows). Called once at
+ * boot, before any run can spawn in this process.
+ */
+export function reconcileOrphanedRuns(): number {
+  const orphans = listActiveRuns();
+  for (const run of orphans) {
+    console.log(`[startRun] reconciling orphaned run ${run.id} (no live PTY after restart)`);
+    finalizeRunExit(run.id, -1);
+  }
+  return orphans.length;
 }
 
 /**

@@ -6,7 +6,7 @@ import path from "node:path";
 import { openDb, closeDb } from "@/lib/db";
 import { createIssue, getIssue, chainDepth } from "@/lib/issues";
 import { createRun, getRun } from "@/lib/runs";
-import { finalizeRunExit } from "@/lib/startRun";
+import { finalizeRunExit, reconcileOrphanedRuns } from "@/lib/startRun";
 
 let tmp: string;
 
@@ -53,6 +53,26 @@ describe("finalizeRunExit", () => {
     expect(getRun(runId)!.exitStatus).toBe("done");
     expect(getRun(runId)!.endedAt).toBe(endedAt);
     expect(getIssue(issueId)!.status).toBe("review");
+  });
+});
+
+describe("reconcileOrphanedRuns", () => {
+  it("fails every run without ended_at and flips its issue, leaving finished runs alone", () => {
+    const orphanIssue = createIssue({ projectSlug: "x", title: "t", status: "running" });
+    const orphanRun = createRun({ issueId: orphanIssue, agentSlug: "a", runtimeId: "claude-code", worktreePath: "/w1" });
+    const doneIssue = createIssue({ projectSlug: "x", title: "t2", status: "running" });
+    const doneRun = createRun({ issueId: doneIssue, agentSlug: "a", runtimeId: "claude-code", worktreePath: "/w2" });
+    finalizeRunExit(doneRun, 0);
+
+    expect(reconcileOrphanedRuns()).toBe(1);
+    expect(getRun(orphanRun)!.exitStatus).toBe("failed");
+    expect(getRun(orphanRun)!.endedAt).not.toBeNull();
+    expect(getIssue(orphanIssue)!.status).toBe("failed");
+    expect(getRun(doneRun)!.exitStatus).toBe("done");
+    expect(getIssue(doneIssue)!.status).toBe("review");
+
+    // Idempotent: nothing left to reconcile.
+    expect(reconcileOrphanedRuns()).toBe(0);
   });
 });
 

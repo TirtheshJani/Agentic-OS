@@ -87,7 +87,7 @@ async function main() {
     });
   });
 
-  server.listen(port, () => {
+  const onListening = () => {
     console.log(`[server] http://localhost:${port}`);
     // Warm-up request: the App Router graph only boots (ensureServerBooted:
     // watcher, runtimes, auto-router, scheduler) on its first request. Fire
@@ -97,7 +97,54 @@ async function main() {
         console.error("[server] warm-up request failed:", err)
       );
     }, 1000);
-  });
+  };
+
+  const LISTEN_RETRIES = 3;
+  const LISTEN_RETRY_MS = 500;
+
+  // Distinguishes our own dashboard from a foreign process squatting on the port.
+  const isAgenticOsAlreadyRunning = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`http://localhost:${port}/api/runtimes`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (!res.ok) return false;
+      const data = (await res.json().catch(() => null)) as { runtimes?: unknown } | null;
+      return Array.isArray(data?.runtimes);
+    } catch {
+      return false;
+    }
+  };
+
+  const listenWithRetry = (attempt = 0): void => {
+    server.once("error", (err: NodeJS.ErrnoException) => {
+      if (err.code !== "EADDRINUSE") {
+        console.error("[server] listen failed:", err);
+        process.exit(1);
+      }
+      if (attempt + 1 < LISTEN_RETRIES) {
+        // tsx watch restarts race the old process's port release; retry briefly.
+        setTimeout(() => listenWithRetry(attempt + 1), LISTEN_RETRY_MS);
+        return;
+      }
+      void isAgenticOsAlreadyRunning().then((ours) => {
+        if (ours) {
+          console.log(`[server] Agentic OS is already running on port ${port}.`);
+          console.log(
+            `[server] Reuse that window, stop it with bin/launch-dashboard.ps1 -Stop, or set PORT to run a second instance.`
+          );
+          process.exit(0);
+        }
+        console.error(
+          `[server] port ${port} is held by another process. Free it or set PORT to use a different one.`
+        );
+        process.exit(1);
+      });
+    });
+    server.listen(port, onListening);
+  };
+
+  listenWithRetry();
 }
 
 main().catch((err) => {

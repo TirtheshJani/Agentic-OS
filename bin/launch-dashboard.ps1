@@ -29,9 +29,11 @@ if ($Stop) {
 }
 
 function Test-Server {
+    # Probe an Agentic OS-specific endpoint so a foreign process on the port
+    # is never mistaken for our server.
     try {
-        $res = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
-        return $res.StatusCode -eq 200
+        $res = Invoke-WebRequest -Uri "$url/api/runtimes" -UseBasicParsing -TimeoutSec 2
+        return ($res.StatusCode -eq 200) -and ($res.Content -match '"runtimes"')
     } catch {
         return $false
     }

@@ -9,6 +9,7 @@ import { registerLiveRun, dropLiveRun } from "@/lib/runtime/liveRuns";
 import { getSettings } from "@/lib/settings";
 import { publish } from "@/lib/stream";
 import { appendEvent } from "@/lib/threads";
+import { installWorktreeMcpConfig } from "@/lib/mcp";
 
 /** Pipeline failure with an HTTP-ish status the API route can map directly. */
 export class StartRunError extends Error {
@@ -96,6 +97,20 @@ export async function startRunForIssue(
     });
   } catch (err) {
     throw new StartRunError(`worktree creation failed: ${(err as Error).message}`, 500);
+  }
+
+  // Inject the project's MCP servers into the worktree before spawn. Claude
+  // Code reads <worktree>/.mcp.json; Gemini reads ~/.gemini/settings.json
+  // globally, so per-worktree injection only applies to claude-code.
+  const mcpTemplates = project["mcp-servers"] ?? [];
+  if (runtimeId === "claude-code" && mcpTemplates.length > 0) {
+    try {
+      const servers = installWorktreeMcpConfig(worktreePath, mcpTemplates);
+      if (servers.length > 0) console.log(`[startRun] issue ${issue.id}: MCP servers ${servers.join(", ")}`);
+    } catch (err) {
+      // Non-fatal: the run proceeds without MCP tools.
+      console.error(`[startRun] MCP install failed for issue ${issue.id}:`, err);
+    }
   }
 
   const runId = createRun({

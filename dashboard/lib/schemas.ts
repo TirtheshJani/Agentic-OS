@@ -17,6 +17,8 @@ export const ProjectFrontmatterSchema = z.object({
   "runtime-default": z.string().default("claude-code"),
   capabilities: z.array(z.string()).default([]),
   "allow-parallel-edits": z.boolean().optional(),
+  /** MCP template names (from .agentic-os/mcp/) injected into run worktrees. */
+  "mcp-servers": z.array(z.string()).default([]),
   created: DateLike,
 });
 

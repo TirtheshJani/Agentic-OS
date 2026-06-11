@@ -232,3 +232,26 @@ SQLite) and survive TUI rendering changes. Cost: agents must be able to
 make local HTTP calls (claude-code agents can, via Bash with curl or
 WebFetch on localhost); a runtime without that ability simply cannot hand
 off, which degrades gracefully.
+
+---
+
+## ADR-011 — Vault-backed inbox instead of live MCP queries
+
+**Date:** 2026-06-10
+
+**Context.** The inbox view needs Gmail context (what needs attention).
+Two paths: the Next server holds Gmail OAuth and queries an MCP client
+live on page load, or the existing agent pipeline (inbox-triage skill on a
+schedule) writes digests to `vault/raw/daily/` and the inbox reads the
+note index.
+
+**Decision.** Vault-backed. The inbox lists recent `vault/raw/**` notes
+(via the spec 0010 index), failed runs from the last 7 days, and issues in
+review. The dashboard process never holds Gmail credentials; agents do,
+inside worktrees, via MCP templates injected per-run.
+
+**Consequences.** Inbox freshness equals triage cadence (scheduler-driven),
+not page-load time. Acceptable for a personal dashboard, and it keeps one
+credential boundary: connectors authenticate agents, not the web server.
+Reversal: if near-real-time mail becomes necessary, add a read-only MCP
+client in the server behind its own ADR.

@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/sessions", label: "Sessions" },
   { href: "/analytics", label: "Analytics" },
   { href: "/evals", label: "Evals" },
+  { href: "/research", label: "Research" },
   { href: "/ask", label: "Ask Vault" },
   { href: "/notes", label: "Notes" },
   { href: "/agents", label: "Agents" },

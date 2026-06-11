@@ -7,8 +7,7 @@ delegating recurring work to autonomous agents.
 > **Status:** command center shipped (June 2026, specs 0007-0011): kanban
 > agent assignment, dual runtimes (Claude Code on the Max plan + Gemini CLI
 > on Google AI Pro), agent creator with AI draft, autonomy with a kill
-> switch, vault knowledge graph, connections hub. `dashboard-v1/` is the
-> deprecated first build.
+> switch, vault knowledge graph, connections hub.
 
 ## Layers
 

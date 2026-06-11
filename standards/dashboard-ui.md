@@ -1,7 +1,6 @@
 # Dashboard UI standard
 
-> Applies to `dashboard/` (the live app). The three-column layout this file
-> previously described belongs to the deprecated `dashboard-v1/`.
+> Applies to `dashboard/` (the live app).
 
 ## App shell
 

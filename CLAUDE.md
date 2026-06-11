@@ -4,7 +4,7 @@ Guidance for Claude Code in this repo.
 
 ## What this repo is
 
-"Agentic OS": a personal command center delegating recurring research, content, coding, business, and productivity work to autonomous agents. Layers: spec, skills, agents, memory (vault + SQLite knowledge index), and the dashboard that runs it all. `dashboard-v1/` is the deprecated first build; reference only, never extend it.
+"Agentic OS": a personal command center delegating recurring research, content, coding, business, and productivity work to autonomous agents. Layers: spec, skills, agents, memory (vault + SQLite knowledge index), and the dashboard that runs it all.
 
 ## Commands
 

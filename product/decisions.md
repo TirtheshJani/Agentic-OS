@@ -81,6 +81,10 @@ demand. Acceptable — both upstreams are stable.
   @ `2c606141936f1eeef17fa3043a72095b4765b9c2` (cloned 2026-05-10).
 - `template/SKILL.md` ← `anthropics/skills/template/SKILL.md` @ same SHA as
   `skill-creator` above.
+- `skills/_meta/grill-me/` and `skills/_meta/grill-with-docs/` ←
+  [`mattpocock/skills`](https://github.com/mattpocock/skills)
+  @ `694fa30311e02c2639942308513555e61ee84a6f` (cloned 2026-06-11). Bodies
+  verbatim; `license` + `metadata` frontmatter added to pass the validator.
 
 To re-vendor: clone the upstream, copy the subtree, update the SHA above,
 commit. No automated sync — that's intentional (see decision body).
@@ -286,3 +290,36 @@ observable over the existing SSE bus. The draft's quality bounds the
 crew's quality — the agent editor remains the correction path. Companion
 cleanup in the same build: `dashboard-v1/` (deprecated first build) was
 deleted from the working tree; it remains in git history.
+
+---
+
+## ADR-013 — Native vault RAG: BLOB cosine scan, hash-keyed embedding cache, CLI answer providers
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0013 adds retrieval-augmented answering over the vault.
+Three contested choices: vector storage (a native extension like
+`sqlite-vec` vs plain BLOBs scanned in process), embedding cache identity
+(chunk ids vs content hashes — the spec 0010 indexer full-rebuilds on
+every vault change, so row identity is unstable), and answer generation
+(API key, headless `claude -p`, or the logged-in CLIs).
+
+**Decision.** Embeddings live as L2-normalized Float32 BLOBs in
+`chunk_embeddings`, scanned with an in-process dot product; no native
+vector dependency. The cache is keyed by `(content_hash, model)`, so
+embeddings survive index rebuilds and only changed content is re-embedded.
+Answers are one-shot CLI calls behind a provider setting: `gemini-cli`
+default (bills the Google AI Pro account), `claude-cli` explicit opt-in
+(draws from the Agent SDK credit pool — no new uncontrolled `claude -p`
+sites, same one-call/no-retry policy as agent drafting and the create
+orchestrator), or `none` (retrieval-only). Retrieval degrades gracefully:
+without an embedding provider, FTS + wikilink-graph retrieval still work.
+
+**Consequences.** Zero new native modules (the Windows build stays
+boring); a full cosine scan at current vault scale (low thousands of
+chunks) costs single-digit milliseconds; embedding spend is proportional
+to edits, not rebuilds. Cost: O(chunks) per query and no ANN index.
+Reversal: if the vault grows ~100x, adopt `sqlite-vec` behind the existing
+provider/scan seam — a contained swap, recharts-style, not a redesign.
+The same applies to answer providers: a direct API provider can slot in
+behind `answerProvider` if CLI latency becomes the bottleneck.

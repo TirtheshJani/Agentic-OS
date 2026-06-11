@@ -66,8 +66,11 @@ export function runOrchestratorDraft(
   prompt: string
 ): { ok: true; raw: string } | { ok: false; error: string } {
   // ONE call. Timeout is 90s (vs 60s for agent drafts) because the reply is
-  // roughly 4x larger.
-  const r = spawnSync(CLAUDE_BIN, ["-p", prompt, "--output-format", "json"], {
+  // roughly 4x larger. The prompt goes over STDIN: with shell:true (needed
+  // for the .cmd shim on Windows) argv is concatenated unquoted, so a
+  // multi-line prompt as an argument would be split at the first space.
+  const r = spawnSync(CLAUDE_BIN, ["-p", "--output-format", "json"], {
+    input: prompt,
     encoding: "utf8",
     shell: process.platform === "win32",
     timeout: 90_000,

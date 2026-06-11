@@ -24,9 +24,9 @@ export interface PreflightDeps {
 }
 
 function defaultGitConfigEmail(): string {
+  // No shell: git is a real .exe, resolved via PATH without one.
   const r = spawnSync("git", ["config", "user.email"], {
     encoding: "utf8",
-    shell: process.platform === "win32",
     timeout: 10_000,
   });
   return (r.stdout ?? "").trim();

@@ -52,12 +52,12 @@ export function defaultExec(
   args: string[],
   opts: { cwd?: string; timeoutMs?: number } = {}
 ): ExecResult {
-  // shell:true on win32 resolves .exe (gh, git) and npm .cmd shims via
-  // PATHEXT, same as lib/connections.ts.
+  // No shell: git and gh are real .exe binaries that spawnSync resolves via
+  // PATH, and shell:true would concatenate args unquoted on Windows,
+  // splitting values like a commit message at the first space.
   const r = spawnSync(cmd, args, {
     cwd: opts.cwd,
     encoding: "utf8",
-    shell: process.platform === "win32",
     timeout: opts.timeoutMs ?? 120_000,
     maxBuffer: 8 * 1024 * 1024,
   });

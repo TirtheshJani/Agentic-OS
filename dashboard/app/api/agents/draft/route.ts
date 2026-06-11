@@ -48,8 +48,11 @@ export async function POST(req: Request) {
 
   // ONE headless call per click. Headless subscription use draws from the
   // monthly Agent SDK credit pool (policy effective 2026-06-15), so this
-  // endpoint must never loop or retry.
-  const r = spawnSync(CLAUDE_BIN, ["-p", prompt, "--output-format", "json"], {
+  // endpoint must never loop or retry. Prompt over STDIN: with shell:true
+  // (needed for the .cmd shim on Windows) argv is concatenated unquoted, so
+  // a prompt passed as an argument would be split at the first space.
+  const r = spawnSync(CLAUDE_BIN, ["-p", "--output-format", "json"], {
+    input: prompt,
     encoding: "utf8",
     shell: process.platform === "win32",
     timeout: 60_000,

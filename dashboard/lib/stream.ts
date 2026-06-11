@@ -1,9 +1,13 @@
+import type { CreateStepId, StepStatus } from "@/lib/createProject/steps";
+
 export type StreamEvent =
   | { kind: "project.changed"; slug: string; reason: "create" | "update" | "delete" }
   | { kind: "agent.changed"; slug: string; reason: "create" | "update" | "delete" }
   | { kind: "issue.changed"; id: number; projectSlug: string; reason: "create" | "update" | "delete" | "status" }
   | { kind: "thread.appended"; issueId: number }
-  | { kind: "vault.indexed"; notes: number; links: number };
+  | { kind: "vault.indexed"; notes: number; links: number }
+  | { kind: "project.create.progress"; jobId: string; step: CreateStepId; status: StepStatus; detail?: string; error?: string }
+  | { kind: "project.create.done"; jobId: string; status: "succeeded" | "failed" };
 
 type Listener = (event: StreamEvent) => void;
 

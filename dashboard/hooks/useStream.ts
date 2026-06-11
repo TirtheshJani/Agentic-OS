@@ -8,7 +8,9 @@ export type StreamEventKind =
   | "agent.changed"
   | "issue.changed"
   | "thread.appended"
-  | "vault.indexed";
+  | "vault.indexed"
+  | "project.create.progress"
+  | "project.create.done";
 
 export interface StreamEventPayload {
   kind: StreamEventKind;

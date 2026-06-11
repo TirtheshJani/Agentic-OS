@@ -16,7 +16,7 @@ interface RuntimeOption {
 type Visibility = "private" | "public" | "local-only";
 
 const selectBase =
-  "w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "w-full rounded-md border border-line2 bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
 
 export function CreateProjectWizard() {
   const router = useRouter();
@@ -135,10 +135,10 @@ export function CreateProjectWizard() {
   if (jobIdParam && jobLost) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
+        <p className="text-sm text-ink2">
           This job is no longer tracked (the dev server probably restarted). Check{" "}
-          <a className="text-blue-600 hover:underline" href="/">Dashboard</a>,{" "}
-          <a className="text-blue-600 hover:underline" href="/agents">Agents</a> and the target
+          <a className="text-accent hover:underline" href="/">Dashboard</a>,{" "}
+          <a className="text-accent hover:underline" href="/agents">Agents</a> and the target
           folder for what was created.
         </p>
         <Button onClick={reset}>Back to the form</Button>
@@ -151,7 +151,7 @@ export function CreateProjectWizard() {
       return (
         <div className="space-y-6">
           <StepChecklist steps={job.steps} />
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-ink3">
             Safe to navigate away; come back via this URL. The draft step costs one headless
             Claude call.
           </p>
@@ -167,7 +167,7 @@ export function CreateProjectWizard() {
   }
 
   if (jobIdParam && !job) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">Loading job...</p>;
+    return <p className="text-sm text-ink3">Loading job...</p>;
   }
 
   // --- form ---
@@ -214,26 +214,26 @@ export function CreateProjectWizard() {
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+      <label className="flex items-center gap-2 text-sm text-ink2">
         <input
           type="checkbox"
           checked={fileIssues}
           onChange={(e) => setFileIssues(e.target.checked)}
-          className="rounded border-gray-300 dark:border-gray-700"
+          className="rounded border-line2"
         />
         File kickoff issues in the backlog
       </label>
 
-      <div className="rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-3 py-2">
-        <p className="text-xs text-gray-600 dark:text-gray-400">
+      <div className="rounded-md bg-raise border border-line px-3 py-2">
+        <p className="text-xs text-ink2">
           New repo folder is created in{" "}
           <span className="font-mono">{workspaceRoot ?? "(loading settings...)"}</span>
           {" - "}change <span className="font-medium">workspaceRoot</span> in{" "}
-          <a className="text-blue-600 hover:underline" href="/settings">Settings</a>.
+          <a className="text-accent hover:underline" href="/settings">Settings</a>.
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <Button variant="primary" onClick={submit} disabled={!canSubmit}>
         {submitting ? "Starting..." : "Create project"}

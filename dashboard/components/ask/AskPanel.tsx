@@ -81,7 +81,7 @@ export function AskPanel() {
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-xs text-gray-500 hover:underline"
+          className="text-xs text-ink3 hover:underline"
         >
           {showAdvanced ? "Hide advanced" : "Advanced"}
         </button>
@@ -97,7 +97,7 @@ export function AskPanel() {
         {loading ? "Asking..." : "Ask"}
       </Button>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {!result && !loading && !error && (
         <EmptyState
@@ -110,20 +110,20 @@ export function AskPanel() {
         <div className="space-y-4">
           {result.degraded.vector && <DegradedBanner reason={result.degraded.reason} />}
           {result.error && (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-danger">
               Answer generation failed: {result.error}. Showing retrieved context below.
             </p>
           )}
           {result.provider === "none" && result.answer === null && !result.error && result.chunks.length > 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink3">
               Answer generation is off — showing retrieval only.{" "}
-              <Link href="/settings" className="text-blue-600 hover:underline">
+              <Link href="/settings" className="text-accent hover:underline">
                 Settings
               </Link>
             </p>
           )}
           {result.answer && (
-            <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4">
+            <section className="rounded-md border border-line p-4">
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{result.answer}</p>
               {result.citations.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
@@ -131,9 +131,9 @@ export function AskPanel() {
                     <button
                       key={c.n}
                       onClick={() => openNote(c.notePath, c.title)}
-                      className="text-xs px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900"
+                      className="text-xs px-2 py-0.5 rounded-full border border-line2 hover:bg-surface2"
                     >
-                      [{c.n}] {c.title} <span className="text-gray-400 font-mono">{c.notePath}</span>
+                      [{c.n}] {c.title} <span className="text-ink3 font-mono">{c.notePath}</span>
                     </button>
                   ))}
                 </div>
@@ -141,11 +141,11 @@ export function AskPanel() {
             </section>
           )}
           <section>
-            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
               Retrieved context ({result.chunks.length})
             </h2>
             {result.chunks.length === 0 ? (
-              <p className="text-sm text-gray-400">No matching notes found.</p>
+              <p className="text-sm text-ink3">No matching notes found.</p>
             ) : (
               <ul className="space-y-2">
                 {result.chunks.map((c) => (
@@ -171,7 +171,7 @@ export function AskPanel() {
             </a>
           }
         >
-          <p className="text-xs text-gray-400 font-mono mb-3">{preview.path}</p>
+          <p className="text-xs text-ink3 font-mono mb-3">{preview.path}</p>
           <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono">{preview.content}</pre>
         </Drawer>
       )}

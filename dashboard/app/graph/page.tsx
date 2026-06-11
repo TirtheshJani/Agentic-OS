@@ -66,7 +66,7 @@ export default function GraphPage() {
     <main className="max-w-7xl mx-auto p-6">
       <header className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Knowledge Graph</h1>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-ink3">
           {data ? `${data.nodes.filter(n => !n.ghost).length} notes, ${data.edges.length} links` : "indexing..."}
         </span>
       </header>
@@ -75,7 +75,7 @@ export default function GraphPage() {
         <select
           value={folder}
           onChange={(e) => setFolder(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
         >
           <option value="">All folders</option>
           {folders.map((f) => <option key={f} value={f}>{f}</option>)}
@@ -83,7 +83,7 @@ export default function GraphPage() {
         <select
           value={tag}
           onChange={(e) => setTag(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
         >
           <option value="">All tags</option>
           {tags.map((t) => <option key={t} value={t}>#{t}</option>)}
@@ -95,22 +95,22 @@ export default function GraphPage() {
             runSearch(e.target.value);
           }}
           placeholder="Search notes (title filter + full text)"
-          className="flex-1 min-w-[220px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-1.5 text-sm"
+          className="flex-1 min-w-[220px] rounded-md border border-line2 bg-surface px-3 py-1.5 text-sm"
         />
       </div>
 
       {searchResults && searchResults.length > 0 && (
-        <div className="mb-4 rounded-md border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-900 max-h-48 overflow-y-auto">
+        <div className="mb-4 rounded-md border border-line divide-y divide-line max-h-48 overflow-y-auto">
           {searchResults.map((r) => (
             <button
               key={r.path}
               onClick={() => openNote(r.path, r.title)}
-              className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="block w-full text-left px-3 py-2 text-sm hover:bg-surface2"
             >
               <span className="font-medium">{r.title}</span>
-              <span className="text-gray-400 text-xs ml-2">{r.path}</span>
+              <span className="text-ink3 text-xs ml-2">{r.path}</span>
               <span
-                className="block text-xs text-gray-500 mt-0.5"
+                className="block text-xs text-ink3 mt-0.5"
                 dangerouslySetInnerHTML={{ __html: r.snippet }}
               />
             </button>
@@ -119,7 +119,7 @@ export default function GraphPage() {
       )}
 
       {!data ? (
-        <p className="text-sm text-gray-400">Loading graph...</p>
+        <p className="text-sm text-ink3">Loading graph...</p>
       ) : (
         <GraphView
           nodes={data.nodes}
@@ -145,7 +145,7 @@ export default function GraphPage() {
             </a>
           }
         >
-          <p className="text-xs text-gray-400 font-mono mb-3">{preview.path}</p>
+          <p className="text-xs text-ink3 font-mono mb-3">{preview.path}</p>
           <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono">{preview.content}</pre>
         </Drawer>
       )}

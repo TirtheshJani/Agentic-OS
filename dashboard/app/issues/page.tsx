@@ -50,7 +50,7 @@ export default function IssuesPage() {
             <select
               value={newIssueProject}
               onChange={(e) => setNewIssueProject(e.target.value)}
-              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
               title="Project for the new issue"
             >
               {projects.map(p => <option key={p.slug} value={p.slug}>{p.name}</option>)}

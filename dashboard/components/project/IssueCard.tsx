@@ -39,7 +39,7 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-3 cursor-grab active:cursor-grabbing text-sm",
+        "rounded-md border border-line bg-surface p-3 cursor-grab active:cursor-grabbing text-sm",
         isDragging && "shadow-lg"
       )}
       {...attributes}
@@ -53,7 +53,7 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
       }}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100">{issue.title}</h3>
+        <h3 className="font-medium text-ink">{issue.title}</h3>
         {issue.priority > 0 && (
           <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 shrink-0">
             P{issue.priority}
@@ -65,14 +65,14 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
           {issue.projectSlug}
         </span>
       )}
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+      <div className="mt-2 flex items-center justify-between text-xs text-ink3">
         {agents && agents.length > 0 ? (
           <select
             value={issue.assigneeSlug ?? ""}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => { e.stopPropagation(); assign(e.target.value); }}
-            className="text-xs max-w-[140px] rounded border border-gray-200 dark:border-gray-800 bg-transparent px-1 py-0.5"
+            className="text-xs max-w-[140px] rounded border border-line bg-transparent px-1 py-0.5"
             title="Assign agent"
           >
             <option value="">unassigned</option>
@@ -86,7 +86,7 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
       {issue.labels.length > 0 && (
         <div className="flex gap-1 flex-wrap mt-2">
           {issue.labels.map(l => (
-            <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900">{l}</span>
+            <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-surface2">{l}</span>
           ))}
         </div>
       )}

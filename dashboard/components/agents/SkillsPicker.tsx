@@ -47,7 +47,7 @@ export function SkillsPicker({ options, selected, onToggle }: Props) {
           {selected.map((name) => (
             <span
               key={name}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-accent-bg text-accent-ink"
             >
               {name}
               <button
@@ -66,21 +66,21 @@ export function SkillsPicker({ options, selected, onToggle }: Props) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search skills..."
-        className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+        className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
       />
-      <div className="max-h-56 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-800">
+      <div className="max-h-56 overflow-y-auto rounded-md border border-line">
         {groups.length === 0 && (
-          <p className="p-3 text-xs text-gray-400">No skills match &quot;{query}&quot;.</p>
+          <p className="p-3 text-xs text-ink3">No skills match &quot;{query}&quot;.</p>
         )}
         {groups.map(([domain, skills]) => (
           <div key={domain}>
-            <div className="sticky top-0 bg-gray-50 dark:bg-gray-900 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200 dark:border-gray-800">
+            <div className="sticky top-0 bg-raise px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink3 border-b border-line">
               {domain}
             </div>
             {skills.map((s) => (
               <label
                 key={s.name}
-                className="flex items-start gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
+                className="flex items-start gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-surface2"
               >
                 <input
                   type="checkbox"
@@ -91,7 +91,7 @@ export function SkillsPicker({ options, selected, onToggle }: Props) {
                 <span className="min-w-0">
                   <span className="font-medium">{s.name}</span>
                   {s.description && (
-                    <span className="block text-gray-500 truncate" title={s.description}>
+                    <span className="block text-ink3 truncate" title={s.description}>
                       {s.description}
                     </span>
                   )}

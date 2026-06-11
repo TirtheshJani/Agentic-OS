@@ -12,25 +12,25 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
     return (
       <div className="space-y-4">
         <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950 p-4">
-          <p className="text-sm font-medium text-red-800 dark:text-red-200">
+          <p className="text-sm font-medium text-danger">
             Create failed at: {failedStep?.id ?? "unknown step"}
           </p>
           {failedStep?.error && (
-            <p className="text-xs text-red-700 dark:text-red-300 mt-1 whitespace-pre-wrap break-words">
+            <p className="text-xs text-danger mt-1 whitespace-pre-wrap break-words">
               {failedStep.error}
             </p>
           )}
         </div>
-        <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+        <div className="text-sm text-ink2 space-y-1">
           <p className="font-medium">Nothing is rolled back. What may already exist:</p>
-          <ul className="list-disc ml-5 text-xs space-y-0.5 text-gray-600 dark:text-gray-400">
+          <ul className="list-disc ml-5 text-xs space-y-0.5 text-ink2">
             <li>{completed.length} completed step(s): {completed.map((s) => s.id).join(", ") || "none"}</li>
             {r.projectPath && <li>Local folder: {r.projectPath}</li>}
             {r.projectSlug && <li>Vault entry: vault/projects/{r.projectSlug}/PROJECT.md</li>}
             {r.agentsCreated.length > 0 && <li>Agents: {r.agentsCreated.join(", ")}</li>}
             {r.repoUrl && <li>GitHub repo: {r.repoUrl}</li>}
           </ul>
-          <p className="text-xs text-gray-500 dark:text-gray-400 pt-1">
+          <p className="text-xs text-ink3 pt-1">
             Deleting a GitHub repo needs the delete_repo scope
             (gh auth refresh -s delete_repo) or github.com settings.
           </p>
@@ -43,39 +43,39 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-green-300 dark:border-green-900 bg-green-50 dark:bg-green-950 p-4">
-        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+        <p className="text-sm font-medium text-ok">
           Project created{r.projectSlug ? `: ${r.projectSlug}` : ""}
         </p>
         {r.projectPath && (
-          <p className="text-xs text-green-700 dark:text-green-300 mt-1">{r.projectPath}</p>
+          <p className="text-xs text-ok mt-1">{r.projectPath}</p>
         )}
       </div>
 
       <ul className="text-sm space-y-1.5">
         {r.projectSlug && (
           <li>
-            <Link className="text-blue-600 hover:underline" href={`/projects/${r.projectSlug}`}>
+            <Link className="text-accent hover:underline" href={`/projects/${r.projectSlug}`}>
               Open the project board
             </Link>
           </li>
         )}
         {r.repoUrl && (
           <li>
-            <a className="text-blue-600 hover:underline" href={r.repoUrl} target="_blank" rel="noreferrer">
+            <a className="text-accent hover:underline" href={r.repoUrl} target="_blank" rel="noreferrer">
               {r.repoUrl}
             </a>
           </li>
         )}
-        <li className="text-gray-700 dark:text-gray-300">
+        <li className="text-ink2">
           Crew: {[...r.agentsCreated, ...r.agentsReused].join(", ") || "none"}{" "}
-          <Link className="text-blue-600 hover:underline" href="/agents">
+          <Link className="text-accent hover:underline" href="/agents">
             (view agents)
           </Link>
         </li>
         {r.issueIds.length > 0 && (
-          <li className="text-gray-700 dark:text-gray-300">
+          <li className="text-ink2">
             {r.issueIds.length} kickoff issue(s) in the backlog{" "}
-            <Link className="text-blue-600 hover:underline" href="/issues">
+            <Link className="text-accent hover:underline" href="/issues">
               (view issues)
             </Link>
           </li>

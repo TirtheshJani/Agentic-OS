@@ -78,17 +78,17 @@ export default function EvalsPage() {
   return (
     <main className="max-w-7xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-1">Evals</h1>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-ink3 mb-4">
         Deterministic run metrics plus optional LLM-judged rubric scores (subjective; one CLI call per grade).
       </p>
       <div className="flex items-center gap-3 mb-6">
         <Button onClick={() => grade("batch")} disabled={busy !== null}>
           {busy === "batch" ? "Grading batch..." : "Grade ungraded runs"}
         </Button>
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {error && <span className="text-sm text-danger">{error}</span>}
       </div>
 
-      {!rows && !error && <p className="text-sm text-gray-500">Loading evals...</p>}
+      {!rows && !error && <p className="text-sm text-ink3">Loading evals...</p>}
       {rows && rows.length === 0 && (
         <EmptyState title="No finished runs" description="Run grades appear here after agent runs complete." />
       )}
@@ -103,7 +103,7 @@ export default function EvalsPage() {
       {rows && rows.length > 0 && (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+            <tr className="text-left text-ink3 border-b border-line">
               <th className="py-1.5 pr-2">Run</th>
               <th className="py-1.5 pr-2">Issue</th>
               <th className="py-1.5 pr-2">Agent</th>
@@ -118,16 +118,16 @@ export default function EvalsPage() {
               const metrics = r.metricsJson ? (JSON.parse(r.metricsJson) as Record<string, unknown>) : null;
               const rubric = r.rubricJson ? (JSON.parse(r.rubricJson) as Record<string, unknown>) : null;
               return (
-                <tr key={r.runId} className="border-b border-gray-100 dark:border-gray-900 align-top">
+                <tr key={r.runId} className="border-b border-line align-top">
                   <td className="py-1.5 pr-2">{r.runId}</td>
                   <td className="py-1.5 pr-2 max-w-64 truncate" title={r.issueTitle}>
                     {r.projectSlug}: {r.issueTitle}
                   </td>
                   <td className="py-1.5 pr-2">
-                    {r.agentSlug} <span className="text-gray-400">({r.runtimeId})</span>
+                    {r.agentSlug} <span className="text-ink3">({r.runtimeId})</span>
                   </td>
                   <td className="py-1.5 pr-2">{r.exitStatus}</td>
-                  <td className="py-1.5 pr-2 text-xs text-gray-500">
+                  <td className="py-1.5 pr-2 text-xs text-ink3">
                     {metrics
                       ? `${metrics.durationMs != null ? `${Math.round((metrics.durationMs as number) / 1000)}s` : "?"} · ${
                           metrics.toolCalls ?? "?"
@@ -143,7 +143,7 @@ export default function EvalsPage() {
                         {r.grade} {r.score != null ? `(${Math.round(r.score)})` : ""}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400">ungraded</span>
+                      <span className="text-xs text-ink3">ungraded</span>
                     )}
                   </td>
                   <td className="py-1.5 pr-2">

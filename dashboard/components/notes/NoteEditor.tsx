@@ -110,7 +110,7 @@ export function NoteEditor({ path, content, onSaved }: NoteEditorProps) {
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 mb-2">
-        <span className="flex-1 min-w-0 text-xs text-gray-400 font-mono truncate">{path}</span>
+        <span className="flex-1 min-w-0 text-xs text-ink3 font-mono truncate">{path}</span>
         {dirty && <span className="text-xs text-yellow-600">Unsaved changes</span>}
         <Button variant="primary" onClick={() => void save()} disabled={!dirty || saving}>
           {saving ? "Saving..." : "Save"}
@@ -122,23 +122,23 @@ export function NoteEditor({ path, content, onSaved }: NoteEditorProps) {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         spellCheck={false}
-        className="flex-1 w-full resize-none rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 w-full resize-none rounded-md border border-line2 bg-surface px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent-line"
       />
       {linkCtx && suggestions.length > 0 && (
-        <div className="mt-1 rounded-md border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-900 max-h-40 overflow-y-auto">
+        <div className="mt-1 rounded-md border border-line divide-y divide-line max-h-40 overflow-y-auto">
           {suggestions.map((s) => (
             <button
               key={s.path}
               onClick={() => insertLink(s.basename)}
-              className="block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="block w-full text-left px-3 py-1.5 text-sm hover:bg-surface2"
             >
               <span className="font-medium">[[{s.basename}]]</span>
-              <span className="text-xs text-gray-400 font-mono ml-2">{s.path}</span>
+              <span className="text-xs text-ink3 font-mono ml-2">{s.path}</span>
             </button>
           ))}
         </div>
       )}
-      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+      {error && <p className="text-sm text-danger mt-2">{error}</p>}
     </div>
   );
 }

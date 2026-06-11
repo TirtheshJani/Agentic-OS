@@ -45,47 +45,47 @@ export function SessionDetail({ id }: { id: string }) {
     void load();
   }, [load]);
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!data) return <p className="text-sm text-gray-500">Loading session...</p>;
+  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (!data) return <p className="text-sm text-ink3">Loading session...</p>;
 
   const { summary } = data;
   const pages = Math.ceil(data.totalMessages / data.pageSize);
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-gray-200 dark:border-gray-800 p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="rounded-md border border-line p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-2">
         <div>
-          <span className="text-gray-500">Provider</span>
+          <span className="text-ink3">Provider</span>
           <div>{summary.provider}</div>
         </div>
         <div>
-          <span className="text-gray-500">Turns (user/assistant)</span>
+          <span className="text-ink3">Turns (user/assistant)</span>
           <div>
             {summary.turnsUser}/{summary.turnsAssistant}
           </div>
         </div>
         <div>
-          <span className="text-gray-500">Tool calls</span>
+          <span className="text-ink3">Tool calls</span>
           <div>{summary.toolCalls}</div>
         </div>
         <div>
-          <span className="text-gray-500">Tokens in/out</span>
+          <span className="text-ink3">Tokens in/out</span>
           <div>
             {summary.tokensIn ?? "n/a"} / {summary.tokensOut ?? "n/a"}
           </div>
         </div>
         <div className="col-span-2">
-          <span className="text-gray-500">Working directory</span>
+          <span className="text-ink3">Working directory</span>
           <div className="truncate" title={summary.projectDir ?? undefined}>
             {summary.projectDir ?? "?"}
           </div>
         </div>
         <div>
-          <span className="text-gray-500">Started</span>
+          <span className="text-ink3">Started</span>
           <div>{summary.startedAt ? new Date(summary.startedAt).toLocaleString() : "?"}</div>
         </div>
         <div>
-          <span className="text-gray-500">Est. cost</span>
+          <span className="text-ink3">Est. cost</span>
           <div>{summary.costEstimate != null ? `$${summary.costEstimate.toFixed(2)}` : "n/a"}</div>
         </div>
       </div>
@@ -96,11 +96,11 @@ export function SessionDetail({ id }: { id: string }) {
             key={i}
             className={
               m.role === "user"
-                ? "rounded-md border-l-4 border-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3"
-                : "rounded-md border-l-4 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3"
+                ? "rounded-md border-l-4 border-blue-400 bg-accent-bg p-3"
+                : "rounded-md border-l-4 border-line2 bg-raise p-3"
             }
           >
-            <div className="text-xs text-gray-500 mb-1">
+            <div className="text-xs text-ink3 mb-1">
               {m.role}
               {m.model ? ` · ${m.model}` : ""}
               {m.timestamp ? ` · ${new Date(m.timestamp).toLocaleTimeString()}` : ""}
@@ -108,8 +108,8 @@ export function SessionDetail({ id }: { id: string }) {
             {m.text && <pre className="whitespace-pre-wrap text-sm font-sans">{m.text}</pre>}
             {m.toolCalls.map((t, j) => (
               <details key={j} className="mt-1 text-xs">
-                <summary className="cursor-pointer text-gray-600 dark:text-gray-400">tool: {t.name}</summary>
-                <pre className="whitespace-pre-wrap mt-1 p-2 rounded bg-gray-100 dark:bg-gray-800 overflow-x-auto">
+                <summary className="cursor-pointer text-ink2">tool: {t.name}</summary>
+                <pre className="whitespace-pre-wrap mt-1 p-2 rounded bg-surface2 overflow-x-auto">
                   {t.inputPreview}
                 </pre>
               </details>
@@ -123,7 +123,7 @@ export function SessionDetail({ id }: { id: string }) {
           <Button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
             Previous
           </Button>
-          <span className="text-gray-500">
+          <span className="text-ink3">
             Page {page + 1} of {pages}
           </span>
           <Button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>

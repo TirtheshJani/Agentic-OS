@@ -52,8 +52,8 @@ export default function LearningTopicPage({ params }: { params: Promise<{ topic:
     }
   }
 
-  if (error && !data) return <main className="max-w-5xl mx-auto p-6 text-sm text-red-600">{error}</main>;
-  if (!data) return <main className="max-w-5xl mx-auto p-6 text-sm text-gray-500">Loading...</main>;
+  if (error && !data) return <main className="max-w-5xl mx-auto p-6 text-sm text-danger">{error}</main>;
+  if (!data) return <main className="max-w-5xl mx-auto p-6 text-sm text-ink3">Loading...</main>;
 
   return (
     <main className="max-w-5xl mx-auto p-6">
@@ -68,14 +68,14 @@ export default function LearningTopicPage({ params }: { params: Promise<{ topic:
           </Button>
         </div>
       </div>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-ink3 mb-4">
         Tutor: {data.tutorSlug ?? "none"} · {data.sessionCount} sessions
       </p>
-      {message && <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{message}</p>}
+      {message && <p className="text-sm text-ink2 mb-4">{message}</p>}
 
       <section className="mb-6">
         <h2 className="text-sm font-semibold mb-2">Syllabus</h2>
-        <pre className="whitespace-pre-wrap text-sm rounded-md border border-gray-200 dark:border-gray-800 p-3">
+        <pre className="whitespace-pre-wrap text-sm rounded-md border border-line p-3">
           {data.syllabus || "(empty)"}
         </pre>
       </section>
@@ -83,7 +83,7 @@ export default function LearningTopicPage({ params }: { params: Promise<{ topic:
       <section>
         <h2 className="text-sm font-semibold mb-2">Session logs</h2>
         {sessions.length === 0 ? (
-          <p className="text-sm text-gray-500">No session logs yet.</p>
+          <p className="text-sm text-ink3">No session logs yet.</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {sessions.map((s) => (

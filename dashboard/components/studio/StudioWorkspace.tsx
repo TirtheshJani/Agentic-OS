@@ -48,20 +48,20 @@ export function StudioWorkspace({ slug }: { slug: string }) {
     setMessage(res.ok ? `Design review issue #${body.issueId} filed (backlog).` : (body.error ?? "failed"));
   }
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error) return <p className="text-sm text-danger">{error}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold">Studio: {slug}</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink3">
             Diagrams save to vault/projects/{slug}/design/ as scene JSON + SVG; docs are vault notes.
           </p>
         </div>
         <Button onClick={requestReview}>Request design review</Button>
       </div>
-      {message && <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{message}</p>}
+      {message && <p className="text-sm text-ink2 mb-3">{message}</p>}
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         {canvases.map((c) => (
@@ -70,8 +70,8 @@ export function StudioWorkspace({ slug }: { slug: string }) {
             onClick={() => setActive(c.name)}
             className={
               active === c.name
-                ? "rounded-md px-2 py-1 text-sm bg-gray-200 dark:bg-gray-800 font-medium"
-                : "rounded-md px-2 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900"
+                ? "rounded-md px-2 py-1 text-sm bg-surface2 font-medium"
+                : "rounded-md px-2 py-1 text-sm text-ink2 hover:bg-surface2"
             }
           >
             {c.name}
@@ -94,13 +94,13 @@ export function StudioWorkspace({ slug }: { slug: string }) {
       {active ? (
         <CanvasHost key={`${slug}:${active}`} slug={slug} name={active} />
       ) : (
-        <p className="text-sm text-gray-500">Create a canvas to start diagramming.</p>
+        <p className="text-sm text-ink3">Create a canvas to start diagramming.</p>
       )}
 
       <section className="mt-6">
         <h2 className="text-sm font-semibold mb-2">Design docs</h2>
         {docs.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink3">
             No design docs yet. Create ARCHITECTURE.md in the Notes view under projects/{slug}/design/.
           </p>
         ) : (

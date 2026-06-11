@@ -11,7 +11,7 @@ export interface BarSeries {
 export function Bars({ labels, series, height = 160 }: { labels: string[]; series: BarSeries[]; height?: number }) {
   const max = Math.max(1, ...series.flatMap((s) => s.values));
   const n = labels.length;
-  if (n === 0) return <p className="text-sm text-gray-500">No data.</p>;
+  if (n === 0) return <p className="text-sm text-ink3">No data.</p>;
   const groupWidth = 100 / n;
   const barWidth = groupWidth / (series.length + 0.5);
 

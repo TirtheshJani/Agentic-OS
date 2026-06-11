@@ -66,7 +66,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   });
 
   if (notFoundFlag) notFound();
-  if (!project || !agents) return <p className="p-6 text-sm text-gray-500">Loading...</p>;
+  if (!project || !agents) return <p className="p-6 text-sm text-ink3">Loading...</p>;
 
   const crewDisplay: AgentDetail[] = project.crew
     .map(s => agents.find(a => a.slug === s))

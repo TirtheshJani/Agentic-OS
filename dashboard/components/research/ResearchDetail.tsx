@@ -96,8 +96,8 @@ export function ResearchDetail({ slug }: { slug: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!data) return <p className="text-sm text-gray-500">Loading research project...</p>;
+  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (!data) return <p className="text-sm text-ink3">Loading research project...</p>;
 
   return (
     <div>
@@ -107,17 +107,17 @@ export function ResearchDetail({ slug }: { slug: string }) {
           {collecting ? "Filing..." : "Run collection"}
         </Button>
       </div>
-      <p className="text-sm text-gray-500 mb-1">{data.meta.question}</p>
-      <p className="text-xs text-gray-400 mb-4">
+      <p className="text-sm text-ink3 mb-1">{data.meta.question}</p>
+      <p className="text-xs text-ink3 mb-4">
         status: {data.meta.status}
-        {collectMsg && <span className="ml-2 text-gray-600 dark:text-gray-300">{collectMsg}</span>}
+        {collectMsg && <span className="ml-2 text-ink2">{collectMsg}</span>}
       </p>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section>
           <h2 className="text-sm font-semibold mb-2">Sources ({data.sources.length})</h2>
           {data.sources.length === 0 && (
-            <p className="text-sm text-gray-500">No sources yet. Run a collection or drop .md files into sources/.</p>
+            <p className="text-sm text-ink3">No sources yet. Run a collection or drop .md files into sources/.</p>
           )}
           <ul className="space-y-1.5">
             {data.sources.map((s) => (
@@ -136,7 +136,7 @@ export function ResearchDetail({ slug }: { slug: string }) {
                       unattributed
                     </span>
                   )}
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-ink3">
                     {s.sourceType ?? "?"}
                     {s.sourceUrl && (
                       <>
@@ -191,28 +191,28 @@ export function ResearchDetail({ slug }: { slug: string }) {
 
           {answer && (
             <div className="mt-4 space-y-3">
-              {answer.error && <p className="text-sm text-red-600">{answer.error}</p>}
+              {answer.error && <p className="text-sm text-danger">{answer.error}</p>}
               {answer.degraded.vector && (
                 <p className="text-xs text-yellow-700 dark:text-yellow-400">
                   Keyword + link-graph retrieval only ({answer.degraded.reason ?? "no embedding provider"}).
                 </p>
               )}
               {answer.answer ? (
-                <pre className="whitespace-pre-wrap text-sm font-sans rounded-md border border-gray-200 dark:border-gray-800 p-3">
+                <pre className="whitespace-pre-wrap text-sm font-sans rounded-md border border-line p-3">
                   {answer.answer}
                 </pre>
               ) : (
-                !answer.error && <p className="text-sm text-gray-500">No answer generated; showing retrieval only.</p>
+                !answer.error && <p className="text-sm text-ink3">No answer generated; showing retrieval only.</p>
               )}
               {answer.chunks.length > 0 && (
                 <details className="text-sm">
-                  <summary className="cursor-pointer text-gray-600 dark:text-gray-400">
+                  <summary className="cursor-pointer text-ink2">
                     Retrieved context ({answer.chunks.length})
                   </summary>
                   <div className="mt-2 space-y-2">
                     {answer.chunks.map((c, i) => (
-                      <div key={i} className="rounded border border-gray-200 dark:border-gray-800 p-2">
-                        <div className="text-xs text-gray-500">
+                      <div key={i} className="rounded border border-line p-2">
+                        <div className="text-xs text-ink3">
                           [{i + 1}] {c.notePath} · {c.score.toFixed(3)}
                         </div>
                         <pre className="whitespace-pre-wrap text-xs mt-1 max-h-32 overflow-auto">{c.content}</pre>

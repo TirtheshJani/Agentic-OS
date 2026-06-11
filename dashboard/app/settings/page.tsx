@@ -117,7 +117,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (!settings) return <main className="max-w-2xl mx-auto p-6 text-sm text-gray-400">Loading settings...</main>;
+  if (!settings) return <main className="max-w-2xl mx-auto p-6 text-sm text-ink3">Loading settings...</main>;
 
   return (
     <main className="max-w-2xl mx-auto p-6">
@@ -161,7 +161,7 @@ export default function SettingsPage() {
           <select
             value={settings.theme}
             onChange={(e) => setSettings({ ...settings, theme: e.target.value as SettingsData["theme"] })}
-            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
           >
             <option value="system">system</option>
             <option value="light">light</option>
@@ -169,7 +169,7 @@ export default function SettingsPage() {
           </select>
         </Field>
 
-        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <section className="rounded-md border border-line p-4 space-y-3">
           <h2 className="text-sm font-semibold">Autonomy</h2>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -179,7 +179,7 @@ export default function SettingsPage() {
             />
             <span>
               <span className="font-medium">Enable autonomy</span>
-              <span className="text-gray-500"> (kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog)</span>
+              <span className="text-ink3"> (kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog)</span>
             </span>
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -190,7 +190,7 @@ export default function SettingsPage() {
             />
             <span>
               <span className="font-medium">In-dashboard scheduler</span>
-              <span className="text-gray-500"> (fires automations/remote/*.md crons as queued issues)</span>
+              <span className="text-ink3"> (fires automations/remote/*.md crons as queued issues)</span>
             </span>
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -201,7 +201,7 @@ export default function SettingsPage() {
             />
             <span>
               <span className="font-medium">LLM routing fallback</span>
-              <span className="text-gray-500"> (reserved; one headless claude call when keyword routing finds nothing)</span>
+              <span className="text-ink3"> (reserved; one headless claude call when keyword routing finds nothing)</span>
             </span>
           </label>
           <Field label="Max handoff chain depth" hint="Children past this depth go to backlog instead of auto-running.">
@@ -219,7 +219,7 @@ export default function SettingsPage() {
           </Field>
         </section>
 
-        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <section className="rounded-md border border-line p-4 space-y-3">
           <h2 className="text-sm font-semibold">Knowledge / RAG</h2>
           <Field label="Embedding provider" hint="none degrades retrieval to keyword + link-graph only.">
             <select
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                   rag: { ...settings.rag, embeddingProvider: e.target.value as SettingsData["rag"]["embeddingProvider"] },
                 })
               }
-              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
             >
               <option value="none">none</option>
               <option value="gemini">gemini</option>
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                   rag: { ...settings.rag, answerProvider: e.target.value as SettingsData["rag"]["answerProvider"] },
                 })
               }
-              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
             >
               <option value="gemini-cli">gemini-cli</option>
               <option value="claude-cli">claude-cli</option>
@@ -264,11 +264,11 @@ export default function SettingsPage() {
             </select>
           </Field>
           {ragStatus && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink3">
               Embeddings: {ragStatus.embedded}/{ragStatus.distinctHashes} chunks embedded ({ragStatus.chunks} total)
               {" · "}
               {ragStatus.model} @ {ragStatus.dims}d
-              {ragStatus.lastError && <span className="text-red-600"> · {ragStatus.lastError}</span>}
+              {ragStatus.lastError && <span className="text-danger"> · {ragStatus.lastError}</span>}
             </p>
           )}
           <Button onClick={reembedAll} disabled={reindexing}>
@@ -276,7 +276,7 @@ export default function SettingsPage() {
           </Button>
         </section>
 
-        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <section className="rounded-md border border-line p-4 space-y-3">
           <h2 className="text-sm font-semibold">LightRAG</h2>
           <Field label="Base URL" hint="Your local LightRAG instance.">
             <Input
@@ -294,7 +294,7 @@ export default function SettingsPage() {
             />
             <span>
               <span className="font-medium">Auto-ingest finished runs</span>
-              <span className="text-gray-500">
+              <span className="text-ink3">
                 {" "}
                 (also requires lightrag-ingest: true in the project&apos;s PROJECT.md; clean exits only)
               </span>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
           </label>
         </section>
 
-        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <section className="rounded-md border border-line p-4 space-y-3">
           <h2 className="text-sm font-semibold">Export</h2>
           <Field
             label="NotebookLM export folder"
@@ -319,7 +319,7 @@ export default function SettingsPage() {
           <Button variant="primary" onClick={save} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
-          {message && <span className="text-sm text-gray-500">{message}</span>}
+          {message && <span className="text-sm text-ink3">{message}</span>}
         </div>
       </div>
     </main>

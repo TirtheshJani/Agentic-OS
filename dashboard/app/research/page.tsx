@@ -53,11 +53,11 @@ export default function ResearchPage() {
           New research project
         </Button>
       </div>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-ink3 mb-6">
         Research projects live in vault/research/. Sources are collected by agents; chat is grounded in the project folder.
       </p>
 
-      {!projects && <p className="text-sm text-gray-500">Loading...</p>}
+      {!projects && <p className="text-sm text-ink3">Loading...</p>}
       {projects && projects.length === 0 && (
         <EmptyState title="No research projects" description="Create one and dispatch a collection run." />
       )}
@@ -67,14 +67,14 @@ export default function ResearchPage() {
             <Link
               key={p.slug}
               href={`/research/${p.slug}`}
-              className="rounded-md border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="rounded-md border border-line p-4 hover:bg-surface2"
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm">{p.title}</span>
-                <span className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs">{p.status}</span>
+                <span className="rounded bg-surface2 px-1.5 py-0.5 text-xs">{p.status}</span>
               </div>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{p.question}</p>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-sm text-ink3 mt-1 line-clamp-2">{p.question}</p>
+              <p className="text-xs text-ink3 mt-2">
                 {p.sourceCount} sources · {p.noteCount} notes{p.briefExists ? " · brief" : ""}
               </p>
             </Link>
@@ -96,7 +96,7 @@ export default function ResearchPage() {
                 placeholder="What is the state of the art in...?"
               />
             </Field>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <div className="flex gap-2">
               <Button variant="primary" onClick={create} disabled={busy || !title.trim() || !question.trim()}>
                 {busy ? "Creating..." : "Create"}

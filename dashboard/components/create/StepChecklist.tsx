@@ -16,17 +16,17 @@ const STEP_LABELS: Record<CreateStepId, string> = {
 function glyph(status: StepState["status"]): { char: string; cls: string } {
   switch (status) {
     case "pending":
-      return { char: "○", cls: "text-gray-400 dark:text-gray-600" }; // ○
+      return { char: "○", cls: "text-ink3" }; // ○
     case "running":
-      return { char: "●", cls: "text-blue-600 animate-pulse" }; // ●
+      return { char: "●", cls: "text-accent animate-pulse" }; // ●
     case "done":
-      return { char: "✓", cls: "text-green-600" }; // ✓
+      return { char: "✓", cls: "text-ok" }; // ✓
     case "skipped":
-      return { char: "−", cls: "text-gray-400 dark:text-gray-600" }; // −
+      return { char: "−", cls: "text-ink3" }; // −
     case "warning":
       return { char: "⚠", cls: "text-yellow-600" }; // ⚠
     case "failed":
-      return { char: "✕", cls: "text-red-600" }; // ✕
+      return { char: "✕", cls: "text-danger" }; // ✕
   }
 }
 
@@ -42,19 +42,19 @@ export function StepChecklist({ steps }: { steps: StepState[] }) {
               <span
                 className={clsx(
                   "text-sm",
-                  step.status === "skipped" && "line-through text-gray-400 dark:text-gray-600",
+                  step.status === "skipped" && "line-through text-ink3",
                   step.status === "pending"
-                    ? "text-gray-500 dark:text-gray-500"
-                    : "text-gray-900 dark:text-gray-100"
+                    ? "text-ink3 dark:text-ink3"
+                    : "text-ink"
                 )}
               >
                 {STEP_LABELS[step.id]}
               </span>
               {step.detail && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{step.detail}</p>
+                <p className="text-xs text-ink3 truncate">{step.detail}</p>
               )}
               {step.error && (
-                <p className="text-xs text-red-600 break-words whitespace-pre-wrap">{step.error}</p>
+                <p className="text-xs text-danger break-words whitespace-pre-wrap">{step.error}</p>
               )}
             </div>
           </li>

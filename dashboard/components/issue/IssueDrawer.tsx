@@ -71,14 +71,14 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
   if (error) {
     return (
       <Drawer title="Issue" width="lg" onClose={onClose}>
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       </Drawer>
     );
   }
   if (!issue) {
     return (
       <Drawer title="Issue" width="lg" onClose={onClose}>
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-ink3">Loading...</p>
       </Drawer>
     );
   }
@@ -100,10 +100,10 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
         <IssueHeader issue={issue} crew={crew} onPatch={patch} />
       </section>
 
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+      <hr className="my-6 border-line" />
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Runs</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Runs</h3>
         <RunsTab
           issueId={issue.id}
           projectSlug={issue.projectSlug}
@@ -112,16 +112,16 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
         />
       </section>
 
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+      <hr className="my-6 border-line" />
 
       <section>
         <IssueBodyEditor title={issue.title} body={issue.body} onSave={patch} />
       </section>
 
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+      <hr className="my-6 border-line" />
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Thread</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Thread</h3>
         <ThreadList issueId={issue.id} />
         <div className="mt-3">
           <ThreadComposer issueId={issue.id} />

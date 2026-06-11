@@ -65,11 +65,11 @@ export default function LearningPage() {
           New topic
         </Button>
       </div>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-ink3 mb-6">
         Topics live in vault/learning/. Sessions are live tutoring runs in the terminal; tutors write session logs back to the vault.
       </p>
 
-      {!topics && <p className="text-sm text-gray-500">Loading...</p>}
+      {!topics && <p className="text-sm text-ink3">Loading...</p>}
       {topics && topics.length === 0 && (
         <EmptyState title="No learning topics" description="Create a topic and start a tutoring session." />
       )}
@@ -79,7 +79,7 @@ export default function LearningPage() {
             <Link
               key={t.slug}
               href={`/learning/${t.slug}`}
-              className="rounded-md border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="rounded-md border border-line p-4 hover:bg-surface2"
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm">{t.title}</span>
@@ -89,7 +89,7 @@ export default function LearningPage() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-ink3 mt-2">
                 {t.sessionCount} sessions{t.lastSession ? ` · last ${t.lastSession}` : ""}
                 {t.hasSrs ? " · srs" : ""}
               </p>
@@ -108,7 +108,7 @@ export default function LearningPage() {
               <select
                 value={tutor}
                 onChange={(e) => setTutor(e.target.value)}
-                className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
               >
                 {(agents.length > 0 ? agents : [{ slug: "socratic-tutor", name: "socratic-tutor" }]).map((a) => (
                   <option key={a.slug} value={a.slug}>
@@ -120,7 +120,7 @@ export default function LearningPage() {
             <Field label="Initial goals (optional)">
               <Textarea value={goals} onChange={(e) => setGoals(e.target.value)} rows={3} placeholder="- [ ] eigenvalues" />
             </Field>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <div className="flex gap-2">
               <Button variant="primary" onClick={create} disabled={busy || !title.trim()}>
                 {busy ? "Creating..." : "Create"}

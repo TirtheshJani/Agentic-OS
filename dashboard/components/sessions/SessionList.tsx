@@ -63,8 +63,8 @@ export function SessionList() {
     }
   }
 
-  if (error) return <p className="text-sm text-red-600">Failed to load sessions: {error}</p>;
-  if (!sessions) return <p className="text-sm text-gray-500">Loading sessions...</p>;
+  if (error) return <p className="text-sm text-danger">Failed to load sessions: {error}</p>;
+  if (!sessions) return <p className="text-sm text-ink3">Loading sessions...</p>;
 
   return (
     <div className="space-y-3">
@@ -72,7 +72,7 @@ export function SessionList() {
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
         >
           <option value="">All providers</option>
           <option value="claude-code">claude-code</option>
@@ -90,7 +90,7 @@ export function SessionList() {
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+            <tr className="text-left text-ink3 border-b border-line">
               <th className="py-1.5 pr-2">Provider</th>
               <th className="py-1.5 pr-2">Project</th>
               <th className="py-1.5 pr-2">Started</th>
@@ -102,13 +102,13 @@ export function SessionList() {
           </thead>
           <tbody>
             {sessions.map((s) => (
-              <tr key={s.id} className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900">
+              <tr key={s.id} className="border-b border-line hover:bg-surface2">
                 <td className="py-1.5 pr-2">
                   <span
                     className={
                       s.provider === "claude-code"
                         ? "rounded bg-orange-100 dark:bg-orange-950 px-1.5 py-0.5 text-xs text-orange-700 dark:text-orange-300"
-                        : "rounded bg-blue-100 dark:bg-blue-950 px-1.5 py-0.5 text-xs text-blue-700 dark:text-blue-300"
+                        : "rounded bg-blue-100 dark:bg-blue-950 px-1.5 py-0.5 text-xs text-accent-ink"
                     }
                   >
                     {s.provider}
@@ -119,7 +119,7 @@ export function SessionList() {
                     {s.projectSlug ?? s.projectDir?.split(/[\\/]/).pop() ?? s.sessionId.slice(0, 8)}
                   </Link>
                 </td>
-                <td className="py-1.5 pr-2 text-gray-500">
+                <td className="py-1.5 pr-2 text-ink3">
                   {s.startedAt ? new Date(s.startedAt).toLocaleString() : "?"}
                 </td>
                 <td className="py-1.5 pr-2">
@@ -131,7 +131,7 @@ export function SessionList() {
                 <td className="py-1.5 pr-2">{s.costEstimate != null ? `$${s.costEstimate.toFixed(2)}` : "n/a"}</td>
                 <td className="py-1.5 pr-2">
                   {s.runId != null && (
-                    <span className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs">run {s.runId}</span>
+                    <span className="rounded bg-surface2 px-1.5 py-0.5 text-xs">run {s.runId}</span>
                   )}
                 </td>
               </tr>
@@ -139,7 +139,7 @@ export function SessionList() {
           </tbody>
         </table>
       )}
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-ink3">
         Costs are estimates from public per-token prices; subscription usage does not bill per token.
       </p>
     </div>

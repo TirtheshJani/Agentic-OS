@@ -33,21 +33,21 @@ export function ProjectCard({ slug, name, path, repo, crewSize, capabilities, la
   return (
     <Link
       href={`/projects/${slug}`}
-      className="block rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+      className="block rounded-lg border border-line bg-surface p-4 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
     >
       <div className="flex justify-between items-start">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold truncate">{name}</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate" title={path}>{path}</p>
+          <p className="text-xs text-ink3 mt-1 truncate" title={path}>{path}</p>
         </div>
-        <span className="text-xs text-gray-400 ml-2 shrink-0">{formatRelative(lastModified)}</span>
+        <span className="text-xs text-ink3 ml-2 shrink-0">{formatRelative(lastModified)}</span>
       </div>
       <div className="flex items-center gap-3 mt-3 text-xs">
-        <span className="text-gray-500">
-          Crew: <span className="font-medium text-gray-700 dark:text-gray-300">{crewSize}</span>
+        <span className="text-ink3">
+          Crew: <span className="font-medium text-ink2">{crewSize}</span>
         </span>
         {repo && (
-          <span className="text-gray-500 truncate" title={repo}>
+          <span className="text-ink3 truncate" title={repo}>
             {repoLabel(repo)}
           </span>
         )}
@@ -55,7 +55,7 @@ export function ProjectCard({ slug, name, path, repo, crewSize, capabilities, la
       {capabilities.length > 0 && (
         <div className="flex gap-1 flex-wrap mt-3">
           {capabilities.slice(0, 5).map(c => (
-            <span key={c} className="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300">
+            <span key={c} className="text-[10px] px-2 py-0.5 rounded bg-surface2 text-ink2">
               {c}
             </span>
           ))}

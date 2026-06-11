@@ -118,7 +118,7 @@ export function GraphView({ nodes, edges, highlight, onSelectNode }: Props) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-md border border-gray-200 dark:border-gray-800 bg-gray-950"
+      className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-md border border-line bg-gray-950"
     />
   );
 }

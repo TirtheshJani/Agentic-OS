@@ -51,7 +51,7 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
     refreshCaps();
   }, [refreshCaps, runs?.length]);
 
-  if (!runs) return <p className="text-sm text-gray-400">Loading runs...</p>;
+  if (!runs) return <p className="text-sm text-ink3">Loading runs...</p>;
 
   const activeRun = runs.find(r => r.endedAt == null);
 
@@ -99,7 +99,7 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-ink3">
           {runs.length === 0 ? "No runs yet." : `${runs.length} run${runs.length === 1 ? "" : "s"}`}
         </div>
         <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
             <select
               value={runtimeOverride}
               onChange={(e) => setRuntimeOverride(e.target.value)}
-              className="text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1"
+              className="text-xs rounded border border-line2 bg-white dark:bg-gray-900 px-1.5 py-1"
               title="Runtime for the next run"
             >
               <option value="">Agent default</option>
@@ -138,10 +138,10 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
 
       {runs.filter(r => r.endedAt != null).length > 0 && (
         <section>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Previous runs</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Previous runs</h4>
           <ul className="space-y-2">
             {runs.filter(r => r.endedAt != null).map(r => (
-              <li key={r.id} className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+              <li key={r.id} className="text-xs text-ink2 font-mono">
                 #{r.id} {r.exitStatus} ({new Date(r.startedAt).toLocaleString()} → {r.endedAt ? new Date(r.endedAt).toLocaleString() : "?"})
               </li>
             ))}

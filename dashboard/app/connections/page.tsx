@@ -13,10 +13,10 @@ interface ConnectionStatus {
 }
 
 const STATUS_STYLES: Record<ConnectionStatus["status"], string> = {
-  connected: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200",
+  connected: "bg-ok-bg text-ok",
   "not-configured": "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200",
-  unavailable: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200",
-  deferred: "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
+  unavailable: "bg-danger-bg text-danger",
+  deferred: "bg-surface2 text-ink2",
 };
 
 const MCP_EDITABLE = new Set(["gmail", "calendar"]);
@@ -81,20 +81,20 @@ export default function ConnectionsPage() {
     <main className="max-w-5xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-6">Connections</h1>
       {!connections ? (
-        <p className="text-sm text-gray-400">Checking connections...</p>
+        <p className="text-sm text-ink3">Checking connections...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {connections.map((c) => (
-            <section key={c.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-2">
+            <section key={c.id} className="rounded-md border border-line p-4 space-y-2">
               <header className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-medium">{c.label}</h2>
                 <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full", STATUS_STYLES[c.status])}>
                   {c.status}
                 </span>
               </header>
-              <p className="text-xs text-gray-500">{c.detail}</p>
+              <p className="text-xs text-ink3">{c.detail}</p>
               {c.setup.length > 0 && (
-                <ul className="text-xs text-gray-500 space-y-0.5 list-disc list-inside">
+                <ul className="text-xs text-ink3 space-y-0.5 list-disc list-inside">
                   {c.setup.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
               )}
@@ -122,7 +122,7 @@ export default function ConnectionsPage() {
             </>
           }
         >
-          <p className="text-xs text-gray-500 mb-2">
+          <p className="text-xs text-ink3 mb-2">
             JSON object mapping server name to its MCP config. One entry per account for multi-account Gmail.
             Saved to the gitignored .agentic-os/mcp/{editing}.json and injected into run worktrees of projects
             whose PROJECT.md lists <code className="font-mono">mcp-servers: [{editing}]</code>.
@@ -132,9 +132,9 @@ export default function ConnectionsPage() {
             onChange={(e) => setTemplateText(e.target.value)}
             rows={16}
             spellCheck={false}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-xs font-mono"
+            className="w-full rounded-md border border-line2 bg-surface px-3 py-2 text-xs font-mono"
           />
-          {saveError && <p className="text-sm text-red-600 mt-2">{saveError}</p>}
+          {saveError && <p className="text-sm text-danger mt-2">{saveError}</p>}
         </Drawer>
       )}
     </main>

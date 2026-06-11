@@ -50,7 +50,7 @@ export function KanbanBoard({ projectSlug, onOpenIssue, agents }: Props) {
     reload();
   }
 
-  if (!issues) return <p className="text-sm text-gray-400 p-4">Loading issues...</p>;
+  if (!issues) return <p className="text-sm text-ink3 p-4">Loading issues...</p>;
 
   const byStatus: Record<string, IssueSummary[]> = {};
   for (const col of COLUMNS) byStatus[col.status] = [];

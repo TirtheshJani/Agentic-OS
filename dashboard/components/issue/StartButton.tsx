@@ -46,7 +46,7 @@ export function StartButton({ issueId, disabled, disabledReason, runtimeId, onSt
       >
         {busy ? "Starting..." : "Start"}
       </Button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

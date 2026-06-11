@@ -67,18 +67,18 @@ export function CrewPickerDrawer({ projectSlug, projectCapabilities, currentCrew
         </>
       }
     >
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-ink3 mb-4">
         Showing agents whose skills overlap with this project's capabilities ({projectCapabilities.join(", ") || "none set"}).
       </p>
       {eligible.length === 0 ? (
-        <p className="text-sm text-gray-400">No eligible agents. Add capabilities to PROJECT.md or skills to agents.</p>
+        <p className="text-sm text-ink3">No eligible agents. Add capabilities to PROJECT.md or skills to agents.</p>
       ) : (
         <ul className="space-y-2">
           {eligible.map(a => {
             const checked = selected.has(a.slug);
             return (
               <li key={a.slug}>
-                <label className={"flex items-start gap-3 p-3 rounded-md border " + (checked ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30" : "border-gray-200 dark:border-gray-800")}>
+                <label className={"flex items-start gap-3 p-3 rounded-md border " + (checked ? "border-blue-400 bg-accent-bg" : "border-line")}>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -87,10 +87,10 @@ export function CrewPickerDrawer({ projectSlug, projectCapabilities, currentCrew
                   />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm">{a.name}</div>
-                    <div className="text-xs text-gray-500 font-mono">{a.slug}</div>
+                    <div className="text-xs text-ink3 font-mono">{a.slug}</div>
                     <div className="flex gap-1 flex-wrap mt-1">
                       {a.skills.map(s => (
-                        <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900">{s}</span>
+                        <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-surface2">{s}</span>
                       ))}
                     </div>
                   </div>
@@ -100,7 +100,7 @@ export function CrewPickerDrawer({ projectSlug, projectCapabilities, currentCrew
           })}
         </ul>
       )}
-      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+      {error && <p className="text-sm text-danger mt-3">{error}</p>}
     </Drawer>
   );
 }

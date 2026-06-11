@@ -7,7 +7,7 @@ import { Button } from "@/components/common/Button";
 // same rule as xterm and sigma (see CLAUDE.md gotchas).
 const Excalidraw = dynamic(() => import("@excalidraw/excalidraw").then((m) => m.Excalidraw), {
   ssr: false,
-  loading: () => <p className="text-sm text-gray-500 p-4">Loading canvas...</p>,
+  loading: () => <p className="text-sm text-ink3 p-4">Loading canvas...</p>,
 });
 
 interface Scene {
@@ -90,7 +90,7 @@ export function CanvasHost({ slug, name }: { slug: string; name: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, name]);
 
-  if (initial === null) return <p className="text-sm text-gray-500 p-4">Loading canvas...</p>;
+  if (initial === null) return <p className="text-sm text-ink3 p-4">Loading canvas...</p>;
 
   return (
     <div className="flex flex-col h-[75vh]">
@@ -98,9 +98,9 @@ export function CanvasHost({ slug, name }: { slug: string; name: string }) {
         <Button variant="primary" onClick={save} disabled={saving}>
           {saving ? "Saving..." : "Save (Ctrl+S)"}
         </Button>
-        {message && <span className="text-sm text-gray-500">{message}</span>}
+        {message && <span className="text-sm text-ink3">{message}</span>}
       </div>
-      <div className="flex-1 rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="flex-1 rounded-md border border-line overflow-hidden">
         <Excalidraw
           initialData={initial === "new" ? undefined : (initial as never)}
           excalidrawAPI={(api) => {

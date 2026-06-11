@@ -112,7 +112,7 @@ export function RunTerminal({ runId, active }: Props) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-[400px] rounded-md border border-gray-300 dark:border-gray-700 bg-black"
+      className="w-full h-[400px] rounded-md border border-line2 bg-black"
     />
   );
 }

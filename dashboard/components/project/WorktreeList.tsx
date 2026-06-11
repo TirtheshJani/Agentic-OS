@@ -46,25 +46,25 @@ export function WorktreeList({ projectSlug }: Props) {
   if (worktrees.length === 0) {
     return (
       <section className="mt-8">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Worktrees</h3>
-        <p className="text-sm text-gray-400">No worktrees.</p>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Worktrees</h3>
+        <p className="text-sm text-ink3">No worktrees.</p>
       </section>
     );
   }
 
   return (
     <section className="mt-8">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Worktrees</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Worktrees</h3>
       <ul className="space-y-2">
         {worktrees.map(w => (
           <li
             key={w.path}
-            className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-800 p-2 text-sm"
+            className="flex items-center justify-between gap-3 rounded-md border border-line p-2 text-sm"
           >
             <div className="min-w-0 flex-1">
               <div className="font-mono text-xs truncate" title={w.path}>{w.path}</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {w.branch ?? "(detached)"} {w.isActive && <span className="text-green-600 ml-2">active</span>}
+              <div className="text-xs text-ink3 mt-1">
+                {w.branch ?? "(detached)"} {w.isActive && <span className="text-ok ml-2">active</span>}
               </div>
             </div>
             <Button variant="ghost" onClick={() => remove(w.path)} disabled={w.isActive} title={w.isActive ? "Stop the run first" : ""}>

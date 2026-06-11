@@ -58,17 +58,17 @@ export default async function InboxPage() {
 
       {reviewIssues.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
             Awaiting review ({reviewIssues.length})
           </h2>
           <ul className="space-y-2">
             {reviewIssues.map((i) => (
-              <li key={i.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 text-sm flex items-center justify-between gap-2">
+              <li key={i.id} className="rounded-md border border-line p-3 text-sm flex items-center justify-between gap-2">
                 <span>
                   <span className="font-medium">{i.title}</span>
-                  <span className="text-xs text-gray-400 ml-2">{i.projectSlug} · {i.assigneeSlug ?? "unassigned"}</span>
+                  <span className="text-xs text-ink3 ml-2">{i.projectSlug} · {i.assigneeSlug ?? "unassigned"}</span>
                 </span>
-                <Link href="/issues" className="text-xs text-blue-600 hover:underline shrink-0">board →</Link>
+                <Link href="/issues" className="text-xs text-accent hover:underline shrink-0">board →</Link>
               </li>
             ))}
           </ul>
@@ -77,14 +77,14 @@ export default async function InboxPage() {
 
       {failedRuns.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
             Failed runs, last 7 days ({failedRuns.length})
           </h2>
           <ul className="space-y-2">
             {failedRuns.map((r) => (
               <li key={r.id} className="rounded-md border border-red-200 dark:border-red-900/50 p-3 text-sm">
                 <span className="font-medium">{r.title}</span>
-                <span className="text-xs text-gray-400 ml-2">
+                <span className="text-xs text-ink3 ml-2">
                   run #{r.id} · {r.project_slug} · {new Date(r.ended_at).toLocaleString()}
                 </span>
               </li>
@@ -95,15 +95,15 @@ export default async function InboxPage() {
 
       {digests.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
             Recent captures and digests
           </h2>
           <ul className="space-y-2">
             {digests.map((d) => (
-              <li key={d.path} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 text-sm flex items-center justify-between gap-2">
+              <li key={d.path} className="rounded-md border border-line p-3 text-sm flex items-center justify-between gap-2">
                 <span>
                   <span className="font-medium">{d.title}</span>
-                  <span className="text-xs text-gray-400 ml-2 font-mono">{d.path}</span>
+                  <span className="text-xs text-ink3 ml-2 font-mono">{d.path}</span>
                 </span>
                 <a
                   href={`obsidian://open?vault=vault&file=${encodeURIComponent(d.path)}`}

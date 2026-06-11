@@ -65,7 +65,7 @@ export function NewNoteModal({ onClose, onCreated }: NewNoteModalProps) {
       >
         <Input value={folder} onChange={(e) => setFolder(e.target.value)} onKeyDown={submitOnEnter} placeholder="raw/daily" />
       </Field>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </Modal>
   );
 }

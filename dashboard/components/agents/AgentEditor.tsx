@@ -182,11 +182,11 @@ export function AgentEditor({ editSlug, onClose }: Props) {
       }
     >
       {loading ? (
-        <p className="text-sm text-gray-400">Loading agent...</p>
+        <p className="text-sm text-ink3">Loading agent...</p>
       ) : (
         <div className="space-y-4">
-          <section className="rounded-md border border-dashed border-gray-300 dark:border-gray-700 p-3 space-y-2">
-            <p className="text-xs text-gray-500">
+          <section className="rounded-md border border-dashed border-line2 p-3 space-y-2">
+            <p className="text-xs text-ink3">
               Describe the agent and let Claude draft the profile (one headless call against your Max plan credits).
             </p>
             <div className="flex gap-2">
@@ -223,7 +223,7 @@ export function AgentEditor({ editSlug, onClose }: Props) {
               <select
                 value={form.runtime}
                 onChange={(e) => changeRuntime(e.target.value)}
-                className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
               >
                 {(runtimes ?? []).map((rt) => (
                   <option key={rt.id} value={rt.id} disabled={!rt.availability.available}>
@@ -244,7 +244,7 @@ export function AgentEditor({ editSlug, onClose }: Props) {
                       setForm({ ...form, model: e.target.value });
                     }
                   }}
-                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+                  className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
                 >
                   <option value="">Default (runtime decides)</option>
                   {runtimeModels.map((m) => (
@@ -275,7 +275,7 @@ export function AgentEditor({ editSlug, onClose }: Props) {
             <Textarea rows={10} value={form.systemPrompt} onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })} />
           </Field>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       )}
     </Drawer>

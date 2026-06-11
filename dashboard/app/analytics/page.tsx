@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
   return (
     <main className="max-w-7xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-1">Analytics</h1>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-ink3 mb-4">
         Token usage and run outcomes across CLI sessions. Costs are estimates; subscription usage does not bill per token.
       </p>
 
@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
         <select
           value={days}
           onChange={(e) => setDays(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
         >
           <option value="7">Last 7 days</option>
           <option value="30">Last 30 days</option>
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
         >
           <option value="">All providers</option>
           <option value="claude-code">claude-code</option>
@@ -67,8 +67,8 @@ export default function AnalyticsPage() {
         </select>
       </div>
 
-      {error && <p className="text-sm text-red-600">Failed to load analytics: {error}</p>}
-      {!data && !error && <p className="text-sm text-gray-500">Loading analytics...</p>}
+      {error && <p className="text-sm text-danger">Failed to load analytics: {error}</p>}
+      {!data && !error && <p className="text-sm text-ink3">Loading analytics...</p>}
 
       {data && (
         <div className="space-y-6">
@@ -80,8 +80,8 @@ export default function AnalyticsPage() {
               ["Est. cost", data.totals.cost != null ? `$${data.totals.cost.toFixed(2)}` : "n/a"],
               ["Runs done/failed", `${data.totals.runsDone}/${data.totals.runsFailed}`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-md border border-gray-200 dark:border-gray-800 p-3">
-                <div className="text-xs text-gray-500">{label}</div>
+              <div key={label} className="rounded-md border border-line p-3">
+                <div className="text-xs text-ink3">{label}</div>
                 <div className="text-lg font-semibold">{value}</div>
               </div>
             ))}
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
               <h2 className="text-sm font-semibold mb-2">By model</h2>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+                  <tr className="text-left text-ink3 border-b border-line">
                     <th className="py-1 pr-2">Model</th>
                     <th className="py-1 pr-2">In</th>
                     <th className="py-1 pr-2">Out</th>
@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {data.byModel.map((m) => (
-                    <tr key={m.model} className="border-b border-gray-100 dark:border-gray-900">
+                    <tr key={m.model} className="border-b border-line">
                       <td className="py-1 pr-2">{m.model}</td>
                       <td className="py-1 pr-2">{fmt(m.tokensIn)}</td>
                       <td className="py-1 pr-2">{fmt(m.tokensOut)}</td>
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
               <h2 className="text-sm font-semibold mb-2">By project</h2>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+                  <tr className="text-left text-ink3 border-b border-line">
                     <th className="py-1 pr-2">Project</th>
                     <th className="py-1 pr-2">Sessions</th>
                     <th className="py-1 pr-2">In</th>
@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {data.byProject.map((p) => (
-                    <tr key={p.projectSlug} className="border-b border-gray-100 dark:border-gray-900">
+                    <tr key={p.projectSlug} className="border-b border-line">
                       <td className="py-1 pr-2">{p.projectSlug}</td>
                       <td className="py-1 pr-2">{p.sessions}</td>
                       <td className="py-1 pr-2">{fmt(p.tokensIn)}</td>

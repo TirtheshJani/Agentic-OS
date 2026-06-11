@@ -16,19 +16,19 @@ export default function Home() {
         <h1 className="text-xl font-semibold">Agentic OS</h1>
         <div className="relative">
           <details className="group">
-            <summary className="list-none cursor-pointer text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:border-gray-500">
+            <summary className="list-none cursor-pointer text-sm px-3 py-1.5 rounded-md border border-line2 hover:border-accent-line">
               + New Project
             </summary>
-            <div className="absolute right-0 mt-1 w-56 rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow z-10">
+            <div className="absolute right-0 mt-1 w-56 rounded-md border border-line bg-surface shadow z-10">
               <button
                 onClick={() => setDialogMode("clone")}
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+                className="block w-full text-left px-3 py-2 text-sm hover:bg-surface2"
               >
                 Clone from GitHub
               </button>
               <button
                 onClick={() => setDialogMode("link")}
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+                className="block w-full text-left px-3 py-2 text-sm hover:bg-surface2"
               >
                 Link existing folder
               </button>
@@ -40,12 +40,12 @@ export default function Home() {
       <RunningSessionsStrip />
 
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Projects</h2>
+        <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">Projects</h2>
         {error && (
-          <div className="text-sm text-red-600">Error: {error}</div>
+          <div className="text-sm text-danger">Error: {error}</div>
         )}
         {!projects ? (
-          <p className="text-sm text-gray-400">Loading...</p>
+          <p className="text-sm text-ink3">Loading...</p>
         ) : projects.length === 0 ? (
           <EmptyState title="No projects yet" description='Click "+ New Project" to get started.' />
         ) : (

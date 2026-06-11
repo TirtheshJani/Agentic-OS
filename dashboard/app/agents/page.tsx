@@ -34,7 +34,7 @@ export default function AgentsPage() {
       </header>
 
       {!agents ? (
-        <p className="text-sm text-gray-400">Loading agents...</p>
+        <p className="text-sm text-ink3">Loading agents...</p>
       ) : agents.length === 0 ? (
         <EmptyState title="No agents yet" description='Click "+ New Agent" to create one, or let AI draft it from a description.' />
       ) : (

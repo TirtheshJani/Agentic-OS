@@ -172,13 +172,13 @@ export function KnowledgeTab({ projectSlug }: Props) {
     }
   }
 
-  if (loadError) return <p className="text-sm text-red-600">{loadError}</p>;
-  if (!data) return <p className="text-sm text-gray-500">Loading...</p>;
+  if (loadError) return <p className="text-sm text-danger">{loadError}</p>;
+  if (!data) return <p className="text-sm text-ink3">Loading...</p>;
 
   return (
     <div className="max-w-3xl">
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Knowledge docs</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Knowledge docs</h3>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -193,12 +193,12 @@ export function KnowledgeTab({ projectSlug }: Props) {
           className={clsx(
             "rounded-md border border-dashed p-4 text-center text-sm transition-colors",
             dragOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
-              : "border-gray-300 dark:border-gray-700"
+              ? "border-blue-500 bg-accent-bg"
+              : "border-line2"
           )}
         >
-          <span className="text-gray-500">Drop .md or .txt files here, or</span>{" "}
-          <Button variant="ghost" className="text-blue-600" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+          <span className="text-ink3">Drop .md or .txt files here, or</span>{" "}
+          <Button variant="ghost" className="text-accent" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
             {uploading ? "Uploading..." : "browse files"}
           </Button>
           <input
@@ -213,7 +213,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
             }}
           />
         </div>
-        {uploadError && <p className="text-xs text-red-600 mt-2">{uploadError}</p>}
+        {uploadError && <p className="text-xs text-danger mt-2">{uploadError}</p>}
 
         {data.docs.length === 0 ? (
           <EmptyState title="No knowledge docs" description="Drop .md or .txt files above to give agents project context." />
@@ -222,18 +222,18 @@ export function KnowledgeTab({ projectSlug }: Props) {
             {data.docs.map((doc) => (
               <li
                 key={doc.relPath}
-                className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-800 p-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-md border border-line p-2 text-sm"
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium" title={doc.relPath}>{doc.name}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{(doc.size / 1024).toFixed(1)} KB</div>
+                  <div className="text-xs text-ink3 mt-0.5">{(doc.size / 1024).toFixed(1)} KB</div>
                 </div>
                 <span
                   className={clsx(
                     "text-xs px-1.5 py-0.5 rounded whitespace-nowrap",
                     doc.chunkCount > 0 && doc.embedded === doc.chunkCount
                       ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
+                      : "bg-gray-100 text-ink2 dark:bg-gray-900 dark:text-ink3"
                   )}
                 >
                   {doc.embedded}/{doc.chunkCount} embedded
@@ -246,7 +246,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
       </section>
 
       <section className="mt-8">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Instructions</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Instructions</h3>
         <Textarea
           rows={6}
           value={instructions}
@@ -256,15 +256,15 @@ export function KnowledgeTab({ projectSlug }: Props) {
             setSaveState("idle");
           }}
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-ink3 mt-1">
           Injected into every agent run in this project as a system-prompt prefix.
         </p>
         <div className="flex items-center gap-2 mt-2">
           <Button variant="primary" onClick={saveInstructions} disabled={saveState === "saving"}>
             {saveState === "saving" ? "Saving..." : "Save"}
           </Button>
-          {saveState === "saved" && <span className="text-xs text-green-600">Saved.</span>}
-          {saveState === "error" && <span className="text-xs text-red-600">Save failed.</span>}
+          {saveState === "saved" && <span className="text-xs text-ok">Saved.</span>}
+          {saveState === "error" && <span className="text-xs text-danger">Save failed.</span>}
         </div>
       </section>
 
@@ -272,7 +272,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
         <button
           onClick={() => setChatOpen((v) => !v)}
           aria-expanded={chatOpen}
-          className="text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          className="text-xs font-semibold uppercase tracking-wide text-ink3 hover:text-ink"
         >
           {chatOpen ? "▾" : "▸"} Project chat
         </button>
@@ -294,13 +294,13 @@ export function KnowledgeTab({ projectSlug }: Props) {
                 {asking ? "Asking..." : "Ask"}
               </Button>
             </form>
-            {asking && <p className="text-sm text-gray-500 mt-2">Thinking...</p>}
-            {askError && <p className="text-sm text-red-600 mt-2">{askError}</p>}
+            {asking && <p className="text-sm text-ink3 mt-2">Thinking...</p>}
+            {askError && <p className="text-sm text-danger mt-2">{askError}</p>}
             {askResult && (
-              <div className="mt-3 rounded-md border border-gray-200 dark:border-gray-800 p-3 text-sm">
+              <div className="mt-3 rounded-md border border-line p-3 text-sm">
                 <p className="whitespace-pre-wrap">{askResult.answer}</p>
                 {askResult.citations.length > 0 && (
-                  <ul className="mt-2 space-y-0.5 text-xs text-gray-500">
+                  <ul className="mt-2 space-y-0.5 text-xs text-ink3">
                     {askResult.citations.map((c) => (
                       <li key={c.n} className="truncate" title={c.notePath}>
                         [{c.n}] {c.title} ({c.notePath})
@@ -320,7 +320,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
       </section>
 
       <section className="mt-8">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Outputs</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Outputs</h3>
         {data.outputs.length === 0 ? (
           <EmptyState
             title="No outputs yet"
@@ -331,10 +331,10 @@ export function KnowledgeTab({ projectSlug }: Props) {
             {data.outputs.map((out) => (
               <li
                 key={out.relPath}
-                className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-800 p-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-md border border-line p-2 text-sm"
               >
                 <div className="truncate font-medium" title={out.relPath}>{out.name}</div>
-                <span className="text-xs text-gray-500 whitespace-nowrap">
+                <span className="text-xs text-ink3 whitespace-nowrap">
                   {new Date(out.mtime).toLocaleString()}
                 </span>
               </li>

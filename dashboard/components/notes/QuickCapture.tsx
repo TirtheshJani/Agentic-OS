@@ -120,8 +120,8 @@ export function QuickCapture() {
           </Field>
         </>
       )}
-      {savedPath && <p className="text-sm text-green-600">Saved to {savedPath}</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {savedPath && <p className="text-sm text-ok">Saved to {savedPath}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </Modal>
   );
 }

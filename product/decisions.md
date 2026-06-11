@@ -85,6 +85,11 @@ demand. Acceptable — both upstreams are stable.
   [`mattpocock/skills`](https://github.com/mattpocock/skills)
   @ `694fa30311e02c2639942308513555e61ee84a6f` (cloned 2026-06-11). Bodies
   verbatim; `license` + `metadata` frontmatter added to pass the validator.
+- `skills/_meta/prototype/`, `skills/_meta/tdd/`, `skills/_meta/to-issues/`,
+  and `skills/_meta/to-prd/` ← [`mattpocock/skills`](https://github.com/mattpocock/skills)
+  @ `694fa30311e02c2639942308513555e61ee84a6f` (cloned 2026-06-11, same SHA).
+  Bodies verbatim; same frontmatter treatment. These back the agentic
+  workflow SOP at `standards/agentic-workflow.md`.
 
 To re-vendor: clone the upstream, copy the subtree, update the SHA above,
 commit. No automated sync — that's intentional (see decision body).
@@ -323,3 +328,34 @@ Reversal: if the vault grows ~100x, adopt `sqlite-vec` behind the existing
 provider/scan seam — a contained swap, recharts-style, not a redesign.
 The same applies to answer providers: a direct API provider can slot in
 behind `answerProvider` if CLI latency becomes the bottleneck.
+
+
+---
+
+## ADR-014 — NotebookLM via export folder; Office/Google connectors stay MCP template slots
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0017 wants "send to NotebookLM" from the dashboard plus
+Outlook/Word/Excel/Google Docs connectivity. NotebookLM has no general
+public API; Drive is its import path. The candid options were a googleapis
+OAuth client inside the dashboard, a Drive MCP server, or a plain export
+folder. ADR-011 established that the dashboard holds no live credentials.
+
+**Decision.** "Send to NotebookLM" writes a markdown bundle (flattened
+wikilinks + `_manifest.md`) to a configurable local folder
+(`settings.export.notebookLmDir`). Pointed at a Google Drive for Desktop
+synced folder, bundles appear in Drive with zero credentials and NotebookLM
+imports them from there; the empty default falls back to
+`vault/outputs/notebooklm/` so bundles are at least git-synced. Office and
+Google connectors (`gdrive`, `gdocs`, `ms365`) ship as MCP template slots in
+the connections hub (the spec 0011 linkedin pattern): a recommendation in
+the setup steps, no code coupling, configured by the operator when needed.
+
+**Consequences.** The credential boundary stays where ADR-011 put it
+(agents hold credentials via MCP inside runs; the dashboard never does).
+The bridge works offline and degrades to a vault folder. Cost: import into
+NotebookLM remains a manual click, and the MCP server ecosystem churn is
+deliberately somebody else's problem until a slot is configured. Reversal:
+a direct Drive API upload can slot in behind the same export route if the
+manual import becomes real friction.

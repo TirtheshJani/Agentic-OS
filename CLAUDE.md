@@ -88,7 +88,8 @@ metadata:
 2. Read the relevant `instructions/*.md` and the governing spec under `specs/`.
 3. New skill → `/new-skill`. New agent → the `/agents` view (or hand-write `agents/<slug>.md`).
 4. Code changes → follow karpathy-guidelines (surface assumptions, surgical edits, minimum code).
-5. Run `npm test` plus the relevant validator before committing.
+5. New features → follow `standards/agentic-workflow.md`: /prototype risky unknowns, /grill-me (or /grill-with-docs), /to-prd into `specs/`, /to-issues as vertical tracer bullets tagged AFK or HITL, /tdd for implementation.
+6. Run `npm test` plus the relevant validator before committing.
 
 ## Code conventions
 

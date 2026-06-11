@@ -7,6 +7,7 @@ export interface AgentSummary {
   name: string;
   description: string | null;
   runtime: string;
+  model: string | null;
   skills: string[];
   allowedTools: string[];
   lastModified: number;
@@ -24,6 +25,9 @@ export function AgentCard({ agent, onEdit }: Props) {
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="font-medium truncate">{agent.name}</h3>
           <RuntimeBadge runtimeId={agent.runtime} />
+          {agent.model && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900 font-mono">{agent.model}</span>
+          )}
         </div>
         <Button variant="ghost" onClick={() => onEdit(agent.slug)}>Edit</Button>
       </header>

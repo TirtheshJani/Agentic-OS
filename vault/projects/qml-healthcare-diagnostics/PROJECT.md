@@ -12,7 +12,9 @@ capabilities:
 agent: Plan
 repo: 'https://github.com/TirtheshJani/QML-Healthcare-Diagnostics'
 created: '2026-05-15'
-crew: []
+crew:
+  - research-lead
+  - arxiv-watcher
 runtime-default: claude-code
 ---
 

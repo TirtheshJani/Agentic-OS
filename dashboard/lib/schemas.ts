@@ -37,6 +37,8 @@ export const AgentFrontmatterSchema = z.object({
   // Routing signal (ADR-007): leads score teammates by description keywords.
   description: z.string().optional(),
   runtime: z.string().default("claude-code"),
+  /** Model passed to the runtime CLI (e.g. "opus", "gemini-2.5-flash"). Absent = runtime default. */
+  model: z.string().min(1).optional(),
   "allowed-tools": z.array(z.string()).default([]),
   skills: z.array(z.string()).default([]),
   created: DateLike,

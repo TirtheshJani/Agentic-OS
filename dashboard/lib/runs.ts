@@ -6,6 +6,7 @@ export interface Run {
   issueId: number;
   agentSlug: string;
   runtimeId: string;
+  model: string | null;
   worktreePath: string;
   ptySessionId: string | null;
   startedAt: number;
@@ -20,6 +21,7 @@ function rowToRun(row: any): Run {
     issueId: row.issue_id,
     agentSlug: row.agent_slug,
     runtimeId: row.runtime_id,
+    model: row.model ?? null,
     worktreePath: row.worktree_path,
     ptySessionId: row.pty_session_id,
     startedAt: row.started_at,
@@ -34,15 +36,16 @@ interface CreateOpts {
   agentSlug: string;
   runtimeId: string;
   worktreePath: string;
+  model?: string;
 }
 
 export function createRun(opts: CreateOpts): number {
   const db = getDb();
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO runs (issue_id, agent_slug, runtime_id, worktree_path, started_at)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(opts.issueId, opts.agentSlug, opts.runtimeId, opts.worktreePath, now);
+    INSERT INTO runs (issue_id, agent_slug, runtime_id, model, worktree_path, started_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(opts.issueId, opts.agentSlug, opts.runtimeId, opts.model ?? null, opts.worktreePath, now);
   return Number(info.lastInsertRowid);
 }
 

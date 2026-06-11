@@ -16,6 +16,11 @@ function detectGemini(): RuntimeAvailability {
   return { available: true, version: m ? m[1] : r.stdout.trim() };
 }
 
+/** Exported for tests: argv construction is pure, the PTY spawn is not. */
+export function geminiSpawnArgs(sessionId: string, model?: string): string[] {
+  return ["--yolo", "--skip-trust", "--session-id", sessionId, ...(model ? ["-m", model] : [])];
+}
+
 async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
   console.log(`[gemini-cli.spawn] run ${opts.runId}: cwd=${opts.worktreePath}, prompt length=${opts.initialPrompt.length}`);
 
@@ -29,7 +34,7 @@ async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
   // --dangerously-skip-permissions; the worktree bounds the blast radius).
   // --skip-trust suppresses the workspace trust dialog for this session, so
   // unlike claude-code no blind Enter is needed.
-  const term = pty.spawn(GEMINI_BIN, ["--yolo", "--skip-trust", "--session-id", sessionId], {
+  const term = pty.spawn(GEMINI_BIN, geminiSpawnArgs(sessionId, opts.model), {
     name: "xterm-color",
     cols: opts.cols ?? 120,
     rows: opts.rows ?? 30,
@@ -73,6 +78,10 @@ async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
 export const geminiCliRuntime: Runtime = {
   id: "gemini-cli",
   displayName: "Gemini CLI",
+  models: [
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  ],
   capabilities: {
     // `gemini --resume` accepts "latest" or an index, not a UUID (v0.46.0);
     // until resume-by-id is verified, resume features stay off.

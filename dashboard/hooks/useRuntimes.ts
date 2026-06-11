@@ -6,6 +6,7 @@ export interface RuntimeInfo {
   id: string;
   displayName: string;
   capabilities: RuntimeCapabilities;
+  models: Array<{ id: string; label: string }>;
   availability: RuntimeAvailability;
 }
 

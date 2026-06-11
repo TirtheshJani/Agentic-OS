@@ -64,5 +64,25 @@ describe("AgentFrontmatterSchema", () => {
     });
     expect(parsed["allowed-tools"]).toEqual([]);
     expect(parsed.skills).toEqual([]);
+    expect(parsed.model).toBeUndefined();
+  });
+
+  it("accepts an optional model and rejects an empty one", () => {
+    const withModel = parseAgentFrontmatter({
+      name: "x",
+      slug: "x",
+      runtime: "claude-code",
+      model: "opus",
+      created: "2026-01-01",
+    });
+    expect(withModel.model).toBe("opus");
+    const empty = AgentFrontmatterSchema.safeParse({
+      name: "x",
+      slug: "x",
+      runtime: "claude-code",
+      model: "",
+      created: "2026-01-01",
+    });
+    expect(empty.success).toBe(false);
   });
 });

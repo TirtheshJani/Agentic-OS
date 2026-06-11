@@ -34,6 +34,18 @@ describe("runs", () => {
     expect(r!.issueId).toBe(7);
     expect(r!.endedAt).toBeNull();
     expect(r!.ptySessionId).toBeNull();
+    expect(r!.model).toBeNull();
+  });
+
+  it("persists the model when provided", () => {
+    const id = createRun({
+      issueId: 1,
+      agentSlug: "x",
+      runtimeId: "claude-code",
+      worktreePath: "/p",
+      model: "sonnet",
+    });
+    expect(getRun(id)!.model).toBe("sonnet");
   });
 
   it("listActiveRuns returns only runs without an ended_at", () => {

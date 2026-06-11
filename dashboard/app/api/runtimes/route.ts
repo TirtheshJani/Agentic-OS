@@ -24,6 +24,7 @@ export async function GET() {
         id: rt.id,
         displayName: rt.displayName,
         capabilities: rt.capabilities,
+        models: rt.models ?? [],
         availability,
       };
     })

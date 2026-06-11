@@ -33,6 +33,11 @@ function getCallbackBaseUrl(): string {
   return process.env.AGENTIC_OS_PUBLIC_URL ?? "http://localhost:3000";
 }
 
+/** Exported for tests: argv construction is pure, the PTY spawn is not. */
+export function claudeSpawnArgs(model?: string): string[] {
+  return ["--dangerously-skip-permissions", ...(model ? ["--model", model] : [])];
+}
+
 async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
   console.log(`[claude-code.spawn] run ${opts.runId}: cwd=${opts.worktreePath}, prompt length=${opts.initialPrompt.length}`);
   // 1. Install SessionStart hook in worktree so claude calls back with session_id.
@@ -49,7 +54,7 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
   // agent specifically to take actions in this worktree, so a blocking
   // permission TUI here just deadlocks the run. The worktree is isolated from
   // the canonical repo, so the blast radius is bounded.
-  const term = pty.spawn(CLAUDE_BIN, ["--dangerously-skip-permissions"], {
+  const term = pty.spawn(CLAUDE_BIN, claudeSpawnArgs(opts.model), {
     name: "xterm-color",
     cols: opts.cols ?? 120,
     rows: opts.rows ?? 30,
@@ -146,6 +151,11 @@ async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
 export const claudeCodeRuntime: Runtime = {
   id: "claude-code",
   displayName: "Claude Code",
+  models: [
+    { id: "opus", label: "Opus" },
+    { id: "sonnet", label: "Sonnet" },
+    { id: "haiku", label: "Haiku" },
+  ],
   capabilities: {
     sessionResume: true,
     sessionIdCapture: true,

@@ -75,6 +75,13 @@ describe("createAgent", () => {
     expect(() => createAgent(baseInput({ skills: ["research"] }), opts())).not.toThrow();
   });
 
+  it("writes the model to frontmatter and drops blank models", () => {
+    const withModel = createAgent(baseInput({ model: "sonnet" }), opts());
+    expect(withModel.model).toBe("sonnet");
+    const blank = createAgent(baseInput({ slug: "blank-model", name: "blank-model", model: "  " }), opts());
+    expect(blank.model).toBeUndefined();
+  });
+
   it("rejects duplicate slugs", () => {
     createAgent(baseInput(), opts());
     expect(() => createAgent(baseInput(), opts())).toThrow(AgentValidationError);
@@ -94,6 +101,15 @@ describe("updateAgent", () => {
     expect(after.systemPrompt).toBe("Updated prompt.");
     expect(after.created).toBe(before.created);
     expect(after.name).toBe(before.name);
+  });
+
+  it("sets, keeps, and clears the model across patches", () => {
+    createAgent(baseInput(), opts());
+    expect(updateAgent("newsletter-editor", { model: "opus" }, opts()).model).toBe("opus");
+    // Absent = keep.
+    expect(updateAgent("newsletter-editor", { name: "renamed" }, opts()).model).toBe("opus");
+    // Explicit "" = clear.
+    expect(updateAgent("newsletter-editor", { model: "" }, opts()).model).toBeUndefined();
   });
 
   it("rejects slug changes", () => {

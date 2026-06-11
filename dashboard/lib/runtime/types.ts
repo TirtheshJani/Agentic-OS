@@ -12,6 +12,8 @@ export interface SpawnOpts {
   runId: number;
   issueId: number;
   projectSlug: string;
+  /** Model passed to the CLI (--model / -m). Absent = runtime default. */
+  model?: string;
   cols?: number;
   rows?: number;
 }
@@ -45,6 +47,8 @@ export interface Runtime {
   displayName: string;
   /** Static declaration of what this runtime supports. The UI consults these to hide or degrade features; each runtime's spawn flow owns its own gating. */
   capabilities: RuntimeCapabilities;
+  /** Known model choices for the agent editor dropdown. The schema field is an open string, so values outside this list still work. */
+  models?: ReadonlyArray<{ id: string; label: string }>;
   /** Returns availability + version. Used by the dashboard to show "claude-code 0.5.3" etc. */
   detect(): Promise<RuntimeAvailability>;
   /** Spawn a session in the given worktree and arrange for the initial prompt to be delivered. */

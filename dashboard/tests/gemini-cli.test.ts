@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { geminiCliRuntime } from "@/lib/runtime/gemini-cli";
-import { claudeCodeRuntime } from "@/lib/runtime/claude-code";
+import { geminiCliRuntime, geminiSpawnArgs } from "@/lib/runtime/gemini-cli";
+import { claudeCodeRuntime, claudeSpawnArgs } from "@/lib/runtime/claude-code";
 
 describe("gemini-cli runtime", () => {
   it("declares the expected identity", () => {
@@ -41,5 +41,24 @@ describe("claude-code capabilities", () => {
     expect(claudeCodeRuntime.capabilities.sessionIdCapture).toBe(true);
     expect(claudeCodeRuntime.capabilities.sessionResume).toBe(true);
     expect(claudeCodeRuntime.capabilities.externalTerminalEscape).toBe(true);
+  });
+});
+
+describe("spawn argv builders", () => {
+  it("claude args omit --model by default and include it when set", () => {
+    expect(claudeSpawnArgs()).toEqual(["--dangerously-skip-permissions"]);
+    expect(claudeSpawnArgs("sonnet")).toEqual(["--dangerously-skip-permissions", "--model", "sonnet"]);
+  });
+
+  it("gemini args omit -m by default and include it when set", () => {
+    expect(geminiSpawnArgs("sid-1")).toEqual(["--yolo", "--skip-trust", "--session-id", "sid-1"]);
+    expect(geminiSpawnArgs("sid-1", "gemini-2.5-flash")).toEqual([
+      "--yolo", "--skip-trust", "--session-id", "sid-1", "-m", "gemini-2.5-flash",
+    ]);
+  });
+
+  it("both runtimes declare model choices for the editor dropdown", () => {
+    expect(claudeCodeRuntime.models?.map(m => m.id)).toEqual(["opus", "sonnet", "haiku"]);
+    expect(geminiCliRuntime.models?.map(m => m.id)).toEqual(["gemini-2.5-pro", "gemini-2.5-flash"]);
   });
 });

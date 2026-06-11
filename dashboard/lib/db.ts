@@ -221,6 +221,19 @@ CREATE INDEX IF NOT EXISTS eval_results_run_idx ON eval_results(run_id);
   console.log("[db] applied schema migration v8 (eval_results)");
 }
 
+// V9: per-agent model assignment. Records the model the run was spawned
+// with (null = runtime default).
+function applyV9(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 9").get() as { n: number };
+  if (row.n > 0) return;
+  const cols = d.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === "model")) {
+    d.exec("ALTER TABLE runs ADD COLUMN model TEXT");
+  }
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (9, ?)").run(Date.now());
+  console.log("[db] applied schema migration v9 (runs.model)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -238,6 +251,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   applyV6(db);
   applyV7(db);
   applyV8(db);
+  applyV9(db);
   return db;
 }
 

@@ -12,6 +12,8 @@ export interface AgentInput {
   slug: string;
   description?: string;
   runtime: string;
+  /** Model passed to the runtime CLI. Empty/absent = runtime default. */
+  model?: string;
   skills: string[];
   allowedTools: string[];
   systemPrompt: string;
@@ -65,6 +67,7 @@ function writeAgentFile(input: AgentInput, created: string, rootDir: string = AG
     slug: input.slug,
     ...(input.description?.trim() ? { description: input.description.trim() } : {}),
     runtime: input.runtime,
+    ...(input.model?.trim() ? { model: input.model.trim() } : {}),
     skills: input.skills,
     "allowed-tools": input.allowedTools,
     created,
@@ -94,6 +97,8 @@ export function updateAgent(slug: string, patch: Partial<AgentInput>, opts: Muta
     slug,
     description: patch.description ?? existing.description,
     runtime: patch.runtime ?? existing.runtime,
+    // Absent = keep; explicit "" = clear (writeAgentFile drops blank models).
+    model: patch.model ?? existing.model,
     skills: patch.skills ?? existing.skills,
     allowedTools: patch.allowedTools ?? existing["allowed-tools"],
     systemPrompt: patch.systemPrompt ?? existing.systemPrompt,

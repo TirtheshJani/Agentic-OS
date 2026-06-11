@@ -83,6 +83,14 @@ export async function startRunForIssue(
   const runtime = getRuntime(runtimeId);
   if (!runtime) throw new StartRunError(`runtime not registered: ${runtimeId}`, 400);
 
+  // The agent's model only applies on the agent's own runtime: a Claude model
+  // alias passed to `gemini -m` (or vice versa) would fail the run.
+  let model = agent.model;
+  if (model && runtimeId !== agent.runtime) {
+    console.log(`[startRun] issue ${issue.id}: dropping agent model ${model} (runtime override ${runtimeId} != ${agent.runtime})`);
+    model = undefined;
+  }
+
   const settings = getSettings();
   // ConcurrencyCapError propagates as-is; callers treat it as "stay queued".
   assertCapacity({
@@ -151,6 +159,7 @@ export async function startRunForIssue(
     agentSlug: agent.slug,
     runtimeId,
     worktreePath,
+    model,
   });
   console.log(`[startRun] created run ${runId}; spawning ${runtimeId}`);
 
@@ -172,6 +181,7 @@ export async function startRunForIssue(
       runId,
       issueId: issue.id,
       projectSlug: project.slug,
+      model,
     });
   } catch (err) {
     throw new StartRunError(`spawn failed: ${(err as Error).message}`, 500);
@@ -197,7 +207,7 @@ export async function startRunForIssue(
     projectSlug: project.slug,
     issueId: issue.id,
     eventType: "run.started",
-    details: `Run ${runId} started against ${agent.slug} via ${runtimeId} at ${worktreePath}`,
+    details: `Run ${runId} started against ${agent.slug} via ${runtimeId}${model ? ` (model ${model})` : ""} at ${worktreePath}`,
   });
   publish({ kind: "issue.changed", id: issue.id, projectSlug: project.slug, reason: "status" });
   publish({ kind: "thread.appended", issueId: issue.id });

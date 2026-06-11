@@ -43,6 +43,13 @@ const PatchSchema = z.object({
       notebookLmDir: z.string(),
     })
     .optional(),
+  evals: z
+    .object({
+      judgeProvider: z.enum(["inherit", "gemini-cli", "claude-cli", "none"]),
+      autoGradeEnabled: z.boolean(),
+      batchLimit: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

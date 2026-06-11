@@ -10,7 +10,8 @@ export type StreamEvent =
   | { kind: "project.create.done"; jobId: string; status: "succeeded" | "failed" }
   | { kind: "rag.embeddings"; embedded: number; pending: number; model: string; error?: string }
   | { kind: "run.finalized"; runId: number; issueId: number; projectSlug: string; exitStatus: "done" | "failed" }
-  | { kind: "sessions.indexed"; scanned: number; updated: number };
+  | { kind: "sessions.indexed"; scanned: number; updated: number }
+  | { kind: "eval.completed"; runId: number; score: number; grade: string };
 
 type Listener = (event: StreamEvent) => void;
 

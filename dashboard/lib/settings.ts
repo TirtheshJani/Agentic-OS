@@ -59,6 +59,15 @@ const SettingsSchema = z.object({
       notebookLmDir: z.string().default(""),
     })
     .default({ notebookLmDir: "" }),
+  evals: z
+    .object({
+      /** "inherit" follows rag.answerProvider; the judge is one CLI call per grade. */
+      judgeProvider: z.enum(["inherit", "gemini-cli", "claude-cli", "none"]).default("inherit"),
+      /** Auto-judge finished runs; also requires the global autonomy switch. */
+      autoGradeEnabled: z.boolean().default(false),
+      batchLimit: z.number().int().positive().default(10),
+    })
+    .default({ judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 }),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -82,6 +91,7 @@ function defaults(): Settings {
     rag: { ...RAG_DEFAULTS },
     lightrag: { baseUrl: "http://localhost:9621", autoIngest: false },
     export: { notebookLmDir: "" },
+    evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 },
   };
 }
 
@@ -110,6 +120,7 @@ export function setSettings(patch: Partial<Settings>): Settings {
     rag: { ...current.rag, ...(patch.rag ?? {}) },
     lightrag: { ...current.lightrag, ...(patch.lightrag ?? {}) },
     export: { ...current.export, ...(patch.export ?? {}) },
+    evals: { ...current.evals, ...(patch.evals ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

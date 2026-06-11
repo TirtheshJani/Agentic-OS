@@ -10,6 +10,7 @@ import { pruneEmbeddingCache } from "@/lib/rag/chunkSync";
 import { startEmbedWorker } from "@/lib/rag/embedWorker";
 import { startLightragIngestWorker } from "@/lib/lightrag/ingestWorker";
 import { startSessionScanner } from "@/lib/sessions/service";
+import { startEvalAutoGrade } from "@/lib/evals/autoGrade";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -43,6 +44,7 @@ export async function ensureServerBooted(): Promise<void> {
     startEmbedWorker();
     startLightragIngestWorker();
     startSessionScanner();
+    startEvalAutoGrade();
     booted = true;
   })();
   return bootPromise;

@@ -195,6 +195,32 @@ CREATE INDEX IF NOT EXISTS sessions_project_idx ON sessions(project_slug, starte
   console.log("[db] applied schema migration v7 (sessions)");
 }
 
+// V8: eval results (spec 0020). One metrics row and at most one judge row
+// per run; re-grades replace (no history).
+function applyV8(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 8").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS eval_results (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id         INTEGER,
+  session_path   TEXT,
+  kind           TEXT NOT NULL,
+  metrics        TEXT,
+  rubric         TEXT,
+  score          REAL,
+  grade          TEXT,
+  judge_provider TEXT,
+  graded_at      INTEGER NOT NULL,
+  UNIQUE(run_id, kind),
+  UNIQUE(session_path, kind)
+);
+CREATE INDEX IF NOT EXISTS eval_results_run_idx ON eval_results(run_id);
+`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (8, ?)").run(Date.now());
+  console.log("[db] applied schema migration v8 (eval_results)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -211,6 +237,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   applyV5(db);
   applyV6(db);
   applyV7(db);
+  applyV8(db);
   return db;
 }
 

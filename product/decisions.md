@@ -393,3 +393,30 @@ gemini sessions carry no token data until their format exposes usage.
 Reversal: index message bodies if full-text search over transcripts
 becomes a need (it would ride the existing FTS5 machinery); adopt recharts
 behind a new ADR if charts grow interactive.
+
+
+---
+
+## ADR-016 — Evals: deterministic metrics always, LLM judge double-gated
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0020 grades finished agent runs. The contested choices:
+whether judged scores blend with measured metrics, which LLM pays for the
+judging, and whether grading may run unattended.
+
+**Decision.** Two separated layers: deterministic run metrics (duration,
+turns, tokens, diff stat — free, computed on every run.finalized event)
+and an optional LLM-judged rubric (correctness 0.4 / efficiency 0.3 /
+coherence 0.3, composite 0-100, A-F). Judged scores never blend with
+measured metrics. The judge reuses the ADR-013 answer-provider mechanism
+(inherit -> gemini-cli by default; one call per grade, no loops, no
+retries). Unattended judging requires evals.autoGradeEnabled AND the
+global autonomy switch, both off by default; the primary path is manual
+per-run and sequential batch grading. Judge input is capped at 24k chars
+(issue + metrics + final assistant messages), never the full transcript.
+
+**Consequences.** Every finished run gets free metrics with zero quota
+risk; judged grades are explicit, attributable spend labeled subjective
+in the UI. Re-grades replace (no history). Reversal: add a grade-history
+table if longitudinal judge-drift analysis becomes a need.

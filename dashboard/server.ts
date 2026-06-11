@@ -12,7 +12,32 @@ const port = parseInt(process.env.PORT ?? "3000", 10);
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+// Distinguishes our own dashboard from a foreign process squatting on the port.
+async function isAgenticOsAlreadyRunning(): Promise<boolean> {
+  try {
+    const res = await fetch(`http://localhost:${port}/api/runtimes`, {
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json().catch(() => null)) as { runtimes?: unknown } | null;
+    return Array.isArray(data?.runtimes);
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
+  // Check BEFORE app.prepare(): two Next dev instances sharing one .next/
+  // directory corrupt each other's manifests, so a second instance must
+  // bail out before Next touches anything on disk.
+  if (await isAgenticOsAlreadyRunning()) {
+    console.log(`[server] Agentic OS is already running on port ${port}.`);
+    console.log(
+      `[server] Reuse that window, stop it with bin/launch-dashboard.ps1 -Stop, or set PORT to run a second instance.`
+    );
+    process.exit(0);
+  }
+
   await app.prepare();
   openDb();
 
@@ -102,20 +127,8 @@ async function main() {
   const LISTEN_RETRIES = 3;
   const LISTEN_RETRY_MS = 500;
 
-  // Distinguishes our own dashboard from a foreign process squatting on the port.
-  const isAgenticOsAlreadyRunning = async (): Promise<boolean> => {
-    try {
-      const res = await fetch(`http://localhost:${port}/api/runtimes`, {
-        signal: AbortSignal.timeout(2000),
-      });
-      if (!res.ok) return false;
-      const data = (await res.json().catch(() => null)) as { runtimes?: unknown } | null;
-      return Array.isArray(data?.runtimes);
-    } catch {
-      return false;
-    }
-  };
-
+  // Listen-time backstop for the race where another instance grabbed the
+  // port after the early isAgenticOsAlreadyRunning() check in main().
   const listenWithRetry = (attempt = 0): void => {
     server.once("error", (err: NodeJS.ErrnoException) => {
       if (err.code !== "EADDRINUSE") {

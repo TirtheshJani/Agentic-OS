@@ -67,6 +67,31 @@ export function listRuns(opts: { issueId?: number } = {}): Run[] {
   return db.prepare(sql).all(...params).map(rowToRun);
 }
 
+export interface RunWithIssue extends Run {
+  issueTitle: string;
+  projectSlug: string;
+}
+
+/** Recent runs joined to their issue (title + project) for the activity
+ * feed and the dashboard home cards. */
+export function listRecentRunsWithIssues(opts: { limit?: number; activeOnly?: boolean } = {}): RunWithIssue[] {
+  const db = getDb();
+  const where = opts.activeOnly ? "WHERE r.ended_at IS NULL" : "";
+  const rows = db.prepare(`
+    SELECT r.*, i.title AS issue_title, i.project_slug AS issue_project_slug
+    FROM runs r
+    INNER JOIN issues i ON i.id = r.issue_id
+    ${where}
+    ORDER BY r.started_at DESC, r.id DESC
+    LIMIT ?
+  `).all(opts.limit ?? 50) as any[];
+  return rows.map((row) => ({
+    ...rowToRun(row),
+    issueTitle: row.issue_title,
+    projectSlug: row.issue_project_slug,
+  }));
+}
+
 export function listActiveRuns(): Run[] {
   const db = getDb();
   return db.prepare("SELECT * FROM runs WHERE ended_at IS NULL ORDER BY started_at DESC").all().map(rowToRun);

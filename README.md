@@ -49,16 +49,28 @@ npm run dev          # http://localhost:3000
 
 | View | What it is |
 |---|---|
-| `/` | Projects (vault-discovered) + new-project menu (clone / link) |
+| `/` | Command-center home: stats row, active runs, recent activity, today panel, projects grid |
 | `/new` | Create-project orchestrator: prompt → repo, GitHub remote, agent crew, kickoff issues (`instructions/create-project.md`) |
 | `/issues` | Global kanban: Backlog → Queued → Running → Review → Done |
 | `/inbox` | Issues in review, failed runs, recent vault captures |
-| `/agents` | Agent profiles with AI draft assist |
-| `/skills` | Skill inventory across `skills/` |
+| `/notes` | Vault notes with quick capture (Ctrl+Shift+K) |
+| `/ask` | Vault RAG: grounded answers with citations |
 | `/graph` | Vault knowledge graph (wikilinks, tags, FTS search) |
+| `/research` | Deep research projects with cited reports |
+| `/learning` | AI tutors, topics, spaced repetition |
+| `/studio` | Design studio (Excalidraw canvases, review by issue) |
+| `/activity` | Every run across all projects, newest first |
+| `/sessions` | CLI session index with token usage |
+| `/analytics` | Run volume, tokens, cost estimates |
+| `/evals` | Run grading: metrics + judge scores |
+| `/agents` | Agent profiles with AI draft assist, per-agent model + skills picker |
+| `/skills` | Skill inventory across `skills/` |
+| `/docker` | Compose stacks + containers (allowlist-gated) |
 | `/runtimes` | CLI runtimes, versions, capability flags |
 | `/connections` | claude / gemini / gh / MCP template status |
-| `/settings` | workspaceRoot, concurrency caps, theme, autonomy kill switch |
+| `/settings` | Tabbed: Features (surface toggles), General, Knowledge, Docker |
+
+Light/dark theming follows the design tokens in `docs/designs/` — toggle from the header; the choice persists to localStorage and settings.
 
 ## Launch like a desktop app
 

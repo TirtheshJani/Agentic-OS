@@ -22,9 +22,9 @@ Desktop-style launch: `bin/launch-dashboard.ps1` (and `bin/install-shortcut.ps1`
 
 ## Repo layers
 
-- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard. Current architecture: specs 0007-0012; decisions in `product/decisions.md`. Operator docs in `docs/` (setup, troubleshooting, runtimes-and-clis).
+- **`product/`, `standards/`, `instructions/`, `specs/`** — spec layer. Read before changing skills, automations, or dashboard. Current architecture: specs 0007-0023 (vault RAG, notes, sessions/analytics, research, evals, docker, learning, design studio); decisions in `product/decisions.md`. Operator docs in `docs/` (setup, troubleshooting, runtimes-and-clis); front-end design reference in `docs/designs/`.
 - **`skills/`** — one folder per skill with a `SKILL.md`. No `README.md` inside skill folders.
-- **`agents/`** — one `<slug>.md` per agent (frontmatter: name, slug, description, runtime, skills, allowed-tools + `# System Prompt` body). Managed from the `/agents` view; archived agents move to `agents/_archive/`.
+- **`agents/`** — one `<slug>.md` per agent (frontmatter: name, slug, description, runtime, optional model, skills, allowed-tools + `# System Prompt` body). Managed from the `/agents` view; archived agents move to `agents/_archive/`. The model (e.g. `opus`, `gemini-2.5-flash`) is passed to the runtime CLI at spawn and recorded on the run row; it is dropped if a per-run runtime override targets a different runtime.
 - **`automations/local/`** — shell scripts, laptop-only. **`automations/remote/`** — markdown cron specs; with a `project:` key the in-dashboard scheduler files them as queued issues (spec 0009).
 - **`vault/`** — Obsidian vault (memory). See `vault/CLAUDE.md`. Indexed into SQLite (notes, wikilinks, tags, FTS) for `/graph`, `/api/search`, and the inbox.
 - **`dashboard/`** — Next.js 15 + React 19 + Tailwind, custom `server.ts` run via tsx. SQLite at `.agentic-os/state.db` (WAL; tables: issues, runs, hook_events, settings_kv, schedule_state, notes, note_links, notes_fts). Migrations apply on boot in `lib/db.ts`.
@@ -38,15 +38,15 @@ Key paths (all under `dashboard/`):
 - `lib/runtime/` — Runtime contract with capability flags (`types.ts`), `claude-code.ts` and `gemini-cli.ts` implementations, registry, liveRuns (globalThis-shared), concurrency caps, hook installer
 - `lib/startRun.ts` — the run pipeline (resolve, capacity, worktree, MCP injection, spawn, exit persistence); `POST /api/runs` is a thin wrapper
 - `lib/orchestrator/` — deterministic issue router (ADR-007 scoring) + auto-router; `lib/scheduler.ts` — 60s cron tick over `automations/remote`
-- `lib/settings.ts` — file-backed settings incl. the `autonomy` kill switch (off by default)
+- `lib/settings.ts` — file-backed settings incl. the `autonomy` kill switch (off by default) and the `features` flag map (12 surfaces, default on) that drives sidebar visibility
 - `lib/vault/indexer.ts` — vault index full-rebuilds (boot + chokidar debounce)
 - `lib/mcp.ts` + `lib/connections.ts` — MCP templates in gitignored `.agentic-os/mcp/`, injected into worktrees per `PROJECT.md` `mcp-servers:`; connector status detectors
 - `lib/createProject/` — the `/new` pipeline (spec 0012): `draft.ts` (one-shot orchestrator draft), `pipeline.ts` (deterministic steps incl. `gh repo create`), `jobs.ts` (globalThis job store), `preflight.ts`, `steps.ts`; `lib/llm/extractJson.ts` is the shared headless-reply parser
 - `server.ts` — HTTP + WebSocket (`/api/runtime/socket/:runId`) + warm-up request that boots `ensureServerBooted` (watcher, runtimes, router, scheduler, vault index); listen has EADDRINUSE retry + already-running detection
 - `lib/stream.ts` — in-process event bus (globalThis-shared across the tsx/Next module graphs) feeding `GET /api/stream` SSE
-- Views: `/` projects, `/new` create-project orchestrator, `/issues` global kanban, `/agents` creator, `/skills`, `/graph`, `/inbox`, `/runtimes`, `/connections`, `/settings`
+- Views: `/` command-center home (stats, active runs, projects), `/new` create-project orchestrator, `/issues` global kanban, `/inbox`, `/notes`, `/ask` vault RAG, `/graph`, `/research`, `/learning`, `/studio`, `/activity` run feed, `/sessions`, `/analytics`, `/evals`, `/agents` creator, `/skills`, `/docker`, `/runtimes`, `/connections`, `/settings` (tabbed; Features tab toggles surfaces)
 
-UI conventions in `standards/dashboard-ui.md`. No auth layer: localhost, single operator.
+UI conventions and the design-token system in `standards/dashboard-ui.md` (tokens extracted from `docs/designs/Agentic OS.dc.html`; light/dark via `data-theme`). No auth layer: localhost, single operator.
 
 Env vars (all optional): `PORT` (3000), `AGENTIC_OS_REPO_ROOT` (auto from cwd), `AGENTIC_OS_STATE_DIR` (`.agentic-os/`), `AGENTIC_OS_PUBLIC_URL` (hook callback base), `TERMINAL` (open-in-terminal). Mirrored in `dashboard/.env.example`.
 

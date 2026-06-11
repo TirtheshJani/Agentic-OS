@@ -159,6 +159,42 @@ CREATE TABLE IF NOT EXISTS lightrag_ingest_log (
   console.log("[db] applied schema migration v6 (lightrag_ingest_log)");
 }
 
+// V7: CLI session index (spec 0018). Summary stats per transcript file;
+// message bodies are parsed on demand from the file, never stored.
+function applyV7(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 7").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS sessions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider        TEXT NOT NULL,
+  session_id      TEXT NOT NULL,
+  file_path       TEXT UNIQUE NOT NULL,
+  project_dir     TEXT,
+  project_slug    TEXT,
+  run_id          INTEGER,
+  started_at      INTEGER,
+  ended_at        INTEGER,
+  turns_user      INTEGER NOT NULL DEFAULT 0,
+  turns_assistant INTEGER NOT NULL DEFAULT 0,
+  tool_calls      INTEGER NOT NULL DEFAULT 0,
+  tokens_in       INTEGER,
+  tokens_out      INTEGER,
+  tokens_cache_write INTEGER,
+  tokens_cache_read  INTEGER,
+  models          TEXT,
+  cost_estimate   REAL,
+  file_mtime      INTEGER NOT NULL,
+  file_size       INTEGER NOT NULL,
+  indexed_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sessions_provider_idx ON sessions(provider, started_at DESC);
+CREATE INDEX IF NOT EXISTS sessions_project_idx ON sessions(project_slug, started_at DESC);
+`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (7, ?)").run(Date.now());
+  console.log("[db] applied schema migration v7 (sessions)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -174,6 +210,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   applyV4(db);
   applyV5(db);
   applyV6(db);
+  applyV7(db);
   return db;
 }
 

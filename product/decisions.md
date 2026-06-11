@@ -359,3 +359,37 @@ NotebookLM remains a manual click, and the MCP server ecosystem churn is
 deliberately somebody else's problem until a slot is configured. Reversal:
 a direct Drive API upload can slot in behind the same export route if the
 manual import becomes real friction.
+
+
+---
+
+## ADR-015 — Session index: summaries in SQLite, transcripts parsed on demand
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0018 surfaces CLI transcripts (Claude Code, Gemini CLI)
+in the dashboard with token analytics. Three storage options: parse every
+file on every request with an in-process mtime cache (dies on dev reload,
+re-scans hundreds of multi-MB files for analytics), index full message
+bodies into SQLite (large blob churn for data the views page through
+anyway), or index summaries only.
+
+**Decision.** A `sessions` row per transcript file (migration V7) holds
+summary stats keyed by `file_path` with `(mtime, size)` change detection;
+the detail view re-reads the JSONL on demand, paginated. Charts are
+hand-rolled SVG (bars, heatmap) rather than a chart library. Cost
+estimation uses an in-code per-MTok pricing table with longest-prefix
+model matching; unknown models render "n/a" rather than a guessed number,
+and every figure is labeled an estimate because subscription usage does
+not bill per token. The dormant `runs.transcript_path` column is now
+written at session-id capture time by globbing
+`~/.claude/projects/*/<sessionId>.jsonl` (never by reconstructing the
+munged cwd, whose drive-letter case varies on Windows).
+
+**Consequences.** Incremental scans are cheap (only changed files parse);
+analytics is a GROUP BY over hundreds of rows; the DB stays small. Cost:
+the detail view does file IO per request (fine at one operator), and
+gemini sessions carry no token data until their format exposes usage.
+Reversal: index message bodies if full-text search over transcripts
+becomes a need (it would ride the existing FTS5 machinery); adopt recharts
+behind a new ADR if charts grow interactive.

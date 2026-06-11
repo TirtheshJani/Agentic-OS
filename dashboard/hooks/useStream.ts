@@ -12,7 +12,8 @@ export type StreamEventKind =
   | "project.create.progress"
   | "project.create.done"
   | "rag.embeddings"
-  | "run.finalized";
+  | "run.finalized"
+  | "sessions.indexed";
 
 export interface StreamEventPayload {
   kind: StreamEventKind;

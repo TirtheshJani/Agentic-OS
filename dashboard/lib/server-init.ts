@@ -9,6 +9,7 @@ import { indexVault, startVaultWatcher } from "@/lib/vault/indexer";
 import { pruneEmbeddingCache } from "@/lib/rag/chunkSync";
 import { startEmbedWorker } from "@/lib/rag/embedWorker";
 import { startLightragIngestWorker } from "@/lib/lightrag/ingestWorker";
+import { startSessionScanner } from "@/lib/sessions/service";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -41,6 +42,7 @@ export async function ensureServerBooted(): Promise<void> {
     }
     startEmbedWorker();
     startLightragIngestWorker();
+    startSessionScanner();
     booted = true;
   })();
   return bootPromise;

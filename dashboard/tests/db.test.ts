@@ -31,11 +31,12 @@ describe("db", () => {
     expect(names).toContain("schedule_state");
     expect(names).toContain("note_chunks");
     expect(names).toContain("chunk_embeddings");
+    expect(names).toContain("sessions");
   });
 
   it("applies all migrations on first open", () => {
     openDb(dbPath);
-    expect(getMigrationVersion()).toBe(6);
+    expect(getMigrationVersion()).toBe(7);
   });
 
   it("is idempotent on second open", () => {
@@ -43,7 +44,7 @@ describe("db", () => {
     closeDb();
     const db2 = openDb(dbPath);
     const count = (db2.prepare("SELECT COUNT(*) as n FROM schema_migrations").get() as { n: number }).n;
-    expect(count).toBe(5); // versions 1, 3, 4, 5, 6
+    expect(count).toBe(6); // versions 1, 3, 4, 5, 6, 7
   });
 
   it("upgrades an older database in place", () => {
@@ -54,7 +55,7 @@ describe("db", () => {
     closeDb();
 
     const db2 = openDb(dbPath);
-    expect(getMigrationVersion()).toBe(6);
+    expect(getMigrationVersion()).toBe(7);
     const cols = db2.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
     expect(cols.some(c => c.name === "parent_issue_id")).toBe(true);
   });

@@ -56,6 +56,22 @@ const PatchSchema = z.object({
       allowlist: z.array(z.string()),
     })
     .optional(),
+  features: z
+    .object({
+      notes: z.boolean(),
+      inbox: z.boolean(),
+      ask: z.boolean(),
+      graph: z.boolean(),
+      learning: z.boolean(),
+      research: z.boolean(),
+      studio: z.boolean(),
+      sessions: z.boolean(),
+      analytics: z.boolean(),
+      evals: z.boolean(),
+      docker: z.boolean(),
+      connections: z.boolean(),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

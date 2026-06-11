@@ -32,6 +32,40 @@ const RAG_DEFAULTS = {
   answerProvider: "gemini-cli" as const,
 };
 
+/** Feature-flagged dashboard surfaces. Off hides the view from the nav;
+ * routes stay URL-reachable (localhost, single operator — no gating). */
+const FeaturesSchema = z.object({
+  notes: z.boolean().default(true),
+  inbox: z.boolean().default(true),
+  ask: z.boolean().default(true),
+  graph: z.boolean().default(true),
+  learning: z.boolean().default(true),
+  research: z.boolean().default(true),
+  studio: z.boolean().default(true),
+  sessions: z.boolean().default(true),
+  analytics: z.boolean().default(true),
+  evals: z.boolean().default(true),
+  docker: z.boolean().default(true),
+  connections: z.boolean().default(true),
+});
+
+export type FeatureKey = keyof z.infer<typeof FeaturesSchema>;
+
+const FEATURES_DEFAULTS: z.infer<typeof FeaturesSchema> = {
+  notes: true,
+  inbox: true,
+  ask: true,
+  graph: true,
+  learning: true,
+  research: true,
+  studio: true,
+  sessions: true,
+  analytics: true,
+  evals: true,
+  docker: true,
+  connections: true,
+};
+
 const SettingsSchema = z.object({
   workspaceRoot: z.string(),
   concurrency: z.object({
@@ -75,6 +109,7 @@ const SettingsSchema = z.object({
       allowlist: z.array(z.string()).default([]),
     })
     .default({ enabled: false, allowlist: [] }),
+  features: FeaturesSchema.default(FEATURES_DEFAULTS),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -100,6 +135,7 @@ function defaults(): Settings {
     export: { notebookLmDir: "" },
     evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 },
     docker: { enabled: false, allowlist: [] },
+    features: { ...FEATURES_DEFAULTS },
   };
 }
 
@@ -130,6 +166,7 @@ export function setSettings(patch: Partial<Settings>): Settings {
     export: { ...current.export, ...(patch.export ?? {}) },
     evals: { ...current.evals, ...(patch.evals ?? {}) },
     docker: { ...current.docker, ...(patch.docker ?? {}) },
+    features: { ...current.features, ...(patch.features ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

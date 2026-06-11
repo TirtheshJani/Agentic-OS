@@ -447,3 +447,32 @@ state on this machine). Cost: a 30s timeout bounds long compose
 operations, and per-container lifecycle is deliberately absent until
 needed. Reversal: adopt dockerode behind the same lib/docker.ts surface
 if streaming logs or events become requirements.
+
+
+---
+
+## ADR-018 — Tutoring sessions ride the run pipeline via a dedicated scratch repo
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0022 needs interactive tutoring sessions. Building a new
+chat surface duplicates the PTY/terminal infrastructure; reusing runs
+collides with the worktree requirement: createWorktree demands a git repo,
+and pointing a learning project at the Agentic-OS repo itself would
+duplicate the whole repo (vault included) per session and let tutors write
+into a divergent vault copy.
+
+**Decision.** A dedicated scratch repo (<workspaceRoot>/learning-scratch,
+auto-git-init, idempotent) backs a "learning" dashboard project; tutoring
+sessions are ordinary sync-mode issues assigned to tutor agents, and the
+existing RunTerminal is the chat UI. Worktrees are honest throwaway
+exercise space. Durable artifacts (session logs, syllabus updates, srs.md)
+are written to vault/learning/<topic>/ by absolute path, the same contract
+the deep-research skill uses. Tutors are plain agents/*.md files.
+
+**Consequences.** Zero changes to the core run pipeline; tutors inherit
+capacity caps, threads, and observability for free. Cost: each session
+pays a (tiny) worktree create on the scratch repo, and stale worktrees
+need the existing prune path. Reversal: a first-class no-worktree
+conversation-run mode, if a second consumer (e.g. ad-hoc agent chat)
+appears.

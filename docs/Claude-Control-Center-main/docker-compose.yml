@@ -1,0 +1,108 @@
+services:
+  claude-control-center:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claude-control-center:latest
+    container_name: claude-control-center
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5050:5050"   # bind to localhost only; remove 127.0.0.1: to expose on LAN
+    env_file:
+      - backend/.env
+    environment:
+      PORT: "5050"
+      CLAUDE_DIR: /data/claude
+      CODEX_DIR: /data/codex
+      CORS_ORIGIN: http://localhost:5050
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}  # required for RAG entity extraction + managed agents
+      # GWS: use file-based keyring (no D-Bus/keyring daemon needed in container)
+      GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND: "file"
+      GOOGLE_WORKSPACE_CLI_CONFIG_DIR: /data/gws-config
+      GWS_BINARY: /usr/local/bin/gws
+      GWS_SNAPSHOT_INTERVAL: "900"   # seconds between background GWS snapshot refreshes
+      # Invoicing — BMO bookkeeper runs on the host (:5223); reach it via host gateway.
+      # INVOICING_SHEET_ID is intentionally NOT set here — it's a private sheet id and
+      # lives in backend/.env (git-ignored), loaded into the container via env_file above.
+      BOOKKEEPER_BASE_URL: ${BOOKKEEPER_BASE_URL:-http://host.docker.internal:5223}
+      # Agentic OS — RAG foundation (LightRAG + Anthropic Haiku entity extraction)
+      ANTHROPIC_HAIKU_MODEL: ${ANTHROPIC_HAIKU_MODEL:-claude-haiku-4-5-20251001}
+      MEMORY_DAILY_BUDGET_USD: ${MEMORY_DAILY_BUDGET_USD:-5.00}
+      LIGHTRAG_WORKING_DIR: /app/backend/data/lightrag
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-sentence-transformers/all-MiniLM-L6-v2}
+      # Agentic OS — Gemini CLI
+      GEMINI_DIR: /data/gemini
+      # Agentic OS — Antigravity CLI
+      ANTIGRAVITY_DIR: /data/gemini/antigravity-cli
+      # Agentic OS — MCP memory server (host-side path, set by user)
+      MCP_MEMORY_SERVER_PATH: ${MCP_MEMORY_SERVER_PATH:-}
+      CCC_BASE_URL: ${CCC_BASE_URL:-http://127.0.0.1:5050}
+      # Agentic OS — Research pipeline
+      # REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, FIRECRAWL_API_KEY
+      # are loaded exclusively from backend/.env (env_file above) — do NOT duplicate
+      # them here with ${VAR:-} syntax, which expands to "" and overrides the .env value.
+      # vault_pipeline: redirect obsidian-cli to host Obsidian via extra_hosts gateway
+      OBSIDIAN_BASE_URL: ${OBSIDIAN_BASE_URL:-http://host.docker.internal:27123}
+      # External LightRAG server — proxy target for all RAG insert/query calls
+      LIGHTRAG_SERVER_URL: ${LIGHTRAG_SERVER_URL:-http://host.docker.internal:9621}
+      LIGHTRAG_DAILY_INGEST_LIMIT: ${LIGHTRAG_DAILY_INGEST_LIMIT:-200}
+      LIGHTRAG_INGEST_INTERVAL: ${LIGHTRAG_INGEST_INTERVAL:-300}
+    volumes:
+      # Mounts your real ~/.claude data into the container
+      - ${HOME}/.claude:/data/claude
+      # Mounts your real ~/.codex data so Codex sessions/settings/skills can be scanned
+      - ${HOME}/.codex:/data/codex
+      # Mounts gws credentials (OAuth tokens) — writable so the CLI can refresh/cache tokens
+      - ${HOME}/.config/gws:/data/gws-config
+      # Mounts Gemini CLI data (sessions, settings)
+      - ${HOME}/.gemini:/data/gemini
+      # Persists backend/data across rebuilds: custom recipes, audit logs, activity cache, snapshots
+      - ccc-data:/app/backend/data
+      # Host ~/Documents mounted at the same path so repo root paths and Obsidian vaults resolve correctly
+      - ${HOME}/Documents:${HOME}/Documents:ro
+      # External/removable media (for vaults on mounted drives)
+      - /media/${USER}:/media/${USER}
+      # Permanent external storage mount (replaces /media/ruwzeta/<UUID> pattern)
+      - /media/storage:/media/storage
+      # Docker management: mount host socket + binaries so the app can run docker compose commands
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose:ro
+      # vault_pipeline: claude CLI binary + supporting tools needed to run the vault-research-pipeline skill
+      - ${HOME}/.local/bin/claude:/usr/local/bin/claude:ro
+      - ${HOME}/.local/bin/notebooklm:/usr/local/bin/notebooklm:ro
+      - ${HOME}/.local/bin/yt-dlp:/usr/local/bin/yt-dlp:ro
+      # claude CLI config and skills (appuser home — separate from CLAUDE_DIR used by Flask)
+      - ${HOME}/.claude:/home/appuser/.claude
+      # npm global + npx cache (provides obsidian-cli and other tools invoked by claude skills)
+      - ${HOME}/.npm:/home/appuser/.npm:ro
+    extra_hosts:
+      # Allows vault_pipeline subprocess to reach Obsidian's Local REST API running on the host
+      - "host.docker.internal:host-gateway"
+    group_add:
+      - "998"   # host docker group GID — grants appuser access to /var/run/docker.sock
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"       # bumped from 0.50 — embedding batches are CPU-bound
+          memory: 2G        # bumped from 384M — LightRAG + sentence-transformers needs headroom
+        reservations:
+          cpus: "0.05"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"   # rotate logs at 10 MB …
+        max-file: "3"     # … keep only 3 files
+
+volumes:
+  ccc-data:   # persists backend/data (recipes, audit logs, GWS activity cache)
+
+# Common operations:
+#   Build image:          docker compose build
+#   Start in background:  docker compose up -d
+#   Rebuild & restart:    docker compose up -d --build
+#   Stop container:       docker compose down
+#   Stream logs:          docker compose logs -f
+#   Resource usage:       docker stats claude-control-center
+#   Wipe persisted data:  docker compose down -v   (removes ccc-data volume too)

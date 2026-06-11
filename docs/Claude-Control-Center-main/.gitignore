@@ -1,0 +1,27 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/app/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.env
+
+# Frontend build output
+frontend/dist/
+frontend/node_modules/
+
+# Backend served frontend assets
+backend/dist/
+
+# Runtime data
+backend/data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MCP memory server
+mcp-memory-server/node_modules/

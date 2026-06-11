@@ -14,6 +14,24 @@ const AutonomySchema = z.object({
   maxChainDepth: z.number().int().positive().default(3),
 });
 
+const RagSchema = z.object({
+  /** "none" disables vector search; retrieval degrades to FTS + link graph. */
+  embeddingProvider: z.enum(["gemini", "none"]).default("none"),
+  geminiApiKey: z.string().default(""),
+  embeddingModel: z.string().default("gemini-embedding-001"),
+  embeddingDims: z.number().int().positive().default(768),
+  /** Grounded-answer generation. gemini-cli bills the Google account; claude-cli draws from the Agent SDK credit pool and is explicit opt-in. */
+  answerProvider: z.enum(["gemini-cli", "claude-cli", "none"]).default("gemini-cli"),
+});
+
+const RAG_DEFAULTS = {
+  embeddingProvider: "none" as const,
+  geminiApiKey: "",
+  embeddingModel: "gemini-embedding-001",
+  embeddingDims: 768,
+  answerProvider: "gemini-cli" as const,
+};
+
 const SettingsSchema = z.object({
   workspaceRoot: z.string(),
   concurrency: z.object({
@@ -27,6 +45,20 @@ const SettingsSchema = z.object({
     schedulerEnabled: false,
     maxChainDepth: 3,
   }),
+  rag: RagSchema.default(RAG_DEFAULTS),
+  lightrag: z
+    .object({
+      baseUrl: z.string().default("http://localhost:9621"),
+      /** Global gate for auto-ingesting finished runs; projects also opt in via frontmatter. */
+      autoIngest: z.boolean().default(false),
+    })
+    .default({ baseUrl: "http://localhost:9621", autoIngest: false }),
+  export: z
+    .object({
+      /** Bundle target; point at a Google Drive for Desktop folder for NotebookLM. "" falls back to vault/outputs/notebooklm. */
+      notebookLmDir: z.string().default(""),
+    })
+    .default({ notebookLmDir: "" }),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -47,6 +79,9 @@ function defaults(): Settings {
     concurrency: { perProjectMax: 3, globalMax: 5 },
     theme: "system",
     autonomy: { enabled: false, llmRouting: false, schedulerEnabled: false, maxChainDepth: 3 },
+    rag: { ...RAG_DEFAULTS },
+    lightrag: { baseUrl: "http://localhost:9621", autoIngest: false },
+    export: { notebookLmDir: "" },
   };
 }
 
@@ -72,6 +107,9 @@ export function setSettings(patch: Partial<Settings>): Settings {
     ...patch,
     concurrency: { ...current.concurrency, ...(patch.concurrency ?? {}) },
     autonomy: { ...current.autonomy, ...(patch.autonomy ?? {}) },
+    rag: { ...current.rag, ...(patch.rag ?? {}) },
+    lightrag: { ...current.lightrag, ...(patch.lightrag ?? {}) },
+    export: { ...current.export, ...(patch.export ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

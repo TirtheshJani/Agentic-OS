@@ -20,6 +20,8 @@ export const ProjectFrontmatterSchema = z.object({
   "allow-parallel-edits": z.boolean().optional(),
   /** MCP template names (from .agentic-os/mcp/) injected into run worktrees. */
   "mcp-servers": z.array(z.string()).default([]),
+  /** Opt this project's finished runs into LightRAG auto-ingest (spec 0016). */
+  "lightrag-ingest": z.boolean().default(false),
   created: DateLike,
 });
 

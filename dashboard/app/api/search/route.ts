@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { openDb, getDb } from "@/lib/db";
 import { ensureServerBooted } from "@/lib/server-init";
+import { sanitizeFtsQuery } from "@/lib/rag/ftsQuery";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +12,7 @@ export async function GET(req: Request) {
   const q = searchParams.get("q")?.trim();
   if (!q) return NextResponse.json({ results: [] });
 
-  // Quote every term so user input cannot inject FTS5 query syntax.
-  const match = q
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => `"${t.replace(/"/g, '""')}"`)
-    .join(" ");
+  const match = sanitizeFtsQuery(q);
 
   try {
     const results = getDb()

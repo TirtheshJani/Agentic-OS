@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { listMcpTemplates } from "@/lib/mcp";
+import { getSettings } from "@/lib/settings";
 
 export interface ConnectionStatus {
   id: string;
@@ -95,14 +96,70 @@ function checkMcp(id: string, label: string, recommended: string): ConnectionSta
   };
 }
 
+async function checkLightRag(): Promise<ConnectionStatus> {
+  const baseUrl = getSettings().lightrag.baseUrl;
+  let reachable = false;
+  try {
+    // LightRAG exposes /health on recent versions; fall back to / for older ones.
+    const res = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(2_000) });
+    reachable = res.ok || (await fetch(baseUrl, { signal: AbortSignal.timeout(2_000) })).ok;
+  } catch {
+    reachable = false;
+  }
+  if (!reachable) {
+    return {
+      id: "lightrag",
+      label: "LightRAG (graph RAG)",
+      status: "unavailable",
+      detail: `No LightRAG instance reachable at ${baseUrl}.`,
+      setup: ["Start your local LightRAG server (default port 9621).", "Adjust the base URL in Settings if it runs elsewhere."],
+    };
+  }
+  const tpl = listMcpTemplates().find((t) => t.name === "lightrag");
+  if (!tpl) {
+    return {
+      id: "lightrag",
+      label: "LightRAG (graph RAG)",
+      status: "not-configured",
+      detail: `Instance reachable at ${baseUrl}, but no MCP template at .agentic-os/mcp/lightrag.json.`,
+      setup: [
+        "Configure on this page (saved to .agentic-os/mcp/lightrag.json).",
+        "Recommended server: daniel-lightrag-mcp (set LIGHTRAG_BASE_URL).",
+        'Then add "mcp-servers: [lightrag]" to a project\'s PROJECT.md frontmatter.',
+      ],
+    };
+  }
+  return {
+    id: "lightrag",
+    label: "LightRAG (graph RAG)",
+    status: "connected",
+    detail: `Instance reachable at ${baseUrl}; ${tpl.servers.length} MCP server(s) configured. Auto-ingest: ${
+      getSettings().lightrag.autoIngest ? "on" : "off"
+    }.`,
+    setup: [],
+  };
+}
+
 export async function getConnectionStatuses(): Promise<ConnectionStatus[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.statuses;
   const statuses: ConnectionStatus[] = [
     checkClaude(),
     checkGemini(),
     checkGitHub(),
+    await checkLightRag(),
     checkMcp("gmail", "Gmail (MCP, multi-account)", "GongRzhe/Gmail-MCP-Server (one entry per account)"),
     checkMcp("calendar", "Google Calendar (MCP)", "a Google Calendar MCP server"),
+    checkMcp(
+      "gdrive",
+      "Google Drive (MCP)",
+      "a maintained Drive MCP server (the reference @modelcontextprotocol/server-gdrive was archived; verify the current best fork)"
+    ),
+    checkMcp("gdocs", "Google Docs (MCP)", "a Google Docs MCP server (template slot; verify options when configuring)"),
+    checkMcp(
+      "ms365",
+      "Microsoft 365 (Outlook/Word/Excel)",
+      "softeria/ms-365-mcp-server (Microsoft Graph, device-code auth)"
+    ),
     {
       id: "linkedin",
       label: "LinkedIn",

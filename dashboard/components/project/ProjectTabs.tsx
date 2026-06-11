@@ -1,0 +1,41 @@
+"use client";
+import clsx from "clsx";
+import { useState, type ReactNode } from "react";
+
+const TABS = ["Board", "Knowledge"] as const;
+type Tab = (typeof TABS)[number];
+
+interface Props {
+  board: ReactNode;
+  knowledge: ReactNode;
+}
+
+export function ProjectTabs({ board, knowledge }: Props) {
+  const [active, setActive] = useState<Tab>("Board");
+
+  return (
+    <div>
+      <div role="tablist" className="flex gap-1 border-b border-gray-200 dark:border-gray-800 mb-6">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={active === tab}
+            onClick={() => setActive(tab)}
+            className={clsx(
+              "px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors",
+              active === tab
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      {/* Both panes stay mounted so switching tabs never refetches or flickers. */}
+      <div hidden={active !== "Board"}>{board}</div>
+      <div hidden={active !== "Knowledge"}>{knowledge}</div>
+    </div>
+  );
+}

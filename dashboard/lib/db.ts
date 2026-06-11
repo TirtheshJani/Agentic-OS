@@ -111,6 +111,54 @@ CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(title, body, path UNINDE
   console.log("[db] applied schema migration v4 (notes, note_links, notes_fts)");
 }
 
+// V5: vault RAG layer (spec 0013). note_chunks is rebuilt incrementally by
+// chunkSync; chunk_embeddings is keyed by content hash so it survives the
+// indexer's full notes rebuild and never re-embeds unchanged content.
+function applyV5(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 5").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS note_chunks (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_path    TEXT NOT NULL,
+  chunk_index  INTEGER NOT NULL,
+  heading      TEXT NOT NULL DEFAULT '',
+  content      TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  updated_at   INTEGER NOT NULL,
+  UNIQUE (note_path, chunk_index)
+);
+CREATE INDEX IF NOT EXISTS note_chunks_path_idx ON note_chunks(note_path);
+CREATE INDEX IF NOT EXISTS note_chunks_hash_idx ON note_chunks(content_hash);
+
+CREATE TABLE IF NOT EXISTS chunk_embeddings (
+  content_hash TEXT NOT NULL,
+  model        TEXT NOT NULL,
+  dims         INTEGER NOT NULL,
+  vector       BLOB NOT NULL,
+  created_at   INTEGER NOT NULL,
+  PRIMARY KEY (content_hash, model)
+);
+`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (5, ?)").run(Date.now());
+  console.log("[db] applied schema migration v5 (note_chunks, chunk_embeddings)");
+}
+
+// V6: LightRAG auto-ingest dedupe log (spec 0016).
+function applyV6(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 6").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS lightrag_ingest_log (
+  run_id      INTEGER PRIMARY KEY,
+  ingested_at INTEGER NOT NULL,
+  status      TEXT NOT NULL
+);
+`);
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (6, ?)").run(Date.now());
+  console.log("[db] applied schema migration v6 (lightrag_ingest_log)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -124,6 +172,8 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   }
   applyV3(db);
   applyV4(db);
+  applyV5(db);
+  applyV6(db);
   return db;
 }
 

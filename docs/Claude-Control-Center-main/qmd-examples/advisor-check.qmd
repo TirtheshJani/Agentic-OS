@@ -1,0 +1,19 @@
+# Advisor Tool Checks
+
+## Scan for Advisor Usage
+
+```bash qmd:name=advisor-scan
+curl -s -X POST http://localhost:5050/api/advisor/scan | jq
+```
+
+## View Advisor Stats
+
+```bash qmd:name=advisor-stats
+curl -s http://localhost:5050/api/advisor/stats | jq
+```
+
+## List Recent Advisor Usages
+
+```bash qmd:name=advisor-usages
+curl -s 'http://localhost:5050/api/advisor/usages?limit=10' | jq '.items[] | {project, executor_model, advisor_model, duration_seconds, status}'
+```

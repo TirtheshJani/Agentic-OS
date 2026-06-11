@@ -23,6 +23,26 @@ const PatchSchema = z.object({
       maxChainDepth: z.number().int().positive(),
     })
     .optional(),
+  rag: z
+    .object({
+      embeddingProvider: z.enum(["gemini", "none"]),
+      geminiApiKey: z.string(),
+      embeddingModel: z.string(),
+      embeddingDims: z.number().int().positive(),
+      answerProvider: z.enum(["gemini-cli", "claude-cli", "none"]),
+    })
+    .optional(),
+  lightrag: z
+    .object({
+      baseUrl: z.string().min(1),
+      autoIngest: z.boolean(),
+    })
+    .optional(),
+  export: z
+    .object({
+      notebookLmDir: z.string(),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

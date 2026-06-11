@@ -7,7 +7,9 @@ export type StreamEvent =
   | { kind: "thread.appended"; issueId: number }
   | { kind: "vault.indexed"; notes: number; links: number }
   | { kind: "project.create.progress"; jobId: string; step: CreateStepId; status: StepStatus; detail?: string; error?: string }
-  | { kind: "project.create.done"; jobId: string; status: "succeeded" | "failed" };
+  | { kind: "project.create.done"; jobId: string; status: "succeeded" | "failed" }
+  | { kind: "rag.embeddings"; embedded: number; pending: number; model: string; error?: string }
+  | { kind: "run.finalized"; runId: number; issueId: number; projectSlug: string; exitStatus: "done" | "failed" };
 
 type Listener = (event: StreamEvent) => void;
 

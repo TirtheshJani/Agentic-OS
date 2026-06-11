@@ -10,6 +10,9 @@ import { getSettings } from "@/lib/settings";
 import { publish } from "@/lib/stream";
 import { appendEvent } from "@/lib/threads";
 import { installWorktreeMcpConfig } from "@/lib/mcp";
+import { readInstructions, knowledgeScopePrefix } from "@/lib/projectKnowledge";
+import { retrieve } from "@/lib/rag/retrieval";
+import { buildWorktreeContext, installWorktreeContext } from "@/lib/promptAssembly";
 
 /** Pipeline failure with an HTTP-ish status the API route can map directly. */
 export class StartRunError extends Error {
@@ -52,6 +55,7 @@ export function finalizeRunExit(runId: number, exitCode: number, signal?: number
     });
     publish({ kind: "issue.changed", id: issue.id, projectSlug: issue.projectSlug, reason: "status" });
     publish({ kind: "thread.appended", issueId: issue.id });
+    publish({ kind: "run.finalized", runId, issueId: issue.id, projectSlug: issue.projectSlug, exitStatus });
   }
 }
 
@@ -113,6 +117,34 @@ export async function startRunForIssue(
     }
   }
 
+  // Project knowledge injection (spec 0014): instructions + top-k relevant
+  // knowledge chunks land in <worktree>/AGENT_CONTEXT.md; the prompt gets one
+  // pointer line. Non-fatal, same posture as the MCP install above.
+  let contextPromptSuffix = "";
+  try {
+    const instructions = readInstructions(project.slug);
+    const kn = await retrieve({
+      q: `${issue.title}\n${issue.body}`.trim(),
+      k: 5,
+      scope: { pathPrefix: knowledgeScopePrefix(project.slug) },
+    });
+    const MIN_CHUNK_SCORE = 0.005; // drop weak matches; RRF scores are small
+    const chunks = kn.chunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
+    if (instructions.trim() || chunks.length > 0) {
+      const parts = buildWorktreeContext({
+        projectSlug: project.slug,
+        issueTitle: issue.title,
+        instructions,
+        chunks,
+      });
+      installWorktreeContext(worktreePath, runtimeId, parts);
+      contextPromptSuffix = parts.promptSuffix;
+      console.log(`[startRun] issue ${issue.id}: AGENT_CONTEXT.md installed (${chunks.length} chunks)`);
+    }
+  } catch (err) {
+    console.error(`[startRun] context install failed for issue ${issue.id}:`, err);
+  }
+
   const runId = createRun({
     issueId: issue.id,
     agentSlug: agent.slug,
@@ -121,7 +153,7 @@ export async function startRunForIssue(
   });
   console.log(`[startRun] created run ${runId}; spawning ${runtimeId}`);
 
-  let initialPrompt = `${issue.title}\n\n${issue.body}`.trim();
+  let initialPrompt = `${issue.title}\n\n${issue.body}`.trim() + contextPromptSuffix;
   if (settings.autonomy.enabled) {
     initialPrompt += [
       "\n\nHandoff protocol: to delegate a follow-up task to another agent when you finish,",

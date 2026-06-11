@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from app.services.codex_tracker import scan_all, build_stats, load; print\\('imports ok'\\)\")",
+      "Bash(python3 -c \"from app.services.codex_tracker import scan_all, build_stats, load; print\\('imports ok'\\)\")",
+      "Bash(venv/bin/python -m scripts.loop_runner:*)",
+      "Bash(python -m scripts.loop_runner:*)",
+      "Bash(python3 -c \"from scripts.loop_runner import main; main\\(\\)\")"
+    ]
+  },
+  "prefersReducedMotion": true
+}

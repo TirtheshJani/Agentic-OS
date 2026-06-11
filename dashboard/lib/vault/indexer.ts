@@ -5,6 +5,7 @@ import chokidar from "chokidar";
 import { VAULT_DIR } from "@/lib/paths";
 import { getDb } from "@/lib/db";
 import { publish } from "@/lib/stream";
+import { syncNoteChunks } from "@/lib/rag/chunkSync";
 
 const IGNORED_DIRS = new Set([".obsidian", ".trash", ".git", "node_modules"]);
 const WIKILINK_RE = /\[\[([^\]|#\n]+)/g;
@@ -16,7 +17,7 @@ export interface IndexStats {
   links: number;
 }
 
-interface ParsedNote {
+export interface ParsedNote {
   relPath: string;
   basename: string;
   title: string;
@@ -147,6 +148,14 @@ export function indexVault(rootDir: string = VAULT_DIR): IndexStats {
     }
   });
   run();
+
+  // RAG layer (spec 0013): incremental chunk diff after the notes rebuild.
+  // Failures here must never break the lexical index.
+  try {
+    syncNoteChunks(parsed);
+  } catch (err) {
+    console.error("[vault] chunk sync failed:", err);
+  }
 
   return { notes: parsed.length, links: linkCount };
 }

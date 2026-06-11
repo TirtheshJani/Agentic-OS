@@ -1,0 +1,15 @@
+# Claude Control Center Dev Checks
+
+Common verification tasks for local development.
+
+## Frontend Build
+
+```bash qmd:name=frontend-build cwd=../frontend
+npm run build
+```
+
+## Backend Dependency Check
+
+```bash qmd:name=backend-dependency-check cwd=../backend
+python3 -m compileall app
+```

@@ -1,0 +1,29 @@
+# Claude Control Center Project Health
+
+Use this file to inspect the repository from the root without memorizing commands.
+
+## Workspace Summary
+
+```bash qmd:name=workspace-summary cwd=..
+pwd
+find . -maxdepth 2 -type d | sort
+```
+
+## Backend Routes
+
+```bash qmd:name=backend-routes cwd=..
+python3 - <<'PY'
+from pathlib import Path
+
+routes = sorted(Path("backend/app/routes").glob("*.py"))
+for route in routes:
+    if route.name != "__init__.py":
+        print(route)
+PY
+```
+
+## Frontend Scripts
+
+```bash qmd:name=frontend-scripts cwd=../frontend
+node -e "const pkg=require('./package.json'); console.log(pkg.scripts)"
+```

@@ -10,7 +10,9 @@ export type StreamEventKind =
   | "thread.appended"
   | "vault.indexed"
   | "project.create.progress"
-  | "project.create.done";
+  | "project.create.done"
+  | "rag.embeddings"
+  | "run.finalized";
 
 export interface StreamEventPayload {
   kind: StreamEventKind;

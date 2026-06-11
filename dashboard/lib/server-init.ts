@@ -6,6 +6,9 @@ import { startAutoRouter } from "@/lib/orchestrator/autoRoute";
 import { startScheduler } from "@/lib/scheduler";
 import { openDb } from "@/lib/db";
 import { indexVault, startVaultWatcher } from "@/lib/vault/indexer";
+import { pruneEmbeddingCache } from "@/lib/rag/chunkSync";
+import { startEmbedWorker } from "@/lib/rag/embedWorker";
+import { startLightragIngestWorker } from "@/lib/lightrag/ingestWorker";
 
 let booted = false;
 let bootPromise: Promise<void> | null = null;
@@ -30,6 +33,14 @@ export async function ensureServerBooted(): Promise<void> {
       console.error("[vault] initial index failed:", err);
     }
     startVaultWatcher();
+    try {
+      const pruned = pruneEmbeddingCache();
+      if (pruned > 0) console.log(`[rag] pruned ${pruned} stale embeddings`);
+    } catch (err) {
+      console.error("[rag] embedding cache prune failed:", err);
+    }
+    startEmbedWorker();
+    startLightragIngestWorker();
     booted = true;
   })();
   return bootPromise;

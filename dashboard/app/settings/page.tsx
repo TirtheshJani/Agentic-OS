@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
 import { Field, Input } from "@/components/common/Field";
+import { useStream } from "@/hooks/useStream";
 
 interface SettingsData {
   workspaceRoot: string;
@@ -13,19 +14,85 @@ interface SettingsData {
     schedulerEnabled: boolean;
     maxChainDepth: number;
   };
+  rag: {
+    embeddingProvider: "gemini" | "none";
+    geminiApiKey: string;
+    embeddingModel: string;
+    embeddingDims: number;
+    answerProvider: "gemini-cli" | "claude-cli" | "none";
+  };
+  lightrag: {
+    baseUrl: string;
+    autoIngest: boolean;
+  };
+  export: {
+    notebookLmDir: string;
+  };
+}
+
+interface RagStatus {
+  embeddingProvider: string;
+  model: string;
+  dims: number;
+  chunks: number;
+  distinctHashes: number;
+  embedded: number;
+  pending: number;
+  lastError: string | null;
+  answerProvider: string;
 }
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [ragStatus, setRagStatus] = useState<RagStatus | null>(null);
+  const [reindexing, setReindexing] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data && setSettings(data))
       .catch(() => undefined);
+    fetch("/api/rag/status", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setRagStatus(data))
+      .catch(() => undefined);
   }, []);
+
+  useStream((event) => {
+    if (event.kind !== "rag.embeddings") return;
+    setRagStatus((s) =>
+      s
+        ? {
+            ...s,
+            embedded: event.embedded as number,
+            pending: event.pending as number,
+            model: event.model as string,
+            lastError: (event.error as string | undefined) ?? null,
+          }
+        : s
+    );
+  });
+
+  async function reembedAll() {
+    if (!window.confirm("Delete all cached embeddings for the current model and re-embed every chunk?")) return;
+    setReindexing(true);
+    try {
+      const res = await fetch("/api/rag/reindex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const status = await fetch("/api/rag/status", { cache: "no-store" });
+      if (status.ok) setRagStatus(await status.json());
+    } catch (err) {
+      setMessage(`Re-embed failed: ${(err as Error).message}`);
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   async function save() {
     if (!settings) return;
@@ -151,6 +218,103 @@ export default function SettingsPage() {
             />
           </Field>
         </section>
+
+        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Knowledge / RAG</h2>
+          <Field label="Embedding provider" hint="none degrades retrieval to keyword + link-graph only.">
+            <select
+              value={settings.rag.embeddingProvider}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  rag: { ...settings.rag, embeddingProvider: e.target.value as SettingsData["rag"]["embeddingProvider"] },
+                })
+              }
+              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            >
+              <option value="none">none</option>
+              <option value="gemini">gemini</option>
+            </select>
+          </Field>
+          <Field label="Gemini API key" hint="Used only for embeddings (gemini-embedding-001).">
+            <Input
+              type="password"
+              autoComplete="off"
+              value={settings.rag.geminiApiKey}
+              onChange={(e) => setSettings({ ...settings, rag: { ...settings.rag, geminiApiKey: e.target.value } })}
+            />
+          </Field>
+          <Field
+            label="Answer provider"
+            hint="gemini-cli bills your Google AI Pro account; claude-cli draws from the Claude Agent SDK credit pool."
+          >
+            <select
+              value={settings.rag.answerProvider}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  rag: { ...settings.rag, answerProvider: e.target.value as SettingsData["rag"]["answerProvider"] },
+                })
+              }
+              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            >
+              <option value="gemini-cli">gemini-cli</option>
+              <option value="claude-cli">claude-cli</option>
+              <option value="none">none</option>
+            </select>
+          </Field>
+          {ragStatus && (
+            <p className="text-sm text-gray-500">
+              Embeddings: {ragStatus.embedded}/{ragStatus.distinctHashes} chunks embedded ({ragStatus.chunks} total)
+              {" · "}
+              {ragStatus.model} @ {ragStatus.dims}d
+              {ragStatus.lastError && <span className="text-red-600"> · {ragStatus.lastError}</span>}
+            </p>
+          )}
+          <Button onClick={reembedAll} disabled={reindexing}>
+            {reindexing ? "Re-embedding..." : "Re-embed all"}
+          </Button>
+        </section>
+
+        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <h2 className="text-sm font-semibold">LightRAG</h2>
+          <Field label="Base URL" hint="Your local LightRAG instance.">
+            <Input
+              value={settings.lightrag.baseUrl}
+              onChange={(e) => setSettings({ ...settings, lightrag: { ...settings.lightrag, baseUrl: e.target.value } })}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.lightrag.autoIngest}
+              onChange={(e) =>
+                setSettings({ ...settings, lightrag: { ...settings.lightrag, autoIngest: e.target.checked } })
+              }
+            />
+            <span>
+              <span className="font-medium">Auto-ingest finished runs</span>
+              <span className="text-gray-500">
+                {" "}
+                (also requires lightrag-ingest: true in the project&apos;s PROJECT.md; clean exits only)
+              </span>
+            </span>
+          </label>
+        </section>
+
+        <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Export</h2>
+          <Field
+            label="NotebookLM export folder"
+            hint='Point at a Google Drive for Desktop synced folder (e.g. G:\My Drive\NotebookLM-Inbox) so bundles appear in Drive. Empty = vault/outputs/notebooklm.'
+          >
+            <Input
+              value={settings.export.notebookLmDir}
+              onChange={(e) => setSettings({ ...settings, export: { ...settings.export, notebookLmDir: e.target.value } })}
+            />
+          </Field>
+        </section>
+
         <div className="flex items-center gap-3">
           <Button variant="primary" onClick={save} disabled={saving}>
             {saving ? "Saving..." : "Save"}

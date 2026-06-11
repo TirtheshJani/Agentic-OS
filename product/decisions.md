@@ -476,3 +476,28 @@ pays a (tiny) worktree create on the scratch repo, and stale worktrees
 need the existing prune path. Reversal: a first-class no-worktree
 conversation-run mode, if a second consumer (e.g. ad-hoc agent chat)
 appears.
+
+
+---
+
+## ADR-019 — Design studio: Excalidraw canvas, vault-file storage, review-by-issue
+
+**Date:** 2026-06-11
+
+**Context.** Spec 0023 adds an architecture studio. Canvas library choice
+(tldraw vs Excalidraw), where diagrams live, and how AI review happens.
+
+**Decision.** @excalidraw/excalidraw (MIT; tldraw's SDK watermarks without
+a license key), client-only via next/dynamic — the repo's standing rule
+for window-touching modules. Diagrams are vault files: scene JSON + a
+client-side-exported SVG + a once-created .md stub embedding it, so
+Obsidian and the knowledge graph see every diagram and the server stays
+rendering-free. Saves are explicit; no autosave. AI design review files a
+templated issue against the project itself — the agent reads the docs and
+SVGs (XML text, no vision required) plus the worktree code and writes
+REVIEW-<date>.md back to the vault.
+
+**Consequences.** One new npm dependency for the entire 0013-0023 wave;
+diagrams are diffable and travel with the vault. Cost: no realtime
+collaboration and no autosave by design. Reversal: tldraw behind the same
+CanvasHost seam if Excalidraw's React support regresses.

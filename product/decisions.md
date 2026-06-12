@@ -501,3 +501,124 @@ REVIEW-<date>.md back to the vault.
 diagrams are diffable and travel with the vault. Cost: no realtime
 collaboration and no autosave by design. Reversal: tldraw behind the same
 CanvasHost seam if Excalidraw's React support regresses.
+
+
+---
+
+## ADR-020: Boot-time run reconciliation; interrupted runs go to Review
+
+**Date:** 2026-06-12
+
+**Context.** `finalizeRunExit` is the only writer of `runs.ended_at`, driven
+by the in-process `pty.onExit` listener (startRun.ts). A hard restart, crash,
+or power loss kills the PTY children and wipes the in-memory `liveRuns` Map
+without that listener completing, so interrupted runs keep `ended_at IS NULL`.
+Because `assertCapacity` counts every `ended_at IS NULL` row against the
+per-project and global concurrency caps, accumulated phantom runs permanently
+wedge the auto-router (ConcurrencyCapError on every spawn). The issue stays in
+`running` and the git worktree is orphaned. ADR-001 (single SQLite writer) and
+the single-instance localhost design mean that at boot the live Map is empty,
+so any active run row is provably orphaned.
+
+**Decision.** `ensureServerBooted` runs a reconciliation pass before
+`startAutoRouter`. It scans `listActiveRuns()` and, for each orphan, writes
+`ended_at = now` with a new distinct `exit_status = "interrupted"` (kept
+separate from `failed` so evals/analytics do not score a power cut as an agent
+failure), appends a `run.interrupted` thread event, and moves the issue to
+`review`. Interrupted issues surface in the inbox flagged "interrupted"; the
+human chooses resume, requeue, or discard. No automatic requeue: runs are not
+idempotent (worktrees are issue-id-keyed and would be reused dirty,
+create-project runs may have already executed `gh repo create`, handoff
+children may already be POSTed). Worktrees are left in place for inspection and
+handled by the existing prune path.
+
+**Consequences.** The router can never deadlock on phantom capacity; recovery
+is observable and human-gated, matching the no-rollback, cap-overflow-to-backlog
+posture of ADR-010 and ADR-012. Cost: interrupted work needs one manual touch
+to resume, and a distinct `interrupted` status threads through the run-status
+enum, the inbox query, and the evals filter. Reversal: a future opt-in
+auto-resume for provably-idempotent skills could slot in behind a per-skill
+`metadata.resumable` flag without changing the reconciliation pass.
+
+
+---
+
+## ADR-021: Reflection loop with one judge-triggered revision, then Review
+
+**Date:** 2026-06-12
+
+**Context.** ADR-016 grades finished runs with an LLM judge
+(correctness/efficiency/coherence) behind the autoGrade + autonomy double
+gate, but the grade is only recorded; agents do not self-correct. The roadmap
+wanted a reflection/critic loop. The planning-doc design (intercept stdout,
+max_retries=2) assumes a parseable headless pipeline that ADR-010 deprecated in
+favor of PTY runs and HTTP handoffs.
+
+**Decision.** When `gradeRunWithJudge` returns a composite below a configurable
+threshold (`evals.reviseThreshold`, default set in the PRD), and only under the
+existing autoGrade + autonomy double gate, the autoGrade worker files exactly
+one revision task: a new queued issue with `parentIssueId` set, assigned back to
+the same agent, whose body carries the judge's critique. Capped at one
+auto-revision round per issue (tracked via parent-chain depth, reusing the
+ADR-010 mechanism). If the revision still grades below threshold, the issue
+escalates to Review for a human rather than looping again. Non-revisable runs
+(interrupted, failed) never trigger a revision.
+
+**Consequences.** Agents self-correct once, cheaply, with bounded spend (one
+judge call plus at most one extra run per issue), matching the reliability-first,
+no-runaway posture. The loop inherits ADR-016's double gate, so it is off by
+default and never fires during manual grading. Cost: one revision is a weak
+corrector for deep errors; escalation-to-Review is the backstop. Reversal: raise
+the cap behind `evals.maxRevisionRounds` if one round proves insufficient,
+without changing the trigger or the handoff.
+
+
+---
+
+## ADR-022: Validation contracts in the issue body; per-assertion judge grading; structured worktree handoff
+
+**Date:** 2026-06-12
+
+**Context.** The ADR-016 judge grades finished runs on a generic
+correctness/efficiency/coherence rubric drawn from the last few assistant
+messages, and the spec-0026 reflection loop revises against that single
+correctness number. The Factory missions talk names the weak link: correctness
+defined after the code confirms decisions rather than catching bugs, and a
+revision instruction of "score 62, try harder" carries little signal. Their fix
+is a validation contract authored during planning, independent of
+implementation, plus structured handoffs so agents write down what happened
+instead of hoping to remember. The issue templates here already emit ad-hoc
+"Acceptance:" lines, and the judge already receives the issue body.
+
+**Decision.** Three parts.
+
+1. **Contract in the issue body.** An optional `## Acceptance contract` section
+   holds a checklist of assertions, authored at planning time (by the PRD/grill
+   flow, the create orchestrator, or by hand). No new table; it travels with the
+   issue and is diffable on the kanban.
+2. **Per-assertion grading with fallback.** When a contract is present, the judge
+   evaluates each assertion pass or fail with a short reason and derives
+   `correctness` from the pass fraction; efficiency and coherence stay as the
+   ADR-016 secondary signals and the composite weighting is unchanged. The judge
+   reply schema gains an optional `assertions: [{text, pass, reason}]`. With no
+   contract, the judge uses the existing generic rubric, so nothing regresses.
+   The spec-0026 revision critique names the failed assertions instead of a bare
+   score.
+3. **Structured handoff in the worktree.** Every run writes `HANDOFF.md` in its
+   worktree by absolute path (the existing agent file-writing contract):
+   completed, remaining, commands run with exit codes, issues discovered, and a
+   per-assertion self-assessment. `finalizeRunExit` reads it from
+   `run.worktreePath` before prune, parses it into a `run.handoff` thread event,
+   and passes it to the judge as grading context. A missing handoff is noted in
+   the thread and does not block grading.
+
+**Consequences.** The contract, the handoff self-assessment, and the grade all
+reference the same assertions, so revision instructions are specific and
+observability improves. The judge still infers pass or fail from the transcript
+and diff, not by running the app; the behavioral validator that actually
+exercises the app is a deferred separate spec, and this contract is what it will
+check. Cost: planning now includes writing assertions (optional, degrades to
+today's behavior when absent), and the judge prompt grows by the contract plus
+handoff within the existing 24k-char budget. Reversal: promote contracts to vault
+files behind the same parser if missions grow multi-feature, or add a
+`contract_assertions` table if cross-issue assertion analytics become a need.

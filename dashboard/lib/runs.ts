@@ -1,6 +1,15 @@
 // dashboard/lib/runs.ts
 import { getDb } from "@/lib/db";
 
+/**
+ * How a run ended. `done`/`failed` are written by `finalizeRunExit`; `stopped`
+ * by an operator DELETE on a live run; `interrupted` only by boot reconciliation
+ * for runs whose PTY died with a previous process (ADR-020) — kept distinct from
+ * `failed` so analytics and evals do not score an environment interruption as an
+ * agent failure.
+ */
+export type ExitStatus = "done" | "failed" | "stopped" | "interrupted";
+
 export interface Run {
   id: number;
   issueId: number;
@@ -11,7 +20,7 @@ export interface Run {
   ptySessionId: string | null;
   startedAt: number;
   endedAt: number | null;
-  exitStatus: string | null;
+  exitStatus: ExitStatus | null;
   transcriptPath: string | null;
 }
 
@@ -109,7 +118,7 @@ export function listActiveRunsForProject(projectSlug: string): Run[] {
 
 interface UpdateOpts {
   endedAt?: number;
-  exitStatus?: string;
+  exitStatus?: ExitStatus;
   transcriptPath?: string;
   ptySessionId?: string;
 }

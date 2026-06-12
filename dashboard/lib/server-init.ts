@@ -24,7 +24,7 @@ export async function ensureServerBooted(): Promise<void> {
     openDb();
     try {
       const reconciled = reconcileOrphanedRuns();
-      if (reconciled > 0) console.log(`[runs] marked ${reconciled} orphaned run(s) failed after restart`);
+      if (reconciled > 0) console.log(`[runs] marked ${reconciled} orphaned run(s) interrupted after restart`);
     } catch (err) {
       console.error("[runs] orphan reconciliation failed:", err);
     }

@@ -43,6 +43,23 @@ export default async function InboxPage() {
 
   const reviewIssues = listIssues({ status: "review" });
 
+  // ADR-020: issues whose latest run was interrupted by a restart land in
+  // review. Flag them so the operator can tell a finished-for-review issue from
+  // one that needs resume/requeue/discard.
+  const interruptedIds = new Set(
+    (
+      db
+        .prepare(
+          `SELECT i.id AS id FROM issues i
+           JOIN runs r ON r.id = (
+             SELECT id FROM runs WHERE issue_id = i.id ORDER BY started_at DESC LIMIT 1
+           )
+           WHERE i.status = 'review' AND r.exit_status = 'interrupted'`
+        )
+        .all() as { id: number }[]
+    ).map((r) => r.id)
+  );
+
   const empty = digests.length === 0 && failedRuns.length === 0 && reviewIssues.length === 0;
 
   return (
@@ -66,6 +83,11 @@ export default async function InboxPage() {
               <li key={i.id} className="rounded-md border border-line p-3 text-sm flex items-center justify-between gap-2">
                 <span>
                   <span className="font-medium">{i.title}</span>
+                  {interruptedIds.has(i.id) && (
+                    <span className="text-[10px] font-medium uppercase tracking-wide ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      interrupted
+                    </span>
+                  )}
                   <span className="text-xs text-ink3 ml-2">{i.projectSlug} · {i.assigneeSlug ?? "unassigned"}</span>
                 </span>
                 <Link href="/issues" className="text-xs text-accent hover:underline shrink-0">board →</Link>

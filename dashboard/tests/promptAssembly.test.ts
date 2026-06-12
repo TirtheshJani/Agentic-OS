@@ -154,4 +154,12 @@ describe("installWorktreeContext", () => {
       fs.rmSync(wt2, { recursive: true, force: true });
     }
   });
+
+  it("targets AGENTS.md for the antigravity runtime", () => {
+    const withInstr = buildWorktreeContext({ projectSlug: "p1", issueTitle: "t", instructions: "Rule.", chunks: [] });
+    installWorktreeContext(worktree, "antigravity-cli", withInstr);
+    expect(fs.existsSync(path.join(worktree, "AGENTS.md"))).toBe(true);
+    expect(fs.existsSync(path.join(worktree, "CLAUDE.md"))).toBe(false);
+    expect(fs.existsSync(path.join(worktree, "GEMINI.md"))).toBe(false);
+  });
 });

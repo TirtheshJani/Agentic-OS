@@ -79,7 +79,13 @@ export function installWorktreeContext(worktreePath: string, runtimeId: string, 
   fs.writeFileSync(path.join(worktreePath, CONTEXT_FILE), parts.contextFileBody);
 
   if (!parts.instructionsSection) return;
-  const memoryFile = runtimeId === "gemini-cli" ? "GEMINI.md" : "CLAUDE.md";
+  // Each runtime auto-reads a different memory file from the worktree root.
+  // agy follows the cross-tool AGENTS.md convention; the AGENT_CONTEXT.md
+  // prompt pointer is the primary channel regardless.
+  const memoryFile =
+    runtimeId === "gemini-cli" ? "GEMINI.md" :
+    runtimeId === "antigravity-cli" ? "AGENTS.md" :
+    "CLAUDE.md";
   const memoryPath = path.join(worktreePath, memoryFile);
   const existing = fs.existsSync(memoryPath) ? fs.readFileSync(memoryPath, "utf8") : "";
   if (existing.includes(SECTION_MARKER)) return; // already installed (idempotent)

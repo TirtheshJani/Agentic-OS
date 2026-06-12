@@ -35,7 +35,7 @@ Agent runs are interactive CLI sessions in PTYs (node-pty), one git worktree per
 
 Key paths (all under `dashboard/`):
 
-- `lib/runtime/` — Runtime contract with capability flags (`types.ts`), `claude-code.ts` and `gemini-cli.ts` implementations, registry, liveRuns (globalThis-shared), concurrency caps, hook installer
+- `lib/runtime/` — Runtime contract with capability flags (`types.ts`), `claude-code.ts`, `gemini-cli.ts`, and `antigravity-cli.ts` (`agy`, Google Antigravity) implementations, registry, liveRuns (globalThis-shared), concurrency caps, hook installer. Each runtime declares its known `models` for the agent-editor dropdown; per-agent `model` frontmatter threads through `startRun` → spawn argv (`--model`) onto the run row
 - `lib/startRun.ts` — the run pipeline (resolve, capacity, worktree, MCP injection, spawn, exit persistence); `POST /api/runs` is a thin wrapper
 - `lib/orchestrator/` — deterministic issue router (ADR-007 scoring) + auto-router; `lib/scheduler.ts` — 60s cron tick over `automations/remote`
 - `lib/settings.ts` — file-backed settings incl. the `autonomy` kill switch (off by default) and the `features` flag map (12 surfaces, default on) that drives sidebar visibility

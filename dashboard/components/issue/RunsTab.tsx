@@ -33,17 +33,22 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
   const [runtimeOverride, setRuntimeOverride] = useState("");
 
   const refreshCaps = useCallback(async () => {
-    const [capRes, settingsRes] = await Promise.all([
-      fetch(`/api/projects/${projectSlug}/capacity`, { cache: "no-store" }),
-      fetch(`/api/settings`, { cache: "no-store" }),
-    ]);
-    if (capRes.ok) setCapStatus(await capRes.json());
-    if (settingsRes.ok) {
-      const s = await settingsRes.json();
-      setCapLimits({
-        perProjectMax: s.concurrency.perProjectMax,
-        globalMax: s.concurrency.globalMax,
-      });
+    if (!projectSlug) return;
+    try {
+      const [capRes, settingsRes] = await Promise.all([
+        fetch(`/api/projects/${projectSlug}/capacity`, { cache: "no-store" }),
+        fetch(`/api/settings`, { cache: "no-store" }),
+      ]);
+      if (capRes.ok) setCapStatus(await capRes.json());
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        setCapLimits({
+          perProjectMax: s.concurrency.perProjectMax,
+          globalMax: s.concurrency.globalMax,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to refresh capacity status:", err);
     }
   }, [projectSlug]);
 
@@ -79,10 +84,15 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
     : capReason;
 
   async function openInTerminal(runId: number) {
-    const res = await fetch(`/api/runs/${runId}/open-terminal`, { method: "POST" });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert(`Failed to open terminal: ${data.error ?? res.status}`);
+    try {
+      const res = await fetch(`/api/runs/${runId}/open-terminal`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`Failed to open terminal: ${data.error ?? res.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to open terminal:", err);
+      alert("Failed to open terminal: Network error");
     }
   }
 

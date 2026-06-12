@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listIssues, createIssue, getIssue, chainDepth, type IssueStatus, type IssueMode, VALID_STATUSES, VALID_MODES } from "@/lib/issues";
+import { listIssues, createIssue, getIssue, chainDepth, updateIssue, type IssueStatus, type IssueMode, VALID_STATUSES, VALID_MODES } from "@/lib/issues";
 import { openDb } from "@/lib/db";
 import { publish } from "@/lib/stream";
 import { getSettings } from "@/lib/settings";
 import { appendEvent } from "@/lib/threads";
+import { getProject } from "@/lib/projects";
+import { createGitHubIssue, isGitHubRepo } from "@/lib/github";
 
 openDb(); // initializes the singleton if not already
 
@@ -61,6 +63,26 @@ export async function POST(req: Request) {
   }
 
   const id = createIssue(data);
+
+  // If the project is linked to a GitHub repo, try to mirror the issue there.
+  const project = getProject(data.projectSlug);
+  if (project && isGitHubRepo(project.repo)) {
+    // This is a side effect: we don't block the response on GitHub success,
+    // but we do it synchronously here for simplicity in this version.
+    // In a high-traffic app this would be a background job.
+    try {
+      const gh = createGitHubIssue(project.repo!, data.title, data.body ?? "");
+      if (gh) {
+        updateIssue(id, {
+          githubUrl: gh.url,
+          githubNumber: gh.number,
+        } as any);
+      }
+    } catch (err) {
+      console.error(`[issues.POST] failed to create GitHub issue:`, err);
+    }
+  }
+
   if (depthCapped) {
     appendEvent({
       projectSlug: data.projectSlug,

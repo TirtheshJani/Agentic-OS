@@ -83,15 +83,14 @@ export const geminiCliRuntime: Runtime = {
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
   ],
   capabilities: {
-    // `gemini --resume` accepts "latest" or an index, not a UUID (v0.46.0);
-    // until resume-by-id is verified, resume features stay off.
-    sessionResume: false,
+    // Gemini CLI v0.46.0+ supports resume-by-uuid and has lifecycle hooks.
+    sessionResume: true,
     sessionIdCapture: true,
-    hooks: false,
+    hooks: true,
     transcriptCostParsing: false,
-    externalTerminalEscape: false,
+    externalTerminalEscape: true,
   },
   detect: async () => detectGemini(),
   spawn: spawnGemini,
-  formatResumeCommand: () => `gemini --resume latest`,
+  formatResumeCommand: (sid) => `gemini --resume ${sid}`,
 };

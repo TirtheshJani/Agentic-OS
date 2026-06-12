@@ -137,6 +137,8 @@ interface UpdateOpts {
   mode?: IssueMode;
   priority?: number;
   labels?: string[];
+  githubUrl?: string | null;
+  githubNumber?: number | null;
 }
 
 export function updateIssue(id: number, patch: UpdateOpts): Issue | null {
@@ -149,6 +151,8 @@ export function updateIssue(id: number, patch: UpdateOpts): Issue | null {
     const column =
       k === "assigneeSlug" ? "assignee_slug" :
       k === "labels" ? "labels" :
+      k === "githubUrl" ? "github_url" :
+      k === "githubNumber" ? "github_number" :
       k;
     sets.push(`${column} = ?`);
     params.push(k === "labels" ? JSON.stringify(v) : v);

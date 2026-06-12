@@ -37,12 +37,17 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    const res = await fetch(`/api/issues/${issueId}`, { cache: "no-store" });
-    if (!res.ok) {
-      setError(`HTTP ${res.status}`);
-      return;
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, { cache: "no-store" });
+      if (!res.ok) {
+        setError(`HTTP ${res.status}`);
+        return;
+      }
+      setIssue(await res.json());
+    } catch (err) {
+      console.error("Failed to load issue:", err);
+      setError("Network error");
     }
-    setIssue(await res.json());
   }, [issueId]);
 
   useEffect(() => {
@@ -54,18 +59,26 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
   });
 
   async function patch(p: Partial<IssueData>) {
-    const res = await fetch(`/api/issues/${issueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(p),
-    });
-    if (res.ok) setIssue(await res.json());
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(p),
+      });
+      if (res.ok) setIssue(await res.json());
+    } catch (err) {
+      console.error("Failed to patch issue:", err);
+    }
   }
 
   async function deleteIssue() {
     if (!confirm("Delete this issue?")) return;
-    const res = await fetch(`/api/issues/${issueId}`, { method: "DELETE" });
-    if (res.ok) onClose();
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, { method: "DELETE" });
+      if (res.ok) onClose();
+    } catch (err) {
+      console.error("Failed to delete issue:", err);
+    }
   }
 
   if (error) {

@@ -622,3 +622,45 @@ today's behavior when absent), and the judge prompt grows by the contract plus
 handoff within the existing 24k-char budget. Reversal: promote contracts to vault
 files behind the same parser if missions grow multi-feature, or add a
 `contract_assertions` table if cross-issue assertion analytics become a need.
+
+
+---
+
+## ADR-023 — Antigravity (`agy`) as the third runtime
+
+**Date:** 2026-06-12
+
+**Context.** ADR-008 made Gemini CLI the second runtime and left Codex as a
+notional candidate third, blocked only by a missing entitlement. Google
+Antigravity then shipped `agy`, an interactive coding CLI the operator can run
+under the same PTY model as claude-code and gemini-cli. Unlike the npm-shimmed
+CLIs, `agy` is a real executable installed to a fixed location
+(`%LOCALAPPDATA%\agy\bin` on Windows, `~/.local/share/agy/bin` elsewhere) whose
+PATH entry only reaches processes started after `agy install`. It also accepts
+the initial prompt directly as a flag (`--prompt-interactive`), which removes the
+ConPTY type-then-delayed-Enter dance the other two need.
+
+**Decision.** Register `antigravity-cli` (`agy`) as a third runtime
+(`dashboard/lib/runtime/antigravity-cli.ts`, registered in `server-init.ts`
+alongside the other two), superseding ADR-008's "Codex as candidate third
+runtime." The binary is resolved to its documented absolute install path with a
+PATH fallback so a dashboard already running at install time still finds it.
+Spawn is `agy --prompt-interactive <prompt> --dangerously-skip-permissions`
+(the worktree bounds the blast radius; there is no first-run trust dialog to
+clear). Capabilities are declared honestly: `sessionResume: true` (via
+`agy --continue`, which is cwd-scoped and so reliable because each run owns its
+worktree), `sessionIdCapture: false` (agy exposes no preset/captured conversation
+id, so the runtime self-assigns a marker UUID purely for the run row and the
+open-in-terminal route), `hooks: false`, `transcriptCostParsing: false`,
+`externalTerminalEscape: true`. `models` is left empty because `agy models`
+requires auth and cannot be enumerated at build time; the editor's free-text
+Custom field covers any authenticated model id.
+
+**Consequences.** Agent runs can target a third provider from the same kanban,
+and runtime-capability gating (spec 0006's design) ships unchanged — the new
+runtime is purely additive. This also widens the deferred role-based
+model-assignment idea from two seats to three (planning, implementation, and
+validation can each target a different runtime to dodge shared-training bias).
+Cost: features that depend on hooks or transcript parsing degrade visibly for
+`agy` runs, same as gemini. Reversal: nothing in the registry blocks dropping a
+runtime; deregistering it in `server-init.ts` is the whole rollback.

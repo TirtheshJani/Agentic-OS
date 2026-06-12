@@ -702,3 +702,61 @@ Deferred, in rough priority order:
 - LLM routing fallback (flag exists, default off, unimplemented).
 - LinkedIn connector (deferred by decision; slot documented in spec 0011).
 - Events tab + synthetic lifecycle events from spec 0006.
+
+## Phase 11: Reliability and quality wave (planned 2026-06-12)
+
+Six specs (0024-0029) and three ADRs (020-022), grilled from the current run
+lifecycle plus the Factory missions talk and Matt Pocock's Claude Code material.
+Ordered reliability first. None shipped yet; all are drafts under `specs/`.
+
+- **Run durability** (spec 0024, ADR-020): a boot-time reconciliation pass in
+  `ensureServerBooted` marks orphaned runs `interrupted`, moves their issues to
+  `review`, and frees concurrency so the auto-router cannot deadlock on phantom
+  capacity.
+- **Repo hygiene and CI** (spec 0025): extract the 6.2M nested
+  `docs/Claude-Control-Center-main`, add `.github/workflows` running the 51
+  vitest tests plus the skill, automation, and agent validators, lint, and build.
+- **Reflection loop** (spec 0026, ADR-021): a sub-threshold judge grade files one
+  revision behind the autoGrade plus autonomy double gate, then escalates to
+  `review`. Amended to revise against named failed assertions when a contract
+  exists.
+- **Command center HUD** (spec 0027): a fixed dense overview landing assembled
+  from existing components (RunningSessionsStrip, kanban cards, the SSE stream,
+  capacity and grade readouts), no new layout dependency.
+- **Agent authoring standard** (spec 0028): `standards/agent-authoring.md`, a
+  `validate-agents` script, and enrichment of thin `description` fields to keep
+  ADR-007 routing robust.
+- **Validation contracts and structured handoffs** (spec 0029, ADR-022): an
+  optional `## Acceptance contract` section in the issue body, per-assertion judge
+  grading with fallback to the generic rubric, and a worktree `HANDOFF.md` parsed
+  on finalize and fed to the judge.
+
+**Phase 11 exit gate:** the dashboard survives a restart mid-run without wedging
+the router (0024); CI runs green on push (0025); a low-graded autonomous run
+self-revises once then escalates (0026); the landing shows a live single-screen
+overview (0027); `validate-agents` passes and routing stays robust on
+skill-free prompts (0028); a graded run with a contract reports per-assertion
+pass or fail and writes a parsed handoff (0029).
+
+### Deferred from the same session (candidate next specs)
+
+- Domain glossary (ubiquitous language from DDD) plus "why in every task," folded
+  into spec 0028's agent-context injection. The cheapest precision win.
+- Behavioral end-to-end validator that spawns and drives the app via the vendored
+  Playwright skill, checking the spec-0029 contract. The user-testing half of
+  Factory's scrutiny-versus-user-testing split.
+- Mission or epic layer above issues, with milestones and a shared contract. The
+  "orders of magnitude harder tasks" unlock.
+- Role-based model assignment (planning, implementation, validation), with the
+  validator on a different provider to dodge shared-training bias. The dual-runtime
+  registry already could express this.
+
+### Open strategic forks (decide consciously, not yet specs)
+
+- Serial versus parallel execution. Factory runs features serially with read-only
+  parallelization because naive parallelism made agents conflict; the current cap
+  allows concurrent runs. Candidate default: parallel across independent issues,
+  serial within an interdependent set.
+- Prompt-driven orchestration versus deterministic pipelines (ADR-012). Factory
+  keeps orchestration in prompts and skills so it compounds with each model
+  release; the current pipelines are deterministic for cost and testability.

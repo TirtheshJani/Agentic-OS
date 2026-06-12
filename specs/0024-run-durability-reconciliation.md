@@ -1,6 +1,6 @@
 # Spec 0024: Run durability and boot-time reconciliation
 
-**Status:** Draft (proposed)
+**Status:** Core shipped (commit 538c359); diverges from ADR-020, see Sync note
 **Owner:** TJ
 **Date:** 2026-06-12
 **Decision record:** ADR-020
@@ -88,3 +88,26 @@ boot is therefore provably orphaned: its PTY died with the previous process.
 
 Auto-requeue of interrupted work (rejected in ADR-020: runs are not
 idempotent). Worktree pruning (existing path). Mid-session checkpointing.
+
+## Sync note (2026-06-12)
+
+Commit 538c359 shipped boot reconciliation, so the critical reliability bug is
+closed: `reconcileOrphanedRuns()` runs in `ensureServerBooted` before the router,
+orphaned runs get `ended_at` set, capacity is freed, and the router can no longer
+deadlock on phantom rows. That is the part that mattered most.
+
+It diverges from ADR-020 in three ways, all because the implementation reuses
+`finalizeRunExit(run.id, -1)` rather than a dedicated path:
+
+1. Orphans are marked `exit_status = "failed"`, not the distinct `interrupted`
+   ADR-020 called for. A restart or power cut now scores as an agent failure.
+2. The issue moves to `failed`, not `review`. ADR-020 wanted human-gated triage
+   (resume, requeue, or discard), not a state that reads as "the agent broke."
+3. There is no inbox "interrupted" flag; `interrupted` exists nowhere in the code.
+
+Recommendation: align the code to ADR-020 with a small follow-up (add an
+`interrupted` exit status, branch reconciliation to it, move the issue to
+`review`, add the inbox badge), because the distinction keeps evals and analytics
+honest about what was an agent failure versus an environment interruption. The
+alternative is a conscious amendment to ADR-020 accepting the simpler `failed`
+behavior. This is an open decision, not yet resolved.

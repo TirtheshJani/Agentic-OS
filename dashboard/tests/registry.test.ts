@@ -5,6 +5,13 @@ import type { Runtime } from "@/lib/runtime/types";
 const fakeRuntime: Runtime = {
   id: "fake",
   displayName: "Fake CLI",
+  capabilities: {
+    sessionResume: true,
+    sessionIdCapture: true,
+    hooks: true,
+    transcriptCostParsing: false,
+    externalTerminalEscape: true,
+  },
   detect: async () => ({ available: true, version: "1.0" }),
   spawn: async () => { throw new Error("not used in registry test"); },
   formatResumeCommand: (sid) => `fake --resume ${sid}`,

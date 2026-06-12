@@ -28,11 +28,15 @@ describe("db", () => {
     expect(names).toContain("hook_events");
     expect(names).toContain("settings_kv");
     expect(names).toContain("schema_migrations");
+    expect(names).toContain("schedule_state");
+    expect(names).toContain("note_chunks");
+    expect(names).toContain("chunk_embeddings");
+    expect(names).toContain("sessions");
   });
 
-  it("records the initial migration version", () => {
+  it("applies all migrations on first open", () => {
     openDb(dbPath);
-    expect(getMigrationVersion()).toBe(1);
+    expect(getMigrationVersion()).toBe(9);
   });
 
   it("is idempotent on second open", () => {
@@ -40,6 +44,25 @@ describe("db", () => {
     closeDb();
     const db2 = openDb(dbPath);
     const count = (db2.prepare("SELECT COUNT(*) as n FROM schema_migrations").get() as { n: number }).n;
-    expect(count).toBe(1);
+    expect(count).toBe(8); // versions 1, 3, 4, 5, 6, 7, 8, 9
+  });
+
+  it("upgrades an older database in place", () => {
+    // Simulate a pre-v3 database: open, then strip the v3 artifacts.
+    const db = openDb(dbPath);
+    db.exec("DROP TABLE schedule_state");
+    db.prepare("DELETE FROM schema_migrations WHERE version = 3").run();
+    closeDb();
+
+    const db2 = openDb(dbPath);
+    expect(getMigrationVersion()).toBe(9);
+    const cols = db2.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
+    expect(cols.some(c => c.name === "parent_issue_id")).toBe(true);
+  });
+
+  it("v9 adds the runs.model column", () => {
+    const db = openDb(dbPath);
+    const cols = db.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
+    expect(cols.some(c => c.name === "model")).toBe(true);
   });
 });

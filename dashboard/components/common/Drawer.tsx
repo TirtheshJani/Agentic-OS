@@ -29,16 +29,16 @@ export function Drawer({ title, width = "md", onClose, children, footer }: Drawe
     <div className="fixed inset-0 z-40 flex">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className={clsx(
-        "ml-auto bg-white dark:bg-gray-950 border-l border-gray-200 dark:border-gray-800 h-full flex flex-col w-full",
+        "relative ml-auto bg-surface border-l border-line h-full flex flex-col w-full shadow-card-lg",
         widthMap[width]
       )}>
-        <header className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="text-base font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">×</button>
+        <header className="px-5 py-3 border-b border-line flex items-center justify-between">
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
+          <button onClick={onClose} className="text-ink3 hover:text-ink">×</button>
         </header>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <footer className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-2">
+          <footer className="px-5 py-3 border-t border-line flex justify-end gap-2">
             {footer}
           </footer>
         )}

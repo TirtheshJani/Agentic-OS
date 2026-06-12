@@ -39,4 +39,18 @@ describe("settings", () => {
     expect(s.workspaceRoot).toBe("/tmp/a");
     expect(s.concurrency.perProjectMax).toBe(10);
   });
+
+  it("defaults all feature flags to true", () => {
+    const s = getSettings();
+    expect(Object.values(s.features).every(Boolean)).toBe(true);
+    expect(s.features.docker).toBe(true);
+  });
+
+  it("merges feature flag patches without wiping sibling flags", () => {
+    setSettings({ features: { ...getSettings().features, docker: false } });
+    setSettings({ workspaceRoot: "/tmp/b" });
+    const s = getSettings();
+    expect(s.features.docker).toBe(false);
+    expect(s.features.notes).toBe(true);
+  });
 });

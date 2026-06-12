@@ -105,7 +105,7 @@ export function listWorktrees(sourceRepoPath: string): Worktree[] {
     let branch: string | null = null;
     let isPrimary = false;
     for (const line of lines) {
-      if (line.startsWith("worktree ")) p = line.slice(9);
+      if (line.startsWith("worktree ")) p = path.normalize(line.slice(9));
       else if (line.startsWith("HEAD ")) head = line.slice(5);
       else if (line.startsWith("branch ")) branch = line.slice(7).replace(/^refs\/heads\//, "");
       else if (line === "bare") isPrimary = true;

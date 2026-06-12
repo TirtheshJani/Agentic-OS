@@ -6,10 +6,12 @@ interface Props {
   issueId: number;
   disabled: boolean;
   disabledReason: string | null;
+  /** Per-run runtime override; undefined means "agent default". */
+  runtimeId?: string;
   onStarted: () => void;
 }
 
-export function StartButton({ issueId, disabled, disabledReason, onStarted }: Props) {
+export function StartButton({ issueId, disabled, disabledReason, runtimeId, onStarted }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +22,7 @@ export function StartButton({ issueId, disabled, disabledReason, onStarted }: Pr
       const res = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issueId }),
+        body: JSON.stringify(runtimeId ? { issueId, runtimeId } : { issueId }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -44,7 +46,7 @@ export function StartButton({ issueId, disabled, disabledReason, onStarted }: Pr
       >
         {busy ? "Starting..." : "Start"}
       </Button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

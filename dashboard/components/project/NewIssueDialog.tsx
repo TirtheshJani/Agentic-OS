@@ -76,7 +76,7 @@ export function NewIssueDialog({ projectSlug, crew, onClose }: Props) {
           <select
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
-            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
           >
             <option value="">unassigned</option>
             {crew.map(a => <option key={a.slug} value={a.slug}>{a.name}</option>)}
@@ -86,7 +86,7 @@ export function NewIssueDialog({ projectSlug, crew, onClose }: Props) {
           <select
             value={priority}
             onChange={(e) => setPriority(parseInt(e.target.value, 10))}
-            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
           >
             <option value={-1}>Low</option>
             <option value={0}>Normal</option>
@@ -98,14 +98,14 @@ export function NewIssueDialog({ projectSlug, crew, onClose }: Props) {
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as any)}
-            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-sm w-full"
+            className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
           >
             <option value="async">async</option>
             <option value="sync">sync</option>
           </select>
         </Field>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </Modal>
   );
 }

@@ -9,6 +9,8 @@ import { NewIssueDialog } from "@/components/project/NewIssueDialog";
 import { CrewPickerDrawer } from "@/components/project/CrewPickerDrawer";
 import { IssueDrawer } from "@/components/issue/IssueDrawer";
 import { WorktreeList } from "@/components/project/WorktreeList";
+import { ProjectTabs } from "@/components/project/ProjectTabs";
+import { KnowledgeTab } from "@/components/project/KnowledgeTab";
 
 interface ProjectData {
   slug: string;
@@ -64,7 +66,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   });
 
   if (notFoundFlag) notFound();
-  if (!project || !agents) return <p className="p-6 text-sm text-gray-500">Loading...</p>;
+  if (!project || !agents) return <p className="p-6 text-sm text-ink3">Loading...</p>;
 
   const crewDisplay: AgentDetail[] = project.crew
     .map(s => agents.find(a => a.slug === s))
@@ -80,12 +82,19 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
         runtimeDefault={project.runtimeDefault}
         onNewIssue={() => setShowNewIssue(true)}
       />
-      <div className="grid grid-cols-[1fr_280px] gap-6">
-        <KanbanBoard projectSlug={slug} onOpenIssue={setOpenIssueId} />
-        <CrewSidebar crew={crewDisplay} onEditCrew={() => setShowCrewPicker(true)} />
-      </div>
+      <ProjectTabs
+        board={
+          <>
+            <div className="grid grid-cols-[1fr_280px] gap-6">
+              <KanbanBoard projectSlug={slug} onOpenIssue={setOpenIssueId} />
+              <CrewSidebar crew={crewDisplay} onEditCrew={() => setShowCrewPicker(true)} />
+            </div>
 
-      <WorktreeList projectSlug={slug} />
+            <WorktreeList projectSlug={slug} />
+          </>
+        }
+        knowledge={<KnowledgeTab projectSlug={slug} />}
+      />
 
       {showNewIssue && (
         <NewIssueDialog

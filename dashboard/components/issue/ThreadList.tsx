@@ -37,19 +37,19 @@ export function ThreadList({ issueId }: Props) {
   });
 
   if (entries.length === 0) {
-    return <p className="text-sm text-gray-400">No comments yet.</p>;
+    return <p className="text-sm text-ink3">No comments yet.</p>;
   }
 
   return (
     <ul className="space-y-3">
       {entries.map((e, i) => (
         <li key={i} className="text-sm">
-          <div className="text-xs text-gray-500 mb-1">
+          <div className="text-xs text-ink3 mb-1">
             {formatTime(e.timestamp)}
             {" · "}
             {e.kind === "comment" ? e.author : `event: ${e.eventType}`}
           </div>
-          <div className="whitespace-pre-wrap font-mono leading-relaxed bg-gray-50 dark:bg-gray-900/50 rounded p-2 border border-gray-100 dark:border-gray-800">
+          <div className="whitespace-pre-wrap font-mono leading-relaxed bg-raise rounded p-2 border border-gray-100 dark:border-gray-800">
             {e.body}
           </div>
         </li>

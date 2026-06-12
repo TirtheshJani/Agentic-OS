@@ -19,10 +19,14 @@ export function useRunsForIssue(issueId: number) {
   const [runs, setRuns] = useState<RunData[] | null>(null);
 
   const reload = useCallback(async () => {
-    const res = await fetch(`/api/runs?issueId=${issueId}`, { cache: "no-store" });
-    if (!res.ok) return;
-    const data = await res.json();
-    setRuns(data.runs);
+    try {
+      const res = await fetch(`/api/runs?issueId=${issueId}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setRuns(data.runs);
+    } catch (err) {
+      console.error("Failed to load runs:", err);
+    }
   }, [issueId]);
 
   useEffect(() => {

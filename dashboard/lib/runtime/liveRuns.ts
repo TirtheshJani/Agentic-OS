@@ -1,8 +1,44 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import type { SpawnedRun } from "@/lib/runtime/types";
-import { attachSessionId } from "@/lib/runs";
+import { attachSessionId, updateRun } from "@/lib/runs";
 
-const live = new Map<number, SpawnedRun>();
-const sidWaiters = new Map<number, Array<(sid: string) => void>>();
+/**
+ * Resolve a Claude Code transcript by globbing ~/.claude/projects/<asterisk>/<sid>.jsonl.
+ * Searching by session UUID avoids reconstructing the munged cwd dir name,
+ * whose drive-letter case varies on Windows.
+ */
+function findClaudeTranscript(sessionId: string): string | null {
+  const root = path.join(os.homedir(), ".claude", "projects");
+  try {
+    for (const dir of fs.readdirSync(root, { withFileTypes: true })) {
+      if (!dir.isDirectory()) continue;
+      const candidate = path.join(root, dir.name, `${sessionId}.jsonl`);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  } catch {
+    // ~/.claude/projects missing or unreadable; nothing to backfill
+  }
+  return null;
+}
+
+// In Next.js dev, the App Router loads modules in its own ESM/CJS graph while
+// the custom server (server.ts) loads via tsx. Each ends up with its own copy
+// of this module, so a Map declared at module scope would not be visible
+// across the two — POST /api/runs writes into the API-route instance, but the
+// WebSocket upgrade handler in server.ts reads from the tsx instance. Hoist
+// the state onto globalThis so both halves observe the same Map.
+const globalKey = Symbol.for("agentic-os.liveRuns");
+type LiveStore = {
+  live: Map<number, SpawnedRun>;
+  sidWaiters: Map<number, Array<(sid: string) => void>>;
+};
+const g = globalThis as unknown as Record<symbol, LiveStore | undefined>;
+if (!g[globalKey]) {
+  g[globalKey] = { live: new Map(), sidWaiters: new Map() };
+}
+const { live, sidWaiters } = g[globalKey]!;
 
 /**
  * Track a spawned run for the lifetime of its PTY. Wires the runtime's session_id
@@ -18,6 +54,14 @@ export function registerLiveRun(runId: number, spawned: SpawnedRun): void {
       attachSessionId(runId, sid);
     } catch (err) {
       console.error(`[liveRuns] failed to persist session_id for run ${runId}:`, err);
+    }
+    // Backfill the transcript path (spec 0018). Non-fatal; gemini sessions
+    // have no captured session id, so this only applies to claude-code.
+    try {
+      const transcriptPath = findClaudeTranscript(sid);
+      if (transcriptPath) updateRun(runId, { transcriptPath });
+    } catch (err) {
+      console.error(`[liveRuns] transcript path backfill failed for run ${runId}:`, err);
     }
     // (2) Notify external waiters.
     const list = sidWaiters.get(runId);

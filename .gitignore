@@ -25,11 +25,18 @@ yarn-error.log*
 *.swp
 
 # Agentic-OS runtime state (SQLite db, transient artifacts)
+/.agentic-os/settings.json
+/.agentic-os/migrations/
 /.agentic-os/state.db
 /.agentic-os/state.db-journal
 /.agentic-os/state.db-wal
 /.agentic-os/state.db-shm
+/.agentic-os/state-v1.db
+/.agentic-os/state-v1.db-journal
+/.agentic-os/state-v1.db-wal
+/.agentic-os/state-v1.db-shm
 /.agentic-os/models/
+/.agentic-os/mcp/
 
 # Obsidian local-only files
 vault/.obsidian/workspace*

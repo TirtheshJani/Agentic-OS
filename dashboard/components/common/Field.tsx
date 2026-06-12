@@ -12,16 +12,16 @@ interface FieldProps {
 export function Field({ label, hint, error, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      <span className="text-sm font-medium text-ink2">{label}</span>
       <div className="mt-1">{children}</div>
-      {hint && !error && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {hint && !error && <p className="text-xs text-ink3 mt-1">{hint}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </label>
   );
 }
 
 const inputBase =
-  "w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "w-full rounded-md border border-line2 bg-surface text-ink px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={clsx(inputBase, props.className)} />;

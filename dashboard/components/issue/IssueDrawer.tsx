@@ -37,12 +37,17 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    const res = await fetch(`/api/issues/${issueId}`, { cache: "no-store" });
-    if (!res.ok) {
-      setError(`HTTP ${res.status}`);
-      return;
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, { cache: "no-store" });
+      if (!res.ok) {
+        setError(`HTTP ${res.status}`);
+        return;
+      }
+      setIssue(await res.json());
+    } catch (err) {
+      console.error("Failed to load issue:", err);
+      setError("Network error");
     }
-    setIssue(await res.json());
   }, [issueId]);
 
   useEffect(() => {
@@ -54,31 +59,39 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
   });
 
   async function patch(p: Partial<IssueData>) {
-    const res = await fetch(`/api/issues/${issueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(p),
-    });
-    if (res.ok) setIssue(await res.json());
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(p),
+      });
+      if (res.ok) setIssue(await res.json());
+    } catch (err) {
+      console.error("Failed to patch issue:", err);
+    }
   }
 
   async function deleteIssue() {
     if (!confirm("Delete this issue?")) return;
-    const res = await fetch(`/api/issues/${issueId}`, { method: "DELETE" });
-    if (res.ok) onClose();
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, { method: "DELETE" });
+      if (res.ok) onClose();
+    } catch (err) {
+      console.error("Failed to delete issue:", err);
+    }
   }
 
   if (error) {
     return (
       <Drawer title="Issue" width="lg" onClose={onClose}>
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       </Drawer>
     );
   }
   if (!issue) {
     return (
       <Drawer title="Issue" width="lg" onClose={onClose}>
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-ink3">Loading...</p>
       </Drawer>
     );
   }
@@ -97,30 +110,35 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
       }
     >
       <section className="space-y-4">
-        <IssueBodyEditor title={issue.title} body={issue.body} onSave={patch} />
         <IssueHeader issue={issue} crew={crew} onPatch={patch} />
       </section>
 
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
+      <hr className="my-6 border-line" />
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Thread</h3>
-        <ThreadList issueId={issue.id} />
-        <div className="mt-3">
-          <ThreadComposer issueId={issue.id} />
-        </div>
-      </section>
-
-      <hr className="my-6 border-gray-200 dark:border-gray-800" />
-
-      <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Runs</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Runs</h3>
         <RunsTab
           issueId={issue.id}
           projectSlug={issue.projectSlug}
           issueStatus={issue.status}
           hasAssignee={issue.assigneeSlug != null}
         />
+      </section>
+
+      <hr className="my-6 border-line" />
+
+      <section>
+        <IssueBodyEditor title={issue.title} body={issue.body} onSave={patch} />
+      </section>
+
+      <hr className="my-6 border-line" />
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Thread</h3>
+        <ThreadList issueId={issue.id} />
+        <div className="mt-3">
+          <ThreadComposer issueId={issue.id} />
+        </div>
       </section>
     </Drawer>
   );

@@ -17,13 +17,17 @@ export interface IssueSummary {
   updatedAt: number;
 }
 
-export function useIssues(projectSlug: string) {
+/** Omit projectSlug to load issues across all projects (global board). */
+export function useIssues(projectSlug?: string) {
   const [issues, setIssues] = useState<IssueSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     try {
-      const res = await fetch(`/api/issues?projectSlug=${encodeURIComponent(projectSlug)}`, { cache: "no-store" });
+      const url = projectSlug
+        ? `/api/issues?projectSlug=${encodeURIComponent(projectSlug)}`
+        : "/api/issues";
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setIssues(data.issues);
@@ -37,7 +41,7 @@ export function useIssues(projectSlug: string) {
   }, [reload]);
 
   useStream((event) => {
-    if (event.kind === "issue.changed" && (event as any).projectSlug === projectSlug) {
+    if (event.kind === "issue.changed" && (!projectSlug || (event as any).projectSlug === projectSlug)) {
       reload();
     }
   });

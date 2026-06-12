@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#f4f6f8;}
+  :root{
+    --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eef1f5; --raise:#f7f9fb;
+    --border:rgba(13,22,40,0.10); --border-2:rgba(13,22,40,0.16);
+    --text:#0d1628; --text-2:#5a6270; --text-3:#8b93a1;
+    --accent:#2f72b8; --accent-ink:#2f72b8; --accent-bg:rgba(74,143,209,0.10); --accent-line:rgba(74,143,209,0.32);
+    --ok:#2c8a72; --ok-bg:rgba(44,138,114,0.10); --danger:#c0392b; --danger-bg:rgba(192,57,43,0.08);
+    --shadow:0 1px 2px rgba(13,22,40,0.04), 0 8px 24px -18px rgba(13,22,40,0.30);
+    --shadow-lg:0 24px 60px -28px rgba(13,22,40,0.45);
+  }
+  [data-theme="dark"]{
+    --bg:#060b14; --surface:#0c1322; --surface-2:#121b2c; --raise:#101a2b;
+    --border:rgba(255,255,255,0.09); --border-2:rgba(255,255,255,0.16);
+    --text:#f3f5f8; --text-2:#b3bac6; --text-3:#7a8294;
+    --accent:#6faef3; --accent-ink:#9cc6f6; --accent-bg:rgba(74,143,209,0.16); --accent-line:rgba(74,143,209,0.40);
+    --ok:#5bc2a4; --ok-bg:rgba(74,168,150,0.16); --danger:#e0796d; --danger-bg:rgba(192,57,43,0.16);
+    --shadow:0 1px 2px rgba(0,0,0,0.4), 0 12px 30px -20px rgba(0,0,0,0.8);
+    --shadow-lg:0 30px 70px -30px rgba(0,0,0,0.85);
+  }
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px;border:3px solid transparent;background-clip:padding-box;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  @keyframes ao-fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  @keyframes ao-slide{from{transform:translateX(24px);opacity:0;}to{transform:none;opacity:1;}}
+  @keyframes ao-spin{to{transform:rotate(360deg);}}
+  @keyframes ao-pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex; min-height:100vh; background:var(--bg); color:var(--text); font-family:'Montserrat',-apple-system,system-ui,sans-serif; -webkit-font-smoothing:antialiased;">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside style="position:sticky; top:0; align-self:flex-start; height:100vh; width:228px; flex:0 0 228px; display:flex; flex-direction:column; background:var(--surface); border-right:1px solid var(--border);">
+    <div style="display:flex; align-items:center; gap:11px; padding:22px 22px 18px;">
+      <span style="width:28px; height:28px; flex:0 0 28px; border-radius:7px; background:var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Oswald',sans-serif; font-weight:600; font-size:14px;">A</span>
+      <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:0.13em; color:var(--text);">AGENTIC&nbsp;OS</span>
+    </div>
+
+    <nav aria-label="Primary" style="padding:6px 12px; display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+        <button type="button" onClick="{{ setView }}" data-v="{{ item.key }}" aria-current="{{ item.current }}" style="{{ item.style }}" style-hover="background:var(--surface-2); color:var(--text);">
+          <span style="display:flex; width:18px; height:18px; flex:0 0 18px; align-items:center; justify-content:center;">{{ item.icon }}</span>
+          <span style="flex:1; text-align:left;">{{ item.label }}</span>
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; padding:10px 12px 6px;">
+      <button type="button" onClick="{{ openSettings }}" data-v="settings" aria-current="{{ settingsCurrent }}" style="{{ settingsNavStyle }}" style-hover="background:var(--surface-2); color:var(--text);">
+        <span style="display:flex; width:18px; height:18px; flex:0 0 18px; align-items:center; justify-content:center;">{{ gearIcon }}</span>
+        <span style="flex:1; text-align:left;">Settings</span>
+      </button>
+    </div>
+
+    <div style="padding:16px 18px 18px; border-top:1px solid var(--border);">
+      <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--text-3); margin-bottom:12px;">Runtimes</div>
+      <sc-for list="{{ runtimes }}" as="rt" hint-placeholder-count="3">
+        <div style="display:flex; align-items:center; gap:9px; padding:4px 0;">
+          <span style="{{ rt.dot }}"></span>
+          <span style="flex:1; font-size:12px; color:var(--text-2);">{{ rt.name }}</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:0.12em; color:var(--text-3);">{{ rt.plan }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main style="flex:1; min-width:0; height:100vh; overflow-y:auto;">
+
+    <sc-if value="{{ killed }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display:flex; align-items:center; gap:10px; padding:10px 28px; background:var(--danger-bg); border-bottom:1px solid var(--danger);">
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--danger); animation:ao-pulse 1.2s infinite; flex:0 0 7px;"></span>
+        <span style="font-size:12px; font-weight:600; color:var(--danger);">Kill switch armed — autonomous runs halted, queue frozen.</span>
+      </div>
+    </sc-if>
+
+    <header style="position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; padding:13px 28px; background:var(--surface); border-bottom:1px solid var(--border);">
+      <div style="font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-3);">{{ crumb }}</div>
+
+      <div style="margin-left:auto; display:flex; align-items:center; gap:9px;">
+        <button type="button" onClick="{{ toggleAutonomy }}" aria-pressed="{{ autonomy }}" style="{{ autonomyStyle }}">
+          <span style="{{ autonomyDot }}"></span>
+          <span>Autonomy {{ autonomyLabel }}</span>
+        </button>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle colour theme" style="display:flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); cursor:pointer;" style-hover="background:var(--surface-2); color:var(--text);">
+          {{ themeIcon }}
+        </button>
+        <button type="button" onClick="{{ openSettings }}" aria-label="Settings" style="display:flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); cursor:pointer;" style-hover="background:var(--surface-2); color:var(--text);">
+          {{ gearIcon }}
+        </button>
+        <button type="button" onClick="{{ toggleKill }}" style="{{ killStyle }}" style-hover="border-color:var(--danger);">
+          <span style="width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 6px;"></span>
+          {{ killLabel }}
+        </button>
+      </div>
+    </header>
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:34px 28px 64px; max-width:1180px;">
+      <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Command center</div>
+      <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:34px; color:var(--text); margin:8px 0 0; line-height:1.1;">Good morning, TJ.</h1>
+      <p style="font-size:14px; color:var(--text-2); margin:9px 0 0; line-height:1.6; max-width:560px;">Thirteen agents across six projects. Everything autonomous runs here — the day job stays off-laptop.</p>
+
+      <div style="display:flex; flex-wrap:wrap; gap:0; margin:30px 0 26px; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow); overflow:hidden;">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="flex:1 1 160px; min-width:160px; padding:18px 22px; border-right:1px solid var(--border);">
+            <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-3);">{{ s.label }}</div>
+            <div style="display:flex; align-items:baseline; gap:8px; margin-top:8px;">
+              <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:30px; color:var(--text); line-height:1;">{{ s.value }}</span>
+              <span style="font-size:11px; color:var(--text-3);">{{ s.sub }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:18px; align-items:start;">
+        <!-- active runs + recent -->
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:16px;">
+              <span style="width:7px; height:7px; border-radius:50%; background:var(--ok); animation:ao-pulse 1.6s infinite; flex:0 0 7px;"></span>
+              <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0;">Active runs</h2>
+              <span style="margin-left:auto; font-size:11px; color:var(--text-3);">live · streaming</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <sc-for list="{{ activeRuns }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex; align-items:center; gap:14px;">
+                  <span style="width:30px; height:30px; flex:0 0 30px; border-radius:8px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-weight:600; font-size:11px;">{{ r.initials }}</span>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.task }}</div>
+                    <div style="display:flex; align-items:center; gap:7px; margin-top:5px;">
+                      <span style="font-size:11px; color:var(--accent-ink);">{{ r.agent }}</span>
+                      <span style="font-size:11px; color:var(--text-3);">· {{ r.proj }}</span>
+                    </div>
+                    <div style="margin-top:8px; height:5px; border-radius:999px; background:var(--surface-2); overflow:hidden;">
+                      <div style="height:100%; width:{{ r.pctW }}; background:var(--accent); border-radius:999px;"></div>
+                    </div>
+                  </div>
+                  <div style="text-align:right; flex:0 0 auto;">
+                    <div style="font-family:'Oswald',sans-serif; font-size:14px; color:var(--text);">{{ r.pct }}%</div>
+                    <div style="font-size:10px; color:var(--text-3); margin-top:2px;">{{ r.el }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+            <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 6px;">Recent activity</h2>
+            <div>
+              <sc-for list="{{ recent }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border);">
+                  <span style="{{ r.dot }}"></span>
+                  <span style="font-size:12.5px; color:var(--text); flex:0 0 148px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.agent }}</span>
+                  <span style="font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:0.04em; color:var(--text-2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.skill }}</span>
+                  <span style="font-size:11px; color:var(--text-3); flex:0 0 46px; text-align:right;">{{ r.tok }}</span>
+                  <span style="{{ r.stStyle }}">{{ r.st }}</span>
+                  <span style="font-size:11px; color:var(--text-3); flex:0 0 34px; text-align:right;">{{ r.ago }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+
+        <!-- today -->
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 4px;">Today</h2>
+          <p style="font-size:12px; color:var(--text-3); margin:0 0 18px;">Orchestrator routes queued work while the kill switch is clear.</p>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px; border-radius:9px; background:var(--surface-2);">
+              <span style="font-size:12.5px; color:var(--text);">Autonomy loop</span>
+              <button type="button" onClick="{{ toggleAutonomy }}" aria-pressed="{{ autonomy }}" style="{{ switchStyle }}"><span style="{{ switchKnob }}"></span></button>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px; border-radius:9px; background:var(--surface-2);">
+              <div><div style="font-size:12.5px; color:var(--text);">Concurrency</div><div style="font-size:11px; color:var(--text-3); margin-top:2px;">max parallel sessions</div></div>
+              <span style="font-family:'Oswald',sans-serif; font-size:17px; color:var(--text);">3 / 4</span>
+            </div>
+            <div style="padding:13px 14px; border-radius:9px; background:var(--surface-2);">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:12.5px; color:var(--text);">Daily token budget</span>
+                <span style="font-size:11px; color:var(--text-3);">4.2M / 8M</span>
+              </div>
+              <div style="margin-top:10px; height:5px; border-radius:999px; background:var(--border); overflow:hidden;"><div style="height:100%; width:53%; background:var(--accent); border-radius:999px;"></div></div>
+            </div>
+          </div>
+          <button type="button" onClick="{{ openCreate }}" style="margin-top:18px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">
+            <span style="font-size:16px; line-height:1;">+</span> New agent
+          </button>
+        </section>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== PROJECTS GRID ===================== -->
+    <sc-if value="{{ isProjects }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 64px; max-width:1180px;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:26px;">
+        <div>
+          <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Workspace</div>
+          <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Projects</h1>
+          <p style="font-size:13.5px; color:var(--text-2); margin:8px 0 0; max-width:560px; line-height:1.6;">{{ projCount }} linked repositories and folders. Each one carries its own board, crew, and git worktrees.</p>
+        </div>
+        <button type="button" onClick="{{ openCreate }}" style="display:flex; align-items:center; gap:8px; padding:11px 18px; border-radius:9px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow);" style-hover="border-color:var(--accent-line);">
+          {{ addIcon }} New project
+        </button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px;">
+        <sc-for list="{{ projectsList }}" as="p" hint-placeholder-count="6">
+          <button type="button" onClick="{{ openProject }}" data-slug="{{ p.slug }}" style="text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:18px; cursor:pointer; font-family:'Montserrat',sans-serif; transition:transform .2s ease, border-color .2s ease;" style-hover="transform:translateY(-2px); border-color:var(--accent-line);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+              <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:16px; color:var(--text);">{{ p.name }}</span>
+              <span style="margin-left:auto; font-family:ui-monospace,monospace; font-size:10px; padding:2px 8px; border-radius:5px; background:var(--surface-2); color:var(--text-2);">{{ p.runtime }}</span>
+            </div>
+            <div style="font-family:ui-monospace,monospace; font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:14px;">{{ p.path }}</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+              <sc-for list="{{ p.caps }}" as="c" hint-placeholder-count="2">
+                <span style="font-size:10.5px; padding:3px 9px; border-radius:999px; background:var(--surface-2); color:var(--text-2);">{{ c.label }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; padding-top:13px; border-top:1px solid var(--border);">
+              <div style="display:flex; align-items:center;">
+                <sc-for list="{{ p.crewAvatars }}" as="cr" hint-placeholder-count="3">
+                  <span style="width:24px; height:24px; margin-right:-7px; border-radius:50%; border:2px solid var(--surface); background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:9px; font-weight:600;">{{ cr.initials }}</span>
+                </sc-for>
+              </div>
+              <span style="font-size:11px; color:var(--text-3); margin-left:8px;">{{ p.crewCount }}</span>
+              <span style="margin-left:auto; font-size:11px; color:var(--accent-ink); font-weight:500;">{{ p.openLabel }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== PROJECT DETAIL ===================== -->
+    <sc-if value="{{ isProject }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:30px 28px 64px; max-width:1240px;">
+      <div style="display:flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text-3); margin-bottom:18px;">
+        <button type="button" onClick="{{ backToProjects }}" style="border:none; background:none; padding:0; cursor:pointer; color:var(--text-3); font-family:'Montserrat',sans-serif; font-size:12.5px;" style-hover="color:var(--accent-ink);">Projects</button>
+        <span>/</span>
+        <span style="color:var(--text-2);">{{ projName }}</span>
+      </div>
+
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:30px; color:var(--text); margin:0; line-height:1.1;">{{ projName }}</h1>
+          <p style="font-family:ui-monospace,monospace; font-size:12px; color:var(--text-3); margin:8px 0 0;">{{ projPath }}</p>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:9px;">
+            <sc-if value="{{ projHasRepo }}" hint-placeholder-val="{{ true }}">
+              <a href="{{ projRepo }}" target="_blank" rel="noreferrer" style="display:flex; align-items:center; gap:5px; font-size:12px; color:var(--accent-ink); text-decoration:none;" style-hover="text-decoration:underline;">{{ projRepoHost }} {{ extIcon }}</a>
+            </sc-if>
+            <span style="font-family:ui-monospace,monospace; font-size:11px; padding:2px 8px; border-radius:5px; background:var(--surface-2); color:var(--text-2);">{{ projRuntime }}</span>
+          </div>
+        </div>
+        <button type="button" onClick="{{ openCreate }}" style="display:flex; align-items:center; gap:7px; padding:11px 18px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow);" style-hover="filter:brightness(1.06);">{{ addIcon }} New issue</button>
+      </div>
+
+      <div style="display:flex; align-items:center; border-bottom:1px solid var(--border); margin:22px 0 24px;">
+        <button type="button" onClick="{{ setProjTab }}" data-t="board" style="{{ projBoardBtnStyle }}">Board</button>
+        <button type="button" onClick="{{ setProjTab }}" data-t="knowledge" style="{{ projKnowledgeBtnStyle }}">Knowledge</button>
+      </div>
+
+      <!-- BOARD TAB -->
+      <sc-if value="{{ projTabBoard }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:20px; align-items:start;">
+        <div style="display:grid; grid-template-columns:repeat(5,minmax(150px,1fr)); gap:12px; align-items:start; overflow-x:auto; padding-bottom:6px;">
+          <sc-for list="{{ projColumns }}" as="col" hint-placeholder-count="5">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; padding:0 2px 12px;">
+                <span style="{{ col.dot }}"></span>
+                <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text);">{{ col.title }}</span>
+                <span style="margin-left:auto; font-family:'Oswald',sans-serif; font-size:11px; color:var(--text-3);">{{ col.count }}</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:9px; min-height:80px; padding:8px; border-radius:10px; background:var(--surface-2);">
+                <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="1">
+                  <div style="background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow); padding:11px 12px;">
+                    <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.05em; color:var(--accent-ink); margin-bottom:7px;">{{ c.id }}</div>
+                    <div style="font-size:12px; color:var(--text); line-height:1.4; font-weight:500;">{{ c.t }}</div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:10px;">
+                      <span style="width:17px; height:17px; flex:0 0 17px; border-radius:5px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:8px; font-weight:600;">{{ c.initials }}</span>
+                      <span style="font-size:10.5px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.agent }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <aside style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:18px;">
+          <div style="display:flex; align-items:center; margin-bottom:14px;">
+            <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0;">Crew</h2>
+            <button type="button" onClick="{{ openCreate }}" style="margin-left:auto; border:none; background:none; padding:0; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:12px; color:var(--accent-ink);" style-hover="text-decoration:underline;">Edit</button>
+          </div>
+          <sc-if value="{{ hasProjCrew }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <sc-for list="{{ projCrew }}" as="a" hint-placeholder-count="3">
+                <div>
+                  <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;">
+                    <span style="width:26px; height:26px; flex:0 0 26px; border-radius:7px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:10px; font-weight:600;">{{ a.initials }}</span>
+                    <span style="font-size:12.5px; color:var(--text); font-weight:500;">{{ a.name }}</span>
+                  </div>
+                  <div style="display:flex; gap:5px; flex-wrap:wrap; padding-left:35px;">
+                    <sc-for list="{{ a.skills }}" as="sk" hint-placeholder-count="2">
+                      <span style="font-size:9.5px; padding:2px 7px; border-radius:5px; background:var(--surface-2); color:var(--text-2);">{{ sk.name }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noProjCrew }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:12.5px; color:var(--text-3); margin:0;">No crew yet. Add agents to route this board automatically.</p>
+          </sc-if>
+        </aside>
+      </div>
+
+      <section style="margin-top:30px;">
+        <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-3); margin-bottom:12px;">Worktrees</div>
+        <sc-if value="{{ hasProjWorktrees }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <sc-for list="{{ projWorktrees }}" as="w" hint-placeholder-count="2">
+            <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; border:1px solid var(--border); border-radius:9px; background:var(--surface); box-shadow:var(--shadow);">
+              <div style="min-width:0; flex:1;">
+                <div style="font-family:ui-monospace,monospace; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ w.path }}</div>
+                <div style="display:flex; align-items:center; gap:9px; margin-top:5px;">
+                  <span style="font-family:ui-monospace,monospace; font-size:11px; color:var(--text-2);">{{ w.branchLabel }}</span>
+                  <span style="font-family:ui-monospace,monospace; font-size:10px; color:var(--text-3);">{{ w.head }}</span>
+                  <sc-if value="{{ w.active }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; color:var(--ok); font-weight:600;">active</span></sc-if>
+                </div>
+              </div>
+              <button type="button" disabled="{{ w.active }}" style="{{ wtBtnStyle }}">Remove</button>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ hasProjWorktrees }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:24px; text-align:center; color:var(--text-3); font-size:12.5px; border:1px dashed var(--border-2); border-radius:10px;">No worktrees. They’re created per running issue.</div>
+        </sc-if>
+      </section>
+      </sc-if>
+
+      <!-- KNOWLEDGE TAB -->
+      <sc-if value="{{ projTabKnowledge }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:18px; align-items:start; max-width:1000px;">
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 6px 6px;">
+          <sc-for list="{{ projKnowledgeNotes }}" as="n" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-bottom:1px solid var(--border);">
+              <div style="min-width:0; flex:1;">
+                <div style="font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n.name }}</div>
+                <div style="font-size:11.5px; color:var(--text-3); margin-top:4px; line-height:1.45;">{{ n.desc }}</div>
+              </div>
+              <span style="{{ n.stStyle }}">{{ n.st }}</span>
+            </div>
+          </sc-for>
+        </section>
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 6px;">Ask this project</h2>
+          <p style="font-size:12px; color:var(--text-3); margin:0 0 14px; line-height:1.55;">Grounded answers from this project’s folder — vector + keyword retrieval with citations.</p>
+          <textarea rows="3" placeholder="How does the auth adapter handle token refresh?" style="width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text); resize:vertical; line-height:1.5;"></textarea>
+          <button type="button" style="margin-top:11px; width:100%; padding:11px; border-radius:8px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">Ask</button>
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+            <span style="width:7px; height:7px; border-radius:50%; background:var(--ok); flex:0 0 7px;"></span>
+            <span style="font-size:11px; color:var(--text-3);">LightRAG ingest on · 142 chunks indexed</span>
+          </div>
+        </section>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ===================== AGENTS ===================== -->
+    <sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 64px; max-width:1180px;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:26px;">
+        <div>
+          <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Roster</div>
+          <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Agents</h1>
+          <p style="font-size:13.5px; color:var(--text-2); margin:8px 0 0; max-width:540px; line-height:1.6;">One markdown profile per agent. Department leads route work to teammates as the queue grows.</p>
+        </div>
+        <button type="button" onClick="{{ openCreate }}" style="display:flex; align-items:center; gap:8px; padding:11px 18px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow);" style-hover="filter:brightness(1.06);">
+          <span style="font-size:16px; line-height:1;">+</span> New agent
+        </button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px;">
+        <sc-for list="{{ agents }}" as="a" hint-placeholder-count="9">
+          <button type="button" onClick="{{ openEdit }}" data-slug="{{ a.slug }}" style="text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:18px; cursor:pointer; font-family:'Montserrat',sans-serif; transition:transform .2s ease, border-color .2s ease;" style-hover="transform:translateY(-2px); border-color:var(--accent-line);">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+              <span style="width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-weight:600; font-size:14px;">{{ a.initials }}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:14px; color:var(--text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ a.name }}</div>
+                <div style="font-size:11px; color:var(--text-3); margin-top:2px;">{{ a.dept }}</div>
+              </div>
+              <span style="{{ a.statusStyle }}">{{ a.status }}</span>
+            </div>
+            <div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px;">
+              <span style="font-size:10.5px; padding:3px 9px; border-radius:999px; background:var(--surface-2); color:var(--text-2); font-weight:500;">{{ a.rt }}</span>
+              <span style="font-size:10.5px; padding:3px 9px; border-radius:999px; background:var(--surface-2); color:var(--text-2);">{{ a.skillsTxt }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding-top:13px; border-top:1px solid var(--border);">
+              <span style="font-family:'Oswald',sans-serif; font-size:16px; color:var(--text);">{{ a.runs }}</span>
+              <span style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-3);">runs · 30d</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ISSUES ===================== -->
+    <sc-if value="{{ isIssues }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 56px;">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Orchestrator</div>
+        <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Issues</h1>
+        <p style="font-size:13.5px; color:var(--text-2); margin:8px 0 0; line-height:1.6;">Each running card streams to a per-issue git worktree. Leads pull from the queue automatically.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5,minmax(220px,1fr)); gap:14px; align-items:start; overflow-x:auto; padding-bottom:8px;">
+        <sc-for list="{{ kanban }}" as="col" hint-placeholder-count="5">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; padding:0 2px 12px;">
+              <span style="{{ col.dot }}"></span>
+              <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text);">{{ col.title }}</span>
+              <span style="margin-left:auto; font-family:'Oswald',sans-serif; font-size:12px; color:var(--text-3);">{{ col.count }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="2">
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:13px 14px;">
+                  <div style="display:flex; align-items:center; gap:7px; margin-bottom:9px;">
+                    <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.05em; color:var(--accent-ink);">{{ c.id }}</span>
+                    <span style="margin-left:auto; font-size:10px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;">{{ c.proj }}</span>
+                  </div>
+                  <div style="font-size:12.5px; color:var(--text); line-height:1.45; font-weight:500;">{{ c.t }}</div>
+                  <div style="display:flex; align-items:center; gap:7px; margin-top:11px;">
+                    <span style="width:18px; height:18px; flex:0 0 18px; border-radius:5px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:8px; font-weight:600;">{{ c.initials }}</span>
+                    <span style="font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.agent }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== FEATURES ===================== -->
+    <sc-if value="{{ isFeatures }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 64px; max-width:1180px;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:26px;">
+        <div>
+          <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Surfaces</div>
+          <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Features</h1>
+          <p style="font-size:13.5px; color:var(--text-2); margin:8px 0 0; max-width:580px; line-height:1.6;">Open a surface to jump straight in. {{ enabledCount }} of {{ featureTotal }} enabled — manage which ones are on in Settings.</p>
+        </div>
+        <button type="button" onClick="{{ openSettings }}" style="display:flex; align-items:center; gap:8px; padding:11px 16px; border-radius:9px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow);" style-hover="border-color:var(--accent-line);">
+          {{ gearIcon }} Manage in Settings
+        </button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:30px;">
+        <sc-for list="{{ featureGroups }}" as="g" hint-placeholder-count="4">
+          <section>
+            <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px;">
+              <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text); margin:0;">{{ g.cat }}</h2>
+              <span style="flex:1; height:1px; background:var(--border);"></span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:12px;">
+              <sc-for list="{{ g.items }}" as="ft" hint-placeholder-count="3">
+                <button type="button" onClick="{{ openFeature }}" data-k="{{ ft.key }}" style="text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:11px; cursor:pointer; font-family:'Montserrat',sans-serif; transition:transform .2s ease, border-color .2s ease;" style-hover="transform:translateY(-2px); border-color:var(--accent-line);">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="{{ ft.iconWrap }}">{{ ft.icon }}</span>
+                    <span style="flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--text);">{{ ft.name }}</span>
+                    <span style="display:flex; color:var(--text-3);">{{ ft.arrow }}</span>
+                  </div>
+                  <p style="font-size:12px; color:var(--text-2); margin:0; line-height:1.55;">{{ ft.desc }}</p>
+                  <div style="display:flex; align-items:center; gap:8px; padding-top:4px;">
+                    <span style="{{ ft.dot }}"></span>
+                    <span style="font-size:11px; color:var(--text-3);">{{ ft.stateLabel }}</span>
+                    <span style="margin-left:auto; font-size:11.5px; font-weight:600; color:var(--accent-ink);">{{ ft.openLabel }}</span>
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 64px; max-width:1080px;">
+      <div style="margin-bottom:22px;">
+        <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Control</div>
+        <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Settings</h1>
+      </div>
+
+      <div role="tablist" style="display:flex; gap:4px; flex-wrap:wrap; padding:5px; border-radius:11px; background:var(--surface-2); margin-bottom:26px; width:fit-content;">
+        <sc-for list="{{ settingsRail }}" as="t" hint-placeholder-count="6">
+          <button type="button" role="tab" onClick="{{ setSettingsTab }}" data-t="{{ t.key }}" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- FEATURES SUB-TAB -->
+      <sc-if value="{{ setFeatures }}" hint-placeholder-val="{{ true }}">
+      <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0;">Feature surfaces</h2>
+          <p style="font-size:12px; color:var(--text-3); margin:6px 0 0;">Disabling a feature hides its sidebar entry and removes its skills from routing.</p>
+        </div>
+        <sc-for list="{{ featureRows }}" as="ft" hint-placeholder-count="8">
+          <div style="display:flex; align-items:center; gap:14px; padding:13px 20px; border-bottom:1px solid var(--border);">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="font-size:13px; font-weight:600; color:var(--text);">{{ ft.name }}</span>
+                <span style="font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">{{ ft.cat }}</span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-3); margin-top:3px; line-height:1.45;">{{ ft.desc }}</div>
+            </div>
+            <button type="button" onClick="{{ toggleFeature }}" data-k="{{ ft.key }}" role="switch" aria-checked="{{ ft.on }}" aria-label="Toggle {{ ft.name }}" style="{{ ft.track }}"><span style="{{ ft.knob }}"></span></button>
+          </div>
+        </sc-for>
+      </section>
+      </sc-if>
+
+      <!-- GENERAL SUB-TAB -->
+      <sc-if value="{{ setGeneral }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 16px;">Workspace</h2>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Workspace root</label>
+          <input value="c:/Users/TJ/Documents/GitHub" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text);">
+          <p style="font-size:11px; color:var(--text-3); margin:7px 0 0;">Where per-issue git worktrees are created.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Per-project concurrency</label>
+              <input type="number" value="2" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Global concurrency</label>
+              <input type="number" value="4" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+            </div>
+          </div>
+          <div style="margin-top:18px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Theme</label>
+            <select style="width:200px; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text); cursor:pointer;">
+              <option>system</option><option>light</option><option>dark</option>
+            </select>
+          </div>
+        </section>
+
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 6px;">Autonomy</h2>
+          <p style="font-size:12px; color:var(--text-3); margin:0 0 16px;">Kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog.</p>
+          <div style="display:flex; flex-direction:column; gap:0;">
+            <div style="display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--border);">
+              <div style="flex:1;"><div style="font-size:12.5px; color:var(--text); font-weight:500;">Enable autonomy</div><div style="font-size:11px; color:var(--text-3); margin-top:2px;">Master switch for the orchestrator loop.</div></div>
+              <button type="button" onClick="{{ toggleAutonomy }}" aria-pressed="{{ autonomy }}" style="{{ switchStyle }}"><span style="{{ switchKnob }}"></span></button>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--border);">
+              <div style="flex:1;"><div style="font-size:12.5px; color:var(--text); font-weight:500;">In-dashboard scheduler</div><div style="font-size:11px; color:var(--text-3); margin-top:2px;">Fires automations/remote/*.md crons as queued issues.</div></div>
+              <button type="button" onClick="{{ toggleSched }}" aria-pressed="{{ sched }}" style="{{ schedSwitch }}"><span style="{{ schedKnob }}"></span></button>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--border);">
+              <div style="flex:1;"><div style="font-size:12.5px; color:var(--text); font-weight:500;">LLM routing fallback</div><div style="font-size:11px; color:var(--text-3); margin-top:2px;">One headless Claude call when keyword routing finds nothing.</div></div>
+              <button type="button" onClick="{{ toggleLlm }}" aria-pressed="{{ llm }}" style="{{ llmSwitch }}"><span style="{{ llmKnob }}"></span></button>
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Max handoff chain depth</label>
+            <input type="number" value="3" style="width:120px; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+          </div>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- SKILLS SUB-TAB -->
+      <sc-if value="{{ setSkillsTab }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex; align-items:flex-end; gap:12px; margin-bottom:16px;">
+          <p style="font-size:13px; color:var(--text-2); margin:0; max-width:560px; line-height:1.6;">Every skill is a markdown capability an agent can run. {{ skillsCount }} authored across {{ domainCount }} domains.</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+          <label style="display:flex; align-items:center; gap:9px; flex:1 1 280px; min-width:240px; padding:10px 14px; border-radius:9px; border:1px solid var(--border); background:var(--surface);">
+            <span style="display:flex; color:var(--text-3);">{{ searchIcon }}</span>
+            <input type="search" onInput="{{ onSkillSearch }}" placeholder="Search skills…" aria-label="Search skills" style="flex:1; border:none; outline:none; background:transparent; font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+          </label>
+        </div>
+        <div role="group" aria-label="Filter by domain" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;">
+          <sc-for list="{{ domainChips }}" as="d" hint-placeholder-count="6">
+            <button type="button" onClick="{{ setDomain }}" data-d="{{ d.key }}" aria-pressed="{{ d.active }}" style="{{ d.style }}" style-hover="border-color:var(--accent-line);">
+              {{ d.label }} <span style="opacity:.6;">{{ d.count }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ hasSkills }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:30px;">
+          <sc-for list="{{ skillGroups }}" as="g" hint-placeholder-count="3">
+            <section>
+              <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px;">
+                <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text); margin:0;">{{ g.domain }}</h2>
+                <span style="font-size:11px; color:var(--text-3); margin-left:2px;">{{ g.count }}</span>
+                <span style="flex:1; height:1px; background:var(--border);"></span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px;">
+                <sc-for list="{{ g.skills }}" as="s" hint-placeholder-count="4">
+                  <article style="background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <h3 style="font-size:13.5px; font-weight:600; color:var(--text); margin:0; flex:1; word-break:break-word;">{{ s.name }}</h3>
+                      <span style="{{ s.statusStyle }}">{{ s.status }}</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-2); margin:0; line-height:1.55; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">{{ s.desc }}</p>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:6px;">
+                      <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-3);">{{ s.sub }}</span>
+                      <span style="{{ s.mcpStyle }}">{{ s.mcp }}</span>
+                    </div>
+                  </article>
+                </sc-for>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ noSkills }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:50px; text-align:center; color:var(--text-3); font-size:13px; border:1px dashed var(--border-2); border-radius:12px;">No skills match your search.</div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- DOCKER SUB-TAB -->
+      <sc-if value="{{ setDocker }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 16px; border:1px solid var(--border); border-radius:10px; background:var(--surface);">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--ok); flex:0 0 8px;"></span>
+          <span style="font-size:12.5px; color:var(--text);">Docker daemon running</span>
+          <span style="font-family:ui-monospace,monospace; font-size:11px; color:var(--text-3); margin-left:auto;">v{{ dockerVersion }}</span>
+        </div>
+
+        <section>
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 12px;">Compose stacks</h2>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">
+            <sc-for list="{{ dockerStacks }}" as="st" hint-placeholder-count="3">
+              <div style="background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); padding:15px 16px;">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px;">
+                  <span style="font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; color:var(--text);">{{ st.name }}</span>
+                  <span style="{{ st.statusStyle }}">{{ st.status }}</span>
+                </div>
+                <div style="font-family:ui-monospace,monospace; font-size:10.5px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:12px;">{{ st.config }}</div>
+                <div style="display:flex; gap:7px;">
+                  <button type="button" disabled="{{ st.notAllowed }}" style="{{ st.startStyle }}">Start</button>
+                  <button type="button" disabled="{{ st.notAllowed }}" style="{{ st.stopStyle }}">Stop</button>
+                  <button type="button" disabled="{{ st.notAllowed }}" style="{{ st.restartStyle }}">Restart</button>
+                  <sc-if value="{{ st.notAllowed }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; color:var(--text-3); align-self:center; margin-left:2px;">allowlist required</span></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+          <div style="padding:14px 18px; border-bottom:1px solid var(--border);"><h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0;">Containers</h2></div>
+          <div style="display:grid; grid-template-columns:1.3fr 1.6fr 0.7fr 1fr 0.9fr 0.6fr; gap:10px; padding:11px 18px; border-bottom:1px solid var(--border); background:var(--surface-2);">
+            <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Name</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Image</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">State</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Project</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Ports</span>
+            <span></span>
+          </div>
+          <sc-for list="{{ dockerContainers }}" as="c" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:1.3fr 1.6fr 0.7fr 1fr 0.9fr 0.6fr; gap:10px; align-items:center; padding:11px 18px; border-bottom:1px solid var(--border);">
+              <span style="font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.name }}</span>
+              <span style="font-family:ui-monospace,monospace; font-size:10.5px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.image }}</span>
+              <span style="{{ c.stStyle }}">{{ c.state }}</span>
+              <span style="font-size:11px; color:var(--text-2);">{{ c.project }}</span>
+              <span style="font-family:ui-monospace,monospace; font-size:10.5px; color:var(--text-3);">{{ c.ports }}</span>
+              <button type="button" style="justify-self:end; padding:5px 11px; border-radius:6px; border:1px solid var(--border-2); background:var(--surface); color:var(--text-2); font-family:'Montserrat',sans-serif; font-size:11px; cursor:pointer;" style-hover="background:var(--surface-2);">Logs</button>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- KNOWLEDGE SUB-TAB -->
+      <sc-if value="{{ setKnowledge }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 16px;">Knowledge / RAG</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Embedding provider</label>
+              <select style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text); cursor:pointer;"><option>gemini</option><option>none</option></select>
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Answer provider</label>
+              <select style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text); cursor:pointer;"><option>gemini-cli</option><option>claude-cli</option><option>none</option></select>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">Gemini API key</label>
+            <input type="password" value="••••••••••••••••" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text);">
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+            <span style="font-size:12px; color:var(--text-3); flex:1;">2,418 / 2,418 chunks embedded · gemini-embedding-001 @ 1536d</span>
+            <button type="button" style="padding:9px 15px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; cursor:pointer;" style-hover="background:var(--surface-2);">Re-embed all</button>
+          </div>
+        </section>
+
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 16px;">LightRAG &amp; export</h2>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">LightRAG base URL</label>
+          <input value="http://localhost:9621" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text);">
+          <label style="display:flex; align-items:center; gap:10px; margin-top:14px; cursor:pointer;">
+            <button type="button" onClick="{{ toggleIngest }}" aria-pressed="{{ ingest }}" style="{{ ingestSwitch }}"><span style="{{ ingestKnob }}"></span></button>
+            <span style="font-size:12.5px; color:var(--text);">Auto-ingest finished runs <span style="color:var(--text-3);">(clean exits only)</span></span>
+          </label>
+          <div style="margin-top:18px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px;">NotebookLM export folder</label>
+            <input value="G:\My Drive\NotebookLM-Inbox" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text);">
+            <p style="font-size:11px; color:var(--text-3); margin:7px 0 0;">A Drive-synced folder so NotebookLM bundles appear in Drive. Empty = vault/outputs/notebooklm.</p>
+          </div>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- CONNECTIONS SUB-TAB -->
+      <sc-if value="{{ setConnections }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px;">
+        <sc-for list="{{ connectionsList }}" as="cn" hint-placeholder-count="6">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:11px;">
+            <div style="display:flex; align-items:center; gap:11px;">
+              <span style="width:36px; height:36px; flex:0 0 36px; border-radius:9px; background:var(--surface-2); color:var(--text-2); display:flex; align-items:center; justify-content:center;">{{ cn.icon }}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13.5px; font-weight:600; color:var(--text);">{{ cn.name }}</div>
+                <div style="font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ cn.acct }}</div>
+              </div>
+              <span style="{{ cn.statusStyle }}">{{ cn.statusLabel }}</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-3); font-family:'Oswald',sans-serif; letter-spacing:0.04em;">{{ cn.skills }}</div>
+            <button type="button" style="{{ cn.btnStyle }}">{{ cn.btnLabel }}</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ===================== FEATURE SURFACE ===================== -->
+    <sc-if value="{{ isFeatureView }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:30px 28px 64px; max-width:1140px;">
+      <div style="display:flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text-3); margin-bottom:20px;">
+        <button type="button" onClick="{{ backToFeatures }}" style="border:none; background:none; padding:0; cursor:pointer; color:var(--text-3); font-family:'Montserrat',sans-serif; font-size:12.5px;" style-hover="color:var(--accent-ink);">Features</button>
+        <span>/</span>
+        <span style="color:var(--text-2);">{{ featName }}</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:15px; margin-bottom:28px;">
+        <span style="width:50px; height:50px; flex:0 0 50px; border-radius:13px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center;">{{ featIcon }}</span>
+        <div>
+          <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:28px; color:var(--text); margin:0; line-height:1.1;">{{ featName }}</h1>
+          <p style="font-size:13px; color:var(--text-2); margin:6px 0 0; max-width:620px; line-height:1.55;">{{ featDesc }}</p>
+        </div>
+      </div>
+
+      <!-- NOTE TAKER -->
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:1.7fr 1fr; gap:18px; align-items:start;">
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+          <sc-for list="{{ notesList }}" as="n" hint-placeholder-count="5">
+            <div style="padding:15px 18px; border-bottom:1px solid var(--border); cursor:pointer;" style-hover="background:var(--surface-2);">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:13.5px; font-weight:600; color:var(--text);">{{ n.title }}</span>
+                <span style="{{ n.folderStyle }}">{{ n.folder }}</span>
+                <span style="margin-left:auto; font-size:11px; color:var(--text-3);">{{ n.ago }}</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-2); margin:6px 0 0; line-height:1.5;">{{ n.excerpt }}</p>
+            </div>
+          </sc-for>
+        </section>
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 12px;">Quick capture</h2>
+          <textarea rows="5" placeholder="Jot a thought — it lands in vault/raw and gets promoted later." style="width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text); resize:vertical; line-height:1.55;"></textarea>
+          <button type="button" style="margin-top:11px; width:100%; padding:11px; border-radius:8px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">Capture</button>
+          <p style="font-size:11px; color:var(--text-3); margin:12px 0 0; line-height:1.5;">Or press <span style="font-family:ui-monospace,monospace; padding:1px 6px; border-radius:4px; background:var(--surface-2); color:var(--text-2);">Ctrl+Shift+K</span> from anywhere.</p>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- INBOX -->
+      <sc-if value="{{ showInbox }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; max-width:760px;">
+        <sc-for list="{{ inboxList }}" as="it" hint-placeholder-count="5">
+          <div style="display:flex; align-items:center; gap:13px; padding:14px 18px; border-bottom:1px solid var(--border);">
+            <span style="{{ it.dot }}"></span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:500; color:var(--text);">{{ it.t }}</div>
+              <div style="font-size:11.5px; color:var(--text-3); margin-top:3px;">{{ it.sub }}</div>
+            </div>
+            <span style="{{ it.stStyle }}">{{ it.st }}</span>
+            <span style="font-size:11px; color:var(--text-3); flex:0 0 34px; text-align:right;">{{ it.ago }}</span>
+          </div>
+        </sc-for>
+      </section>
+      </sc-if>
+
+      <!-- ASK VAULT -->
+      <sc-if value="{{ showAsk }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:780px;">
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+          <input value="How do we gate model promotion in the MLOps runbook?" style="flex:1; padding:12px 14px; border-radius:9px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+          <button type="button" style="padding:12px 20px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">Ask</button>
+        </div>
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:22px;">
+          <p style="font-size:13.5px; color:var(--text); margin:0; line-height:1.7;">Promotion runs through three gates — a deterministic metric check, an LLM-judged rubric pass, and a manual confirm <span style="color:var(--accent-ink); font-weight:600;">[1]</span>. The FHIR adapter adds a rollback drill before any clinical workflow is switched over <span style="color:var(--accent-ink); font-weight:600;">[2]</span>, and the on-call escalation path is documented alongside it <span style="color:var(--accent-ink); font-weight:600;">[1]</span>.</p>
+          <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
+            <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-3); margin-bottom:10px;">Sources</div>
+            <sc-for list="{{ askSources }}" as="src" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:10px; padding:7px 0;">
+                <span style="width:20px; height:20px; flex:0 0 20px; border-radius:5px; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:10px; font-weight:600;">{{ src.n }}</span>
+                <span style="font-size:12.5px; color:var(--text);">{{ src.title }}</span>
+                <span style="margin-left:auto; font-family:ui-monospace,monospace; font-size:11px; color:var(--text-3);">{{ src.path }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- KNOWLEDGE GRAPH -->
+      <sc-if value="{{ showGraph }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative; height:440px; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); background:var(--surface); overflow:hidden;">
+        <div style="position:absolute; inset:0; background-image:radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0); background-size:26px 26px; opacity:.5;"></div>
+        <sc-for list="{{ graphNodes }}" as="g" hint-placeholder-count="8">
+          <span style="{{ g.style }}"><span style="{{ g.dotStyle }}"></span>{{ g.label }}</span>
+        </sc-for>
+      </div>
+      <p style="font-size:11.5px; color:var(--text-3); margin:12px 0 0;">Wikilink + backlink graph across the vault. Larger nodes are hubs by inbound links.</p>
+      </sc-if>
+
+      <!-- TUTOR / LEARNING -->
+      <sc-if value="{{ showLearning }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; justify-content:flex-end; margin-bottom:14px;">
+        <button type="button" style="display:flex; align-items:center; gap:7px; padding:10px 16px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">{{ addIcon }} New topic</button>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px;">
+        <sc-for list="{{ topicsList }}" as="t" hint-placeholder-count="4">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); padding:16px; cursor:pointer;" style-hover="border-color:var(--accent-line);">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+              <span style="font-size:13.5px; font-weight:600; color:var(--text); flex:1;">{{ t.title }}</span>
+              <span style="font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px; background:var(--accent-bg); color:var(--accent-ink);">{{ t.tutor }}</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-3);">{{ t.meta }}</div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- RESEARCH -->
+      <sc-if value="{{ showResearch }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; justify-content:flex-end; margin-bottom:14px;">
+        <button type="button" style="display:flex; align-items:center; gap:7px; padding:10px 16px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="filter:brightness(1.06);">{{ addIcon }} New research project</button>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">
+        <sc-for list="{{ researchList }}" as="r" hint-placeholder-count="3">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); padding:17px; cursor:pointer;" style-hover="border-color:var(--accent-line);">
+            <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:8px;">{{ r.title }}</div>
+            <p style="font-size:12px; color:var(--text-2); margin:0 0 12px; line-height:1.55;">{{ r.q }}</p>
+            <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-3);">{{ r.meta }}</div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- DESIGN STUDIO -->
+      <sc-if value="{{ showStudio }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px;">
+        <sc-for list="{{ studioDocs }}" as="d" hint-placeholder-count="4">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); overflow:hidden; cursor:pointer;" style-hover="border-color:var(--accent-line);">
+            <div style="height:120px; background:var(--surface-2); background-image:linear-gradient(135deg, var(--accent-bg) 0%, transparent 60%), radial-gradient(circle at 70% 30%, var(--accent-line) 0, transparent 40%);"></div>
+            <div style="padding:14px 16px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:600; color:var(--text); flex:1;">{{ d.title }}</span>
+                <span style="{{ d.kindStyle }}">{{ d.kind }}</span>
+              </div>
+              <div style="font-family:ui-monospace,monospace; font-size:11px; color:var(--text-3); margin-top:5px;">{{ d.proj }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- SESSIONS -->
+      <sc-if value="{{ showSessions }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.3fr 1fr 1.4fr 0.7fr 0.8fr 0.5fr; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface-2);">
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Agent</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Runtime</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Skill</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Tokens</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Status</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Ago</span>
+        </div>
+        <sc-for list="{{ sessionsList }}" as="r" hint-placeholder-count="6">
+          <div style="display:grid; grid-template-columns:1.3fr 1fr 1.4fr 0.7fr 0.8fr 0.5fr; gap:10px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--border);">
+            <span style="font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.agent }}</span>
+            <span style="font-family:ui-monospace,monospace; font-size:11px; color:var(--text-2);">{{ r.rt }}</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.skill }}</span>
+            <span style="font-size:11.5px; color:var(--text-2); text-align:right;">{{ r.tok }}</span>
+            <span style="{{ r.stStyle }}">{{ r.st }}</span>
+            <span style="font-size:11px; color:var(--text-3); text-align:right;">{{ r.ago }}</span>
+          </div>
+        </sc-for>
+      </section>
+      </sc-if>
+
+      <!-- ANALYTICS -->
+      <sc-if value="{{ showAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:18px; align-items:start;">
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 18px;">Tokens · this week</h2>
+          <div style="display:flex; align-items:flex-end; gap:10px; height:180px;">
+            <sc-for list="{{ analyticsBars }}" as="b" hint-placeholder-count="7">
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end;">
+                <div style="width:100%; flex:1; display:flex; align-items:flex-end;"><div style="{{ b.barStyle }}"></div></div>
+                <span style="font-size:10px; color:var(--text-3);">{{ b.d }}</span>
+                <span style="font-family:'Oswald',sans-serif; font-size:10px; color:var(--text-2);">{{ b.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+        <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:20px 22px;">
+          <h2 style="font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); margin:0 0 16px;">Run outcomes · 7d</h2>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; align-items:baseline; gap:8px;"><span style="font-family:'Oswald',sans-serif; font-size:28px; color:var(--ok);">186</span><span style="font-size:12px; color:var(--text-3);">completed</span></div>
+            <div style="display:flex; align-items:baseline; gap:8px;"><span style="font-family:'Oswald',sans-serif; font-size:28px; color:var(--danger);">9</span><span style="font-size:12px; color:var(--text-3);">failed</span></div>
+            <div style="display:flex; align-items:baseline; gap:8px;"><span style="font-family:'Oswald',sans-serif; font-size:28px; color:var(--text);">21.4M</span><span style="font-size:12px; color:var(--text-3);">tokens · ~$3.10 metered</span></div>
+            <p style="font-size:11px; color:var(--text-3); margin:4px 0 0; line-height:1.5;">Costs are estimates; subscription usage does not bill per token.</p>
+          </div>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- EVALS -->
+      <sc-if value="{{ showEvals }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <button type="button" style="padding:10px 16px; border-radius:9px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="background:var(--surface-2);">Grade ungraded runs</button>
+        <span style="font-size:11.5px; color:var(--text-3);">Rubric scores are LLM-judged — one CLI call per grade.</span>
+      </div>
+      <section style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.6fr 1.3fr 0.7fr 0.7fr 0.7fr; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface-2);">
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Skill</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Agent</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Score</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Result</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Latency</span>
+        </div>
+        <sc-for list="{{ evalsRows }}" as="r" hint-placeholder-count="6">
+          <div style="display:grid; grid-template-columns:1.6fr 1.3fr 0.7fr 0.7fr 0.7fr; gap:10px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--border);">
+            <span style="font-family:'Oswald',sans-serif; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.skill }}</span>
+            <span style="font-size:12px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.agent }}</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:13px; color:var(--text); text-align:right;">{{ r.score }}</span>
+            <span style="{{ r.passStyle }}">{{ r.pass }}</span>
+            <span style="font-size:11.5px; color:var(--text-3); text-align:right;">{{ r.lat }}</span>
+          </div>
+        </sc-for>
+      </section>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ACTIVITY ===================== -->
+    <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:34px 28px 64px; max-width:1000px;">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--accent-ink);">Telemetry</div>
+        <h1 style="font-family:'Playfair Display',serif; font-weight:700; font-size:32px; color:var(--text); margin:8px 0 0; line-height:1.1;">Activity</h1>
+        <p style="font-size:13.5px; color:var(--text-2); margin:8px 0 0; line-height:1.6;">Every run, newest first. Tokens and metered cost per execution.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.4fr 1.6fr 0.7fr 0.7fr 0.8fr 0.6fr; gap:10px; padding:13px 20px; border-bottom:1px solid var(--border); background:var(--surface-2);">
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Agent</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Skill</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Tokens</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Cost</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3);">Status</span>
+          <span style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); text-align:right;">Ago</span>
+        </div>
+        <sc-for list="{{ activityRows }}" as="r" hint-placeholder-count="8">
+          <div style="display:grid; grid-template-columns:1.4fr 1.6fr 0.7fr 0.7fr 0.8fr 0.6fr; gap:10px; align-items:center; padding:13px 20px; border-bottom:1px solid var(--border);">
+            <span style="font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.agent }}</span>
+            <span style="font-family:'Oswald',sans-serif; font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.skill }}</span>
+            <span style="font-size:11.5px; color:var(--text-2); text-align:right;">{{ r.tok }}</span>
+            <span style="font-size:11.5px; color:var(--text-2); text-align:right;">{{ r.cost }}</span>
+            <span style="{{ r.stStyle }}">{{ r.st }}</span>
+            <span style="font-size:11px; color:var(--text-3); text-align:right;">{{ r.ago }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </main>
+
+  <!-- ===================== CREATE AGENT DRAWER ===================== -->
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed; inset:0; z-index:40;">
+    <div onClick="{{ closeDrawer }}" style="position:absolute; inset:0; background:rgba(8,12,20,0.5); backdrop-filter:blur(2px);"></div>
+    <div role="dialog" aria-modal="true" aria-label="{{ drawerTitle }}" style="position:absolute; top:0; right:0; height:100vh; width:min(520px,100vw); display:flex; flex-direction:column; background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow-lg);">
+      <div style="display:flex; align-items:center; gap:12px; padding:20px 24px; border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent-ink);">{{ drawerEyebrow }}</div>
+          <h2 style="font-family:'Playfair Display',serif; font-weight:700; font-size:21px; color:var(--text); margin:4px 0 0;">{{ drawerTitle }}</h2>
+        </div>
+        <button type="button" onClick="{{ closeDrawer }}" aria-label="Close" style="margin-left:auto; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); cursor:pointer; font-size:16px; line-height:1;" style-hover="background:var(--surface-2); color:var(--text);">✕</button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding:22px 24px; display:flex; flex-direction:column; gap:20px;">
+
+        <!-- AI draft -->
+        <div style="border:1px dashed var(--accent-line); border-radius:11px; background:var(--accent-bg); padding:15px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:9px;">
+            <span style="display:flex; color:var(--accent-ink);">{{ sparkIcon }}</span>
+            <span style="font-size:11.5px; font-weight:600; color:var(--text);">Draft with Claude</span>
+          </div>
+          <p style="font-size:11.5px; color:var(--text-2); margin:0 0 11px; line-height:1.5;">Describe the agent in a sentence — one headless call drafts the profile and pre-selects skills.</p>
+          <div style="display:flex; gap:8px;">
+            <input onInput="{{ onDraftInput }}" value="{{ draftPrompt }}" placeholder="e.g. watch FDA digital-health guidance weekly" aria-label="Describe the agent" style="flex:1; min-width:0; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text);">
+            <button type="button" onClick="{{ draftAi }}" disabled="{{ draftDisabled }}" style="{{ draftBtnStyle }}">{{ draftLabel }}</button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-name">Name</label>
+            <input id="ag-name" onInput="{{ setName }}" value="{{ form.name }}" placeholder="health-watcher" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text);">
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-slug">Slug</label>
+            <input id="ag-slug" onInput="{{ setSlug }}" value="{{ form.slug }}" placeholder="kebab-case" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text);">
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-desc">Description</label>
+          <textarea id="ag-desc" onInput="{{ setDesc }}" value="{{ form.description }}" rows="2" placeholder="Used by lead routing — pack it with domain keywords." style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text); resize:vertical; line-height:1.5;"></textarea>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-rt">Runtime</label>
+          <select id="ag-rt" onChange="{{ setRuntime }}" value="{{ form.runtime }}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:'Montserrat',sans-serif; font-size:13px; color:var(--text); cursor:pointer;">
+            <option value="claude-code">Claude Code · Max</option>
+            <option value="gemini-cli">Gemini CLI · Pro</option>
+            <option value="claude-api">Claude API · Key</option>
+          </select>
+        </div>
+
+        <!-- SKILLS PICKER -->
+        <div>
+          <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2);">Skills</span>
+            <span style="font-size:11px; color:var(--accent-ink);">{{ selectedCount }} selected</span>
+          </div>
+
+          <sc-if value="{{ hasSelected }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+              <sc-for list="{{ selectedChips }}" as="c" hint-placeholder-count="2">
+                <button type="button" onClick="{{ toggleSkill }}" data-s="{{ c.name }}" style="display:flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; border:1px solid var(--accent-line); background:var(--accent-bg); color:var(--accent-ink); font-family:'Montserrat',sans-serif; font-size:11px; font-weight:500; cursor:pointer;">
+                  {{ c.name }} <span aria-hidden="true" style="font-size:12px; line-height:1; opacity:.8;">✕</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <label style="display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:8px 8px 0 0; border:1px solid var(--border-2); border-bottom:none; background:var(--surface-2);">
+            <span style="display:flex; color:var(--text-3);">{{ searchIcon }}</span>
+            <input onInput="{{ onPickerSearch }}" placeholder="Filter skills…" aria-label="Filter skills" style="flex:1; border:none; outline:none; background:transparent; font-family:'Montserrat',sans-serif; font-size:12.5px; color:var(--text);">
+          </label>
+          <div style="max-height:230px; overflow-y:auto; border:1px solid var(--border-2); border-radius:0 0 8px 8px;">
+            <sc-for list="{{ pickerGroups }}" as="g" hint-placeholder-count="4">
+              <div>
+                <div style="position:sticky; top:0; padding:7px 13px; background:var(--surface-2); font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); border-bottom:1px solid var(--border);">{{ g.domain }}</div>
+                <sc-for list="{{ g.skills }}" as="s" hint-placeholder-count="3">
+                  <label style="{{ s.rowStyle }}" style-hover="background:var(--surface-2);">
+                    <input type="checkbox" onChange="{{ toggleSkill }}" data-s="{{ s.name }}" checked="{{ s.checked }}" style="width:15px; height:15px; accent-color:var(--accent); flex:0 0 15px; cursor:pointer;">
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:block; font-size:12.5px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ s.name }}</span>
+                      <span style="display:block; font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ s.desc }}</span>
+                    </span>
+                  </label>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-tools">Allowed tools</label>
+          <input id="ag-tools" onInput="{{ setTools }}" value="{{ form.allowedTools }}" placeholder="Read, Write, WebFetch" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12px; color:var(--text);">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-2); margin-bottom:6px;" for="ag-prompt">System prompt</label>
+          <textarea id="ag-prompt" onInput="{{ setPrompt }}" value="{{ form.systemPrompt }}" rows="6" placeholder="You are…" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); font-family:ui-monospace,monospace; font-size:12px; color:var(--text); resize:vertical; line-height:1.5;"></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px; padding:16px 24px; border-top:1px solid var(--border); background:var(--surface);">
+        <span style="font-size:11px; color:var(--text-3);">{{ saveHint }}</span>
+        <button type="button" onClick="{{ closeDrawer }}" style="margin-left:auto; padding:10px 16px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer;" style-hover="background:var(--surface-2);">Cancel</button>
+        <button type="button" onClick="{{ saveAgent }}" disabled="{{ saveDisabled }}" style="{{ saveBtnStyle }}">{{ saveLabel }}</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  state = {
+    theme: 'light',
+    view: 'dashboard',
+    autonomy: true,
+    killed: false,
+    drawerOpen: false,
+    editSlug: null,
+    skillQuery: '',
+    skillDomain: 'all',
+    settingsTab: 'features',
+    featKey: 'notes',
+    sched: true, llm: false, ingest: true,
+    projSlug: null,
+    projTab: 'board',
+    features: { notes:true, inbox:true, ask:true, graph:true, notebooklm:true, learning:true, research:true, studio:false, sessions:true, analytics:true, evals:false, docker:true, connections:true },
+    pickerQuery: '',
+    drafting: false,
+    draftPrompt: '',
+    form: { name:'', slug:'', description:'', runtime:'claude-code', skills:[], allowedTools:'Read, Write, Glob, Grep', systemPrompt:'' },
+  };
+
+  // ---------- static data ----------
+  RUNTIMES = [
+    { name:'Claude Code', plan:'MAX', on:true },
+    { name:'Gemini CLI', plan:'PRO', on:true },
+    { name:'Claude API', plan:'KEY', on:false },
+  ];
+
+  AGENTS = [
+    { name:'research-lead', slug:'research-lead', dept:'Research', rt:'Claude Code', skills:1, runs:142, status:'active' },
+    { name:'arxiv-watcher', slug:'arxiv-watcher', dept:'Research', rt:'Claude Code', skills:4, runs:88, status:'active' },
+    { name:'health-watcher', slug:'health-watcher', dept:'Research · Healthcare', rt:'Claude Code', skills:5, runs:53, status:'idle' },
+    { name:'paper-coach', slug:'paper-coach', dept:'Research · Learning', rt:'Claude Code', skills:3, runs:27, status:'idle' },
+    { name:'coding-lead', slug:'coding-lead', dept:'Coding', rt:'Claude Code', skills:1, runs:96, status:'active' },
+    { name:'moon-cli-builder', slug:'moon-cli-builder', dept:'Coding', rt:'Claude Code', skills:6, runs:61, status:'active' },
+    { name:'moon-cli-reviewer', slug:'moon-cli-reviewer', dept:'Coding', rt:'Claude Code', skills:4, runs:44, status:'idle' },
+    { name:'business-lead', slug:'business-lead', dept:'Business', rt:'Claude Code', skills:1, runs:74, status:'idle' },
+    { name:'content-lead', slug:'content-lead', dept:'Content', rt:'Claude Code', skills:1, runs:58, status:'idle' },
+    { name:'anxious-nomad-writer', slug:'anxious-nomad-writer', dept:'Content', rt:'Claude Code', skills:5, runs:39, status:'idle' },
+    { name:'productivity-lead', slug:'productivity-lead', dept:'Productivity', rt:'Claude Code', skills:1, runs:67, status:'active' },
+    { name:'drill-sergeant', slug:'drill-sergeant', dept:'Productivity · Coaching', rt:'Claude Code', skills:2, runs:18, status:'paused' },
+    { name:'socratic-tutor', slug:'socratic-tutor', dept:'Learning', rt:'Gemini CLI', skills:3, runs:22, status:'idle' },
+  ];
+
+  SKILLS = [
+    // Research
+    ['arxiv-daily-digest','Research','physics-ml',"Today's physics & ML arXiv submissions, clustered into emergent themes and summarized.",'authored','none'],
+    ['paper-search','Research','general','Search papers by keyword, or look up one by DOI or OpenAlex ID. Powered by OpenAlex.','authored','none'],
+    ['paper-summary','Research','physics-ml','Fetch metadata from an arXiv ID, DOI, or title and write a structured paper note.','authored','none'],
+    ['research-lookup','Research','general','Routes a query to the best search backend — fast web, deep research, or academic.','authored','none'],
+    ['literature-review','Research','general','Systematic reviews across PubMed, arXiv, bioRxiv & Semantic Scholar with verified citations.','authored','none'],
+    ['scientific-writing','Research','general','Write manuscripts in flowing IMRAD prose with proper citations — never bullet points.','authored','none'],
+    ['deep-web-research','Research','general','Crawl with Firecrawl, store sources, and synthesize a topic to the research wiki.','authored','drive'],
+    ['morning-trend-scan','Research','general',"GitHub trending plus the day's arXiv in your tracked categories, as a morning digest.",'authored','github'],
+    ['healthcare-arxiv','Research','healthcare-tech','Pull q-bio & physics.med-ph arXiv, filter for healthcare-tech relevance, summarize.','authored','none'],
+    ['pubmed-digest','Research','healthcare-tech','Run a PubMed query and write a digest with study designs, sample & effect sizes.','authored','none'],
+    ['regulatory-watch','Research','healthcare-tech','Latest FDA & CE updates from RSS, classified by device class and topic.','authored','none'],
+    ['benchmark-tracker','Research','data-science','Track named ML benchmarks and write a delta report when a previous best is beaten.','authored','none'],
+    ['dataset-scan','Research','data-science','Scan HuggingFace, OpenML & data.gov for new datasets matching your tracked tags.','authored','none'],
+    ['kaggle-watch','Research','data-science','Latest Kaggle competitions, top notebooks and dataset releases worth a deeper look.','authored','none'],
+    ['article-extractor','Research','general','Extract clean article text from a URL — no ads, nav, or clutter.','authored','none'],
+    ['youtube-transcript','Research','general',"Download a video's transcript via yt-dlp, with a Whisper fallback when no captions exist.",'authored','none'],
+    ['youtube-search','Research','general','Search, watch and transcribe top YouTube results, then write a digest.','blocked','none'],
+    ['ml-twitter-watch','Research','physics-ml','Digest notable ML claims, links and disagreements from a curated set of accounts.','blocked','none'],
+    ['research-lead','Research','general','Read the research queue, pick a teammate per task by skill overlap, claim & reassign.','authored','none'],
+    // Coding
+    ['coding-lead','Coding','general','Read the coding queue, route each task to a teammate by skill overlap.','authored','none'],
+    ['issue-triage','Coding','general','Classify open GitHub issues by rubric into buckets and draft response comments.','authored','github'],
+    ['pr-review-prep','Coding','general','Fetch a PR diff, hot files & CI status, then prepare a focused review checklist.','authored','github'],
+    ['repo-onboarding','Coding','general','Explore a repo and write an onboarding doc: build/test, key abstractions, first issues.','authored','github'],
+    // Business
+    ['business-lead','Business','general','Read the business queue and route venture-side tasks to teammates.','authored','none'],
+    ['calendar-prep',"Business",'general',"Read today's events, add per-meeting prep, detect conflicts, write a daily briefing.",'authored','google-calendar'],
+    ['inbox-triage','Business','general','Triage Gmail by rubric, surface buckets, and draft replies for the reply-now bucket.','authored','gmail'],
+    ['weekly-rollup','Business','general','Summarize the week across calendar, vault notes and GitHub into a structured review.','authored','google-calendar'],
+    // Content
+    ['content-lead','Content','general','Read the content queue and route writing tasks to teammates.','authored','none'],
+    ['content-research-writer','Content','general','Iterative long-form writing partner: research, citations, hooks, section feedback.','authored','none'],
+    ['avoid-ai-writing','Content','general','Audit and rewrite content to remove AI writing patterns. Detection-only mode too.','authored','none'],
+    ['draft-from-vault','Content','substack','Read recent vault notes on a topic and draft a Substack post from the template.','authored','canva'],
+    ['substack-publish-prep','Content','substack','Generate headline, subhead, social blurb, image prompts and a publish checklist.','authored','none'],
+    ['collective-update','Content','anxious-nomad','Compile members, milestones & blockers into a community update for the collective.','authored','notion'],
+    ['newsletter-roundup','Content','anxious-nomad',"Curate the week's tagged links, group thematically, and produce a roundup draft.",'authored','canva'],
+    ['comment-digest','Content','community','Group recent community comments by post, summarize sentiment, flag ones to reply.','blocked','gmail'],
+    ['engagement-report','Content','community','Aggregate weekly engagement across content surfaces into a one-page report.','authored','notion'],
+    // Engineering
+    ['brainstorming','Engineering','workflow','Explore user intent, requirements and design before any implementation work.','authored','none'],
+    ['test-driven-development','Engineering','workflow','Enforce red-green-refactor: failing test first, minimal code to pass, then refactor.','authored','none'],
+    ['requesting-code-review','Engineering','workflow','Dispatch a code-reviewer subagent with crafted context to catch issues before merge.','authored','none'],
+    ['receiving-code-review','Engineering','workflow','Verify review feedback with technical rigor before implementing suggestions.','authored','none'],
+    ['finishing-a-development-branch','Engineering','workflow','Present structured options for merge, PR, or cleanup when work is complete.','authored','none'],
+    // Productivity
+    ['daily-rollup','Productivity','general',"Sweep the day's notes, merged PRs & events into one rollup with tomorrow's setup.",'authored','calendar+github'],
+    ['productivity-lead','Productivity','general','Read the productivity queue and route daily-ops tasks to teammates.','authored','none'],
+    ['vault-cleanup','Productivity','general','List stale vault notes and propose archives or promotions, applied on confirmation.','authored','none'],
+  ];
+
+  ACTIVITY = [
+    ['arxiv-watcher','paper-summary','done','41k','$0.00','4m'],
+    ['business-lead','inbox-triage','done','22k','$0.11','12m'],
+    ['content-lead','draft-from-vault','done','68k','$0.00','26m'],
+    ['health-watcher','pubmed-digest','done','35k','$0.00','41m'],
+    ['moon-cli-reviewer','pr-review-prep','failed','12k','$0.06','1h'],
+    ['productivity-lead','vault-cleanup','done','9k','$0.00','1h'],
+    ['arxiv-watcher','arxiv-daily-digest','done','77k','$0.00','2h'],
+    ['anxious-nomad-writer','newsletter-roundup','done','54k','$0.09','3h'],
+    ['research-lead','research-lookup','done','6k','$0.00','3h'],
+    ['coding-lead','issue-triage','done','18k','$0.04','4h'],
+  ];
+
+  ACTIVE = [
+    { agent:'arxiv-watcher', task:'arxiv-daily-digest · physics-ml', proj:'Research', pct:62, el:'2m 14s' },
+    { agent:'coding-lead', task:'issue-triage · moon-cli', proj:'moon-cli', pct:38, el:'48s' },
+    { agent:'productivity-lead', task:'daily-rollup', proj:'Vault', pct:81, el:'5m 02s' },
+  ];
+
+  KANBAN = [
+    { key:'backlog', title:'Backlog', cards:[
+      { id:'#214', proj:'moon-cli', t:'Flaky retry on token refresh', agent:'moon-cli-builder' },
+      { id:'#209', proj:'vault', t:'Wikilink index rebuild is O(n²)', agent:'productivity-lead' } ] },
+    { key:'queued', title:'Queued', cards:[
+      { id:'#221', proj:'Research', t:'Weekly healthcare-tech regulatory watch', agent:'health-watcher' } ] },
+    { key:'running', title:'Running', cards:[
+      { id:'#218', proj:'moon-cli', t:'Triage 14 open issues by rubric', agent:'coding-lead' },
+      { id:'#205', proj:'Research', t:'Cluster today’s arXiv into themes', agent:'arxiv-watcher' } ] },
+    { key:'review', title:'Review', cards:[
+      { id:'#212', proj:'Content', t:'Substack draft from vault notes', agent:'content-lead' } ] },
+    { key:'done', title:'Done', cards:[
+      { id:'#198', proj:'Business', t:'Inbox triage + reply drafts', agent:'business-lead' },
+      { id:'#193', proj:'Vault', t:'End-of-day rollup', agent:'productivity-lead' } ] },
+  ];
+
+  NAV = [
+    ['dashboard','Dashboard','M4 4h7v7H4zM13 4h7v7h-7zM13 13h7v7h-7zM4 13h7v7H4z', null],
+    ['projects','Projects','M3 7a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', '6'],
+    ['issues','Issues','M9 11l2.5 2.5L21 4M20.5 12v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2H16', null],
+    ['agents','Agents','M16 21v-1.5a4 4 0 0 0-4-4H6.5a4 4 0 0 0-4 4V21M9.25 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5zM21.5 21v-1.5a4 4 0 0 0-3-3.87M16.5 4.13a4 4 0 0 1 0 7.5', '13'],
+    ['features','Features','M4 5h7v7H4zM13 5h7v4h-7zM13 13h7v6h-7zM4 16h7v3H4z', null],
+    ['activity','Activity','M22 12h-4l-3 8L9 4l-3 8H2', null],
+  ];
+
+  PROJECTS = [
+    { slug:'moon-cli', name:'moon-cli', path:'c:/Users/TJ/Documents/GitHub/moon-cli', repo:'https://github.com/TirtheshJani/moon-cli', runtime:'claude-code', crew:['coding-lead','moon-cli-builder','moon-cli-reviewer'], caps:['coding','engineering'], open:5, mod:'3m ago' },
+    { slug:'tutoring-app', name:'tutoring-app', path:'c:/Users/TJ/Documents/GitHub/TutoringApp', repo:'https://github.com/TirtheshJani/TutoringApp', runtime:'claude-code', crew:[], caps:['learning','coding'], open:0, mod:'1h ago' },
+    { slug:'research', name:'research', path:'c:/Users/TJ/Documents/Research', repo:null, runtime:'claude-code', crew:['research-lead','arxiv-watcher','health-watcher'], caps:['research','healthcare-tech'], open:3, mod:'26m ago' },
+    { slug:'vault', name:'vault', path:'c:/Users/TJ/Documents/Vault', repo:null, runtime:'claude-code', crew:['productivity-lead','drill-sergeant'], caps:['productivity'], open:2, mod:'12m ago' },
+    { slug:'content', name:'content', path:'c:/Users/TJ/Documents/Content', repo:null, runtime:'gemini-cli', crew:['content-lead','anxious-nomad-writer'], caps:['content','substack'], open:1, mod:'3h ago' },
+    { slug:'portfolio', name:'portfolio', path:'c:/Users/TJ/Documents/GitHub/portfolio', repo:'https://github.com/TirtheshJani/portfolio', runtime:'claude-code', crew:['business-lead'], caps:['business'], open:1, mod:'1d ago' },
+  ];
+
+  PROJ_BOARD = {
+    'moon-cli': {
+      backlog:[ ['#214','Flaky retry on token refresh','moon-cli-builder'], ['#211','Cache invalidation on profile switch','moon-cli-builder'] ],
+      queued:[ ['#222','Weekly dependency bump + changelog','moon-cli-reviewer'] ],
+      running:[ ['#218','Triage 14 open issues by rubric','coding-lead'], ['#220','Add --json flag to status output','moon-cli-builder'] ],
+      review:[ ['#205','Refactor auth module into adapters','moon-cli-reviewer'] ],
+      done:[ ['#198','Fix Windows path handling','moon-cli-builder'], ['#193','Onboarding doc for new contributors','coding-lead'] ],
+    },
+    'research': {
+      backlog:[ ['#231','Track three new ML benchmarks','arxiv-watcher'] ],
+      queued:[ ['#229','Weekly healthcare-tech regulatory watch','health-watcher'] ],
+      running:[ ['#226','Cluster today’s arXiv into themes','arxiv-watcher'] ],
+      review:[],
+      done:[ ['#219','PubMed digest: FHIR interoperability','health-watcher'] ],
+    },
+  };
+
+  WORKTREES = {
+    'moon-cli':[
+      { path:'.worktrees/issue-218', branch:'issue/218-triage', head:'a3f9c1', active:true },
+      { path:'.worktrees/issue-220', branch:'issue/220-json-flag', head:'7b2e44', active:false },
+    ],
+    'research':[
+      { path:'.worktrees/issue-226', branch:'issue/226-arxiv-themes', head:'c81d05', active:true },
+    ],
+  };
+
+  AGENT_SKILLS = {
+    'coding-lead':['coding-lead','issue-triage'],
+    'moon-cli-builder':['repo-onboarding','pr-review-prep','test-driven-development'],
+    'moon-cli-reviewer':['requesting-code-review','receiving-code-review'],
+    'research-lead':['research-lead','research-lookup'],
+    'arxiv-watcher':['arxiv-daily-digest','paper-summary','morning-trend-scan'],
+    'health-watcher':['healthcare-arxiv','pubmed-digest','regulatory-watch'],
+    'productivity-lead':['productivity-lead','daily-rollup'],
+    'drill-sergeant':['vault-cleanup'],
+    'content-lead':['content-lead','content-research-writer'],
+    'anxious-nomad-writer':['newsletter-roundup','collective-update'],
+    'business-lead':['business-lead','inbox-triage','calendar-prep'],
+    'socratic-tutor':['research-lookup'],
+    'paper-coach':['paper-summary'],
+  };
+
+  FEATURES = [
+    ['notes','Note Taker','Capture','Read, edit, and quick-capture vault notes — Ctrl+Shift+K from anywhere.', true],
+    ['inbox','Inbox','Capture','Triage digests, failed runs, and issues awaiting review in one queue.', true],
+    ['ask','Ask Vault','Knowledge','Grounded Q&A over the vault — hybrid retrieval with [n] citations.', true],
+    ['graph','Knowledge Graph','Knowledge','Wikilink and backlink graph across the entire vault.', true],
+    ['notebooklm','NotebookLM Export','Knowledge','Bundle notes and sources into a Drive-synced NotebookLM inbox.', true],
+    ['learning','Tutor','Learning & Research','Live Socratic tutoring per topic; tutors write session logs back to the vault.', true],
+    ['research','Research','Learning & Research','Multi-source research projects; agents collect sources, chat grounded in the folder.', true],
+    ['studio','Design Studio','Studio','Architecture diagrams and design docs per project, readable by agents.', false],
+    ['sessions','Sessions','Telemetry','CLI transcripts from Claude Code and Gemini CLI, linked to runs.', true],
+    ['analytics','Analytics','Telemetry','Token usage and run outcomes across every CLI session.', true],
+    ['evals','Evals','Telemetry','Deterministic run metrics plus optional LLM-judged rubric scores.', false],
+    ['docker','Docker','Infrastructure','Manage compose stacks and containers from the dashboard.', true],
+    ['connections','Connections','Infrastructure','Gmail, Calendar, GitHub, Notion and Drive connectors for skills.', true],
+  ];
+
+  FEATURE_ICONS = {
+    notes:['M5 3h14v18H5z','M8 8h8M8 12h8M8 16h5'],
+    inbox:['M4 13l2-8h12l2 8','M4 13v6h16v-6','M4 13h5l1.5 2.5h3L19 13'],
+    ask:['M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z'],
+    graph:['M6 6m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0','M18 18m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0','M18 6m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0','M8.5 6h7M8 8l8 8'],
+    notebooklm:['M5 4a1 1 0 0 1 1-1h8l4 4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z','M13 3v5h5','M9 14l2 2 4-4'],
+    learning:['M12 4l9 5-9 5-9-5z','M21 9v5','M7 11.5V16c0 1 2.2 2.5 5 2.5s5-1.5 5-2.5v-4.5'],
+    research:['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M21 21l-4.3-4.3'],
+    studio:['M12 21a9 9 0 1 1 0-18 7 7 0 0 1 0 14h-1.6a1.4 1.4 0 0 0 0 2.8z','M7.5 11h.01M12 7.5h.01M16.5 11h.01'],
+    sessions:['M4 5h16v12H4z','M8 21h8','M7 9l3 2-3 2'],
+    analytics:['M4 19V5M4 19h16','M8 16v-4M12 16V9M16 16v-7'],
+    evals:['M9 11l2.5 2.5L21 4M20.5 12v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2H16'],
+    docker:['M3 8l9-4 9 4-9 4-9-4z','M3 8v8l9 4 9-4V8','M12 12v8'],
+    connections:['M9.5 12.5a3 3 0 0 0 4.24 0l2.12-2.12a3 3 0 1 0-4.24-4.24l-1 1','M14.5 11.5a3 3 0 0 0-4.24 0l-2.12 2.12a3 3 0 1 0 4.24 4.24l1-1'],
+  };
+
+  FEATURE_GROUPS = ['Capture','Knowledge','Learning & Research','Studio','Telemetry','Infrastructure'];
+
+  DOCKER = {
+    available:{ cli:true, daemon:true, version:'27.1.1' },
+    stacks:[
+      { name:'lightrag', status:'running (2)', config:'infra/lightrag/compose.yaml', allowed:true },
+      { name:'vault-search', status:'running (1)', config:'infra/search/compose.yaml', allowed:true },
+      { name:'tutoring-app', status:'exited', config:'TutoringApp/docker-compose.yml', allowed:false },
+    ],
+    containers:[
+      { name:'lightrag-server', image:'ghcr.io/hkuds/lightrag:latest', state:'running', project:'lightrag', ports:'9621→9621' },
+      { name:'lightrag-postgres', image:'shangor/postgres-for-rag:v1.0', state:'running', project:'lightrag', ports:'5432' },
+      { name:'meilisearch', image:'getmeili/meilisearch:v1.8', state:'running', project:'vault-search', ports:'7700→7700' },
+      { name:'tutoring-api', image:'tutoringapp-api:dev', state:'exited', project:'tutoring-app', ports:'—' },
+    ],
+    allowlist:['lightrag','vault-search'],
+  };
+
+  CONNECTIONS = [
+    ['Gmail','gmail','connected','tj@gmail.com','inbox-triage · weekly-rollup'],
+    ['Google Calendar','calendar','connected','tj@gmail.com','calendar-prep · weekly-rollup'],
+    ['GitHub','github','connected','TirtheshJani','issue-triage · pr-review-prep'],
+    ['Google Drive','drive','connected','My Drive','deep-web-research · NotebookLM'],
+    ['Notion','notion','off','','collective-update · engagement-report'],
+    ['Substack','substack','off','','draft-from-vault'],
+  ];
+
+  NOTES = [
+    ['Daily — 2026-06-11','daily','Standup follow-ups, the FHIR adapter retry bug, and a note to re-run the arXiv digest.','2h ago'],
+    ['Gaia-ESO interpretability audit','research','LightGBM feature attributions look stable across UVES folds; write up the SHAP drift section.','yesterday'],
+    ['metricHEALTH — MLOps runbook','wiki','Promotion gates, rollback drill, and the on-call escalation path for clinical workflows.','2d ago'],
+    ['Reading — RAG vs narrative','threads','Comparing retrieval-grounded answers against narrative summaries for clinical notes.','3d ago'],
+    ['Ad astra — quarter goals','daily','Two papers in prep, ship moon-cli 0.4, and keep the day job off the laptop.','5d ago'],
+  ];
+
+  INBOX = [
+    ['digest','Morning trend scan ready','arxiv-watcher · 14 links, 3 worth a deeper look','done','22m'],
+    ['review','Substack draft awaiting review','content-lead · #212 in Review','review','41m'],
+    ['failed','pr-review-prep failed','moon-cli-reviewer · GitHub rate limit (#206)','failed','1h'],
+    ['digest','Weekly healthcare-tech watch','health-watcher · 6 FDA + CE updates classified','done','2h'],
+    ['review','Vault cleanup proposes 11 archives','productivity-lead · confirm to apply','review','3h'],
+  ];
+
+  ASK_SOURCES = [
+    ['metricHEALTH — MLOps runbook','wiki/metrichealth-mlops-runbook.md'],
+    ['FHIR adapter — decisions.md','projects/moon-cli/decisions.md'],
+    ['Reading — RAG vs narrative','threads/rag-vs-narrative.md'],
+  ];
+
+  TOPICS = [
+    ['Linear algebra for QML','socratic-tutor',8,'last 2d ago','srs'],
+    ['FHIR resource modelling','paper-coach',5,'last yesterday',''],
+    ['Stellar spectra interpretability','socratic-tutor',12,'last 4h ago','srs'],
+    ['System design drills','drill-sergeant',3,'last 6d ago',''],
+  ];
+
+  RESEARCH = [
+    ['FHIR vs narrative RAG','Does retrieval over structured FHIR beat narrative summaries for clinical Q&A?',24,'today'],
+    ['Stellar spectra interpretability','Which spectral features drive a LightGBM classifier on Gaia-ESO UVES data?',38,'yesterday'],
+    ['MLOps reliability patterns','What promotion-gate designs hold up under real clinical load?',11,'4d ago'],
+  ];
+
+  STUDIO_DOCS = [
+    ['moon-cli — architecture','moon-cli','diagram'],
+    ['Tutoring app — data flow','tutoring-app','diagram'],
+    ['Vault RAG — retrieval design','vault','doc'],
+    ['metricHEALTH — integration surface','research','doc'],
+  ];
+
+  NOTEBOOKS = [
+    ['Stellar-spectra paper pack','9 notes · 4 sources','3.2 MB','synced'],
+    ['FHIR RAG literature','22 sources','7.8 MB','synced'],
+    ['Weekly healthcare watch','6 digests','1.1 MB','pending'],
+  ];
+
+  SESSIONS_LIST = [
+    ['arxiv-watcher','claude-code','paper-summary','41k','done','4m'],
+    ['business-lead','claude-code','inbox-triage','22k','done','12m'],
+    ['content-lead','gemini-cli','draft-from-vault','68k','done','26m'],
+    ['moon-cli-reviewer','claude-code','pr-review-prep','12k','failed','1h'],
+    ['health-watcher','claude-code','pubmed-digest','35k','done','41m'],
+    ['socratic-tutor','gemini-cli','tutor-session','19k','done','2h'],
+  ];
+
+  EVALS = [
+    ['arxiv-daily-digest','arxiv-watcher','4.6','pass','12.4s'],
+    ['inbox-triage','business-lead','4.2','pass','6.1s'],
+    ['pr-review-prep','moon-cli-reviewer','—','fail','3.0s'],
+    ['pubmed-digest','health-watcher','4.8','pass','9.7s'],
+    ['draft-from-vault','content-lead','3.9','pass','22.0s'],
+    ['vault-cleanup','productivity-lead','4.4','pass','5.2s'],
+  ];
+
+  ANALYTICS_BARS = [
+    ['Mon','3.1M',62],['Tue','4.8M',96],['Wed','2.4M',48],['Thu','5.2M',100],['Fri','4.2M',84],['Sat','1.1M',22],['Sun','0.8M',16],
+  ];
+
+  GRAPH_NODES = [
+    ['FHIR',50,42,1],['MLOps',26,60,1],['RAG',70,64,1],['Gaia-ESO',78,30,0],['moon-cli',38,80,0],['tutoring',62,86,0],['interpretability',86,52,0],['vault',18,38,0],
+  ];
+
+  componentDidMount() {
+    try { const t = localStorage.getItem('aos-theme'); if (t) this.setState({ theme: t }); } catch(e){}
+    this._key = (e) => { if (e.key === 'Escape' && this.state.drawerOpen) this.closeDrawer(); };
+    document.addEventListener('keydown', this._key);
+    this._syncBody();
+  }
+  componentWillUnmount(){ document.removeEventListener('keydown', this._key); }
+  _syncBody(){ try { document.body.style.background = this.state.theme === 'dark' ? '#060b14' : '#f4f6f8'; } catch(e){} }
+
+  svg(d, sz) {
+    sz = sz || 17;
+    const paths = Array.isArray(d) ? d : [d];
+    return React.createElement('svg', { width:sz, height:sz, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.7, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':'true' },
+      paths.map((p,i)=>React.createElement('path',{key:i,d:p})));
+  }
+
+  // ---------- handlers ----------
+  setView = (e) => this.setState({ view: e.currentTarget.dataset.v, projSlug: null });
+  openSettings = () => this.setState({ view: 'settings' });
+  setSettingsTab = (e) => this.setState({ settingsTab: e.currentTarget.dataset.t });
+  openProject = (e) => this.setState({ view: 'projects', projSlug: e.currentTarget.dataset.slug, projTab: 'board' });
+  backToProjects = () => this.setState({ projSlug: null });
+  setProjTab = (e) => this.setState({ projTab: e.currentTarget.dataset.t });
+  toggleFeature = (e) => { const k = e.currentTarget.dataset.k; this.setState(s => ({ features: { ...s.features, [k]: !s.features[k] } })); };
+  openFeature = (e) => {
+    const k = e.currentTarget.dataset.k;
+    if (k === 'docker') { this.setState({ view:'settings', settingsTab:'docker' }); return; }
+    if (k === 'connections') { this.setState({ view:'settings', settingsTab:'connections' }); return; }
+    if (k === 'notebooklm') { this.setState({ view:'settings', settingsTab:'knowledge' }); return; }
+    this.setState({ view:'feature', featKey:k });
+  };
+  backToFeatures = () => this.setState({ view:'features' });
+  toggleSched = () => this.setState(s => ({ sched: !s.sched }));
+  toggleLlm = () => this.setState(s => ({ llm: !s.llm }));
+  toggleIngest = () => this.setState(s => ({ ingest: !s.ingest }));
+  toggleTheme = () => { const t = this.state.theme === 'dark' ? 'light' : 'dark'; try{localStorage.setItem('aos-theme',t);}catch(e){} this.setState({ theme:t }, ()=>this._syncBody()); };
+  toggleAutonomy = () => this.setState(s => ({ autonomy: !s.autonomy }));
+  toggleKill = () => this.setState(s => ({ killed: !s.killed }));
+  onSkillSearch = (e) => this.setState({ skillQuery: e.target.value });
+  setDomain = (e) => this.setState({ skillDomain: e.currentTarget.dataset.d });
+  onPickerSearch = (e) => this.setState({ pickerQuery: e.target.value });
+
+  openCreate = () => this.setState({ drawerOpen:true, editSlug:null, draftPrompt:'', pickerQuery:'', form:{ name:'', slug:'', description:'', runtime:'claude-code', skills:[], allowedTools:'Read, Write, Glob, Grep', systemPrompt:'' } });
+  openEdit = (e) => {
+    const slug = e.currentTarget.dataset.slug;
+    const a = this.AGENTS.find(x=>x.slug===slug);
+    const sk = this.SKILLS.filter(s=>s[1].toLowerCase()===(a?a.dept.split(' ')[0].toLowerCase():'')).slice(0, a?a.skills:0).map(s=>s[0]);
+    this.setState({ drawerOpen:true, editSlug:slug, draftPrompt:'', pickerQuery:'',
+      form:{ name:a?a.name:'', slug:slug, description:'', runtime: a&&a.rt==='Gemini CLI'?'gemini-cli':'claude-code', skills:sk, allowedTools:'Read, Write, WebFetch, WebSearch', systemPrompt:'You are '+slug+', a '+(a?a.dept:'')+' department member.' } });
+  };
+  closeDrawer = () => this.setState({ drawerOpen:false });
+
+  setName = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,name:v}})); };
+  setSlug = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,slug:v}})); };
+  setDesc = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,description:v}})); };
+  setRuntime = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,runtime:v}})); };
+  setTools = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,allowedTools:v}})); };
+  setPrompt = (e)=>{ const v=e.target.value; this.setState(s=>({form:{...s.form,systemPrompt:v}})); };
+  onDraftInput = (e)=>{ const v=e.target.value; this.setState({draftPrompt:v}); };
+
+  toggleSkill = (e) => {
+    const name = e.currentTarget.dataset.s;
+    this.setState(s => {
+      const has = s.form.skills.includes(name);
+      return { form: { ...s.form, skills: has ? s.form.skills.filter(x=>x!==name) : [...s.form.skills, name] } };
+    });
+  };
+
+  draftAi = () => {
+    if (this.state.draftPrompt.trim().length < 10 || this.state.drafting) return;
+    this.setState({ drafting:true });
+    setTimeout(() => {
+      this.setState(s => ({
+        drafting:false,
+        form:{ ...s.form,
+          name: s.form.name || 'fda-guidance-watcher',
+          slug: s.editSlug || s.form.slug || 'fda-guidance-watcher',
+          description: 'Watches FDA digital-health guidance and regulatory updates; summarizes new device clearances weekly.',
+          skills: Array.from(new Set([...s.form.skills, 'regulatory-watch','pubmed-digest','healthcare-arxiv'])),
+          systemPrompt: 'You are fda-guidance-watcher, a research-department member. Pull the latest FDA and CE healthcare-tech updates, classify by device class, and write a weekly watch report to the vault.' }
+      }));
+    }, 900);
+  };
+
+  saveAgent = () => { if (!this._canSave()) return; this.closeDrawer(); };
+  _canSave(){ const f=this.state.form; return !!(f.name && f.slug && f.systemPrompt); }
+
+  // ---------- derived ----------
+  _statusPill(st){
+    const map = {
+      active:['var(--ok)','var(--ok-bg)'], done:['var(--ok)','var(--ok-bg)'],
+      idle:['var(--text-3)','var(--surface-2)'], paused:['var(--text-2)','var(--surface-2)'],
+      failed:['var(--danger)','var(--danger-bg)'], blocked:['var(--danger)','var(--danger-bg)'], stub:['var(--text-3)','var(--surface-2)'], authored:['var(--ok)','var(--ok-bg)'],
+    };
+    const [c,bg] = map[st] || map.idle;
+    return 'font-family:Oswald,sans-serif; font-size:9.5px; letter-spacing:0.07em; text-transform:uppercase; padding:3px 8px; border-radius:999px; flex:0 0 auto; color:'+c+'; background:'+bg+';';
+  }
+  _dot(c){ return 'width:7px; height:7px; border-radius:50%; flex:0 0 7px; background:'+c+';'; }
+  _switchTrack(on){ return 'position:relative; flex:0 0 auto; width:40px; height:22px; border-radius:999px; border:none; cursor:pointer; padding:0; background:'+(on?'var(--accent)':'var(--border-2)')+';'; }
+  _switchKnob(on){ return 'position:absolute; top:3px; left:'+(on?'21px':'3px')+'; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .18s ease; box-shadow:0 1px 2px rgba(0,0,0,.3);'; }
+
+  renderVals() {
+    const s = this.state;
+    const f = s.form;
+
+    // ---------- projects ----------
+    const capChip = 'font-size:10.5px; padding:3px 9px; border-radius:999px; background:var(--surface-2); color:var(--text-2);';
+    const projectsList = this.PROJECTS.map(p => ({
+      slug:p.slug, name:p.name, path:p.path, runtime:p.runtime,
+      repo: p.repo ? p.repo.replace('https://github.com/','') : '', hasRepo: !!p.repo,
+      open: p.open, openLabel: p.open===1?'1 open issue':(p.open+' open issues'), mod:p.mod,
+      caps: p.caps.map(c=>({ label:c })),
+      crewAvatars: p.crew.slice(0,4).map(c=>({ initials:this._initials(c) })),
+      crewMore: p.crew.length>4 ? ('+'+(p.crew.length-4)) : '', hasCrewMore: p.crew.length>4,
+      crewCount: p.crew.length===0 ? 'No crew' : (p.crew.length+' crew'),
+    }));
+
+    // ---------- current project detail ----------
+    const pj = this.PROJECTS.find(x=>x.slug===s.projSlug) || null;
+    const colDefs = [['backlog','Backlog'],['queued','Queued'],['running','Running'],['review','Review'],['done','Done']];
+    const board = (this.PROJ_BOARD[s.projSlug] || {});
+    const projColumns = colDefs.map(([k,title]) => {
+      const cards = (board[k] || []).map(([id,t,agent]) => ({ id, t, agent, initials:this._initials(agent) }));
+      const dotColor = k==='running' ? 'var(--ok)' : (k==='done' ? 'var(--text-3)' : 'var(--accent)');
+      return { key:k, title, count:cards.length, cards, dot:this._dot(dotColor) };
+    });
+    const projCrew = pj ? pj.crew.map(c => ({ name:c, initials:this._initials(c), skills:(this.AGENT_SKILLS[c]||[]).slice(0,4).map(sk=>({ name:sk })) })) : [];
+    const projWorktrees = (this.WORKTREES[s.projSlug] || []).map(w => ({ ...w, branchLabel: w.branch || '(detached)' }));
+    const projKnowledgeNotes = [
+      ['PROJECT.md','Routing, crew, capabilities and runtime defaults for this project.','ingested'],
+      ['architecture.md','System boundaries, data flow, and the integration surface.','ingested'],
+      ['decisions.md','Running log of design decisions with rationale and dates.','ingested'],
+      ['notes/2026-06-standup.md','Captured standup notes and follow-ups for the week.','pending'],
+    ];
+
+    // ---------- features ----------
+    const featureGroups = this.FEATURE_GROUPS.map(cat => ({
+      cat,
+      items: this.FEATURES.filter(x=>x[2]===cat).map(([key,name,c,desc]) => {
+        const on = !!s.features[key];
+        return { key, name, desc, on,
+          icon: this.svg(this.FEATURE_ICONS[key], 18),
+          arrow: this.svg(['M5 12h14','M13 6l6 6-6 6'], 16),
+          iconWrap: 'width:40px; height:40px; flex:0 0 40px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:'+(on?'var(--accent-bg)':'var(--surface-2)')+'; color:'+(on?'var(--accent-ink)':'var(--text-3)')+';',
+          dot: this._dot(on?'var(--ok)':'var(--text-3)'),
+          stateLabel: on?'Enabled':'Disabled',
+          openLabel: 'Open →',
+        };
+      })
+    })).filter(g=>g.items.length>0);
+    const enabledCount = Object.values(s.features).filter(Boolean).length;
+
+    // ---------- feature surface ----------
+    const fk = s.featKey;
+    const fdef = this.FEATURES.find(x=>x[0]===fk) || this.FEATURES[0];
+    const featName = fdef[1], featDesc = fdef[3], featCat = fdef[2];
+    const noteFolderPill = 'font-family:Oswald,sans-serif; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:5px; background:var(--surface-2); color:var(--text-3);';
+    const notesList = this.NOTES.map(([t,f,e,ago])=>({ title:t, folder:f, excerpt:e, ago, folderStyle:noteFolderPill }));
+    const inboxList = this.INBOX.map(([kind,t,sub,st,ago])=>({ kind, t, sub, ago, dot:this._dot(st==='failed'?'var(--danger)':(st==='review'?'var(--accent)':'var(--ok)')), stStyle:this._statusPill(st==='failed'?'failed':(st==='review'?'paused':'done')), st:kind }));
+    const askSources = this.ASK_SOURCES.map(([t,p],i)=>({ n:String(i+1), title:t, path:p }));
+    const topicsList = this.TOPICS.map(([t,tutor,n,last,srs])=>({ title:t, tutor, meta:n+' sessions · '+last+(srs?' · srs':'') }));
+    const researchList = this.RESEARCH.map(([t,q,n,ago])=>({ title:t, q, meta:n+' sources · '+ago }));
+    const studioDocs = this.STUDIO_DOCS.map(([t,p,kind])=>({ title:t, proj:p, kind, kindStyle: kind==='diagram' ? 'font-family:Oswald,sans-serif; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:5px; background:var(--accent-bg); color:var(--accent-ink);' : 'font-family:Oswald,sans-serif; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:5px; background:var(--surface-2); color:var(--text-2);' }));
+    const notebooksList = this.NOTEBOOKS.map(([t,meta,size,st])=>({ title:t, meta, size, st, stStyle:this._statusPill(st==='synced'?'active':'idle') }));
+    const sessionsList = this.SESSIONS_LIST.map(([agent,rt,skill,tok,st,ago])=>({ agent, rt, skill, tok, ago, st, stStyle:this._statusPill(st) }));
+    const evalsRows = this.EVALS.map(([skill,agent,score,pass,lat])=>({ skill, agent, score, lat, pass, passStyle:this._statusPill(pass==='pass'?'done':'failed') }));
+    const analyticsBars = this.ANALYTICS_BARS.map(([d,v,h])=>({ d, v, barStyle:'width:100%; border-radius:6px 6px 0 0; background:var(--accent); height:'+h+'%;' }));
+    const graphNodes = this.GRAPH_NODES.map(([label,x,y,hub])=>({ label, style:'position:absolute; left:'+x+'%; top:'+y+'%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:7px; padding:'+(hub?'7px 13px':'5px 10px')+'; border-radius:999px; border:1px solid '+(hub?'var(--accent-line)':'var(--border-2)')+'; background:'+(hub?'var(--accent-bg)':'var(--surface)')+'; color:'+(hub?'var(--accent-ink)':'var(--text-2)')+'; font-size:'+(hub?'12.5px':'11px')+'; font-weight:'+(hub?'600':'500')+'; white-space:nowrap; box-shadow:var(--shadow);', dotStyle:this._dot(hub?'var(--accent)':'var(--text-3)') }));
+
+    // ---------- settings ----------
+    const settingsTabs = [['features','Features'],['general','General'],['skills','Skills'],['docker','Docker'],['knowledge','Knowledge'],['connections','Connections']];
+    const stBase = 'padding:8px 14px; border-radius:8px; border:none; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:12.5px; font-weight:500; color:var(--text-2); white-space:nowrap;';
+    const stActive = 'padding:8px 14px; border-radius:8px; border:none; background:var(--accent-bg); cursor:pointer; font-family:Montserrat,sans-serif; font-size:12.5px; font-weight:600; color:var(--accent-ink); white-space:nowrap;';
+    const settingsRail = settingsTabs.map(([k,label]) => ({ key:k, label, style: s.settingsTab===k ? stActive : stBase }));
+
+    const featureRows = this.FEATURES.map(([key,name,cat,desc]) => {
+      const on = !!s.features[key];
+      return { key, name, cat, desc, on, track:this._switchTrack(on), knob:this._switchKnob(on) };
+    });
+
+    const dockBtn = (allowed, primary) => 'padding:7px 13px; border-radius:7px; border:1px solid '+(primary&&allowed?'transparent':'var(--border-2)')+'; background:'+(primary&&allowed?'var(--accent)':'var(--surface)')+'; color:'+(primary&&allowed?'#fff':'var(--text-2)')+'; font-family:Montserrat,sans-serif; font-size:11.5px; font-weight:500; cursor:'+(allowed?'pointer':'not-allowed')+';'+(allowed?'':'opacity:.45;');
+    const dockerStacks = this.DOCKER.stacks.map(st => ({ ...st, notAllowed: st.allowed?'':'true', statusStyle:this._statusPill(st.status.startsWith('running')?'active':'idle'), startStyle:dockBtn(st.allowed,true), stopStyle:dockBtn(st.allowed,false), restartStyle:dockBtn(st.allowed,false) }));
+    const dockerContainers = this.DOCKER.containers.map(c => ({ ...c, stStyle:this._statusPill(c.state==='running'?'active':'idle') }));
+    const connectionsList = this.CONNECTIONS.map(([name,key,status,acct,skills]) => {
+      const connected = status==='connected';
+      return { name, key, acct, skills, connected,
+        icon: this.svg(this.FEATURE_ICONS[key] || this.FEATURE_ICONS.connections, 18),
+        statusStyle: this._statusPill(connected?'active':'idle'),
+        statusLabel: connected?'connected':'not connected',
+        btnLabel: connected?'Manage':'Connect',
+        btnStyle: connected
+          ? 'padding:9px; border-radius:8px; border:1px solid var(--border-2); background:var(--surface); color:var(--text); font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer;'
+          : 'padding:9px; border-radius:8px; border:none; background:var(--accent); color:#fff; font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer;',
+      };
+    });
+
+    const navBase = 'display:flex; align-items:center; gap:11px; width:100%; padding:9px 11px; border:none; border-radius:8px; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:500; color:var(--text-2);';
+    const navActive = 'display:flex; align-items:center; gap:11px; width:100%; padding:9px 11px; border:none; border-radius:8px; background:var(--accent-bg); cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:600; color:var(--accent-ink);';
+    const navItems = this.NAV.map(([key,label,d,badge]) => ({
+      key, label, badge: badge||'', current: s.view===key ? 'page' : 'false',
+      icon: this.svg(d, 17),
+      style: s.view===key ? navActive : navBase,
+      badgeStyle: badge ? ('font-family:Oswald,sans-serif; font-size:10px; letter-spacing:0.06em; padding:1px 7px; border-radius:999px; background:var(--surface-2); color:var(--text-3);') : 'display:none;',
+    }));
+
+    const runtimes = this.RUNTIMES.map(r => ({ name:r.name, plan:r.plan, dot:this._dot(r.on?'var(--ok)':'var(--text-3)') }));
+
+    const crumbMap = { dashboard:'Command center', projects:'Workspace', agents:'Roster', issues:'Orchestrator', features:'Surfaces', activity:'Telemetry', settings:'Control' };
+    const onProject = s.view==='projects' && !!pj;
+
+    // dashboard
+    const stats = [
+      { label:'Active runs', value:'3', sub:'streaming' },
+      { label:'Agents', value:'13', sub:'across 6 projects' },
+      { label:'Skills', value:'44', sub:'6 domains' },
+      { label:'Runs today', value:'28', sub:'2 failed' },
+    ];
+    const activeRuns = this.ACTIVE.map(r => ({ ...r, initials:this._initials(r.agent), pctW:r.pct+'%' }));
+    const recent = this.ACTIVITY.slice(0,6).map(([agent,skill,st,tok,cost,ago]) => ({ agent, skill, tok, ago, st, dot:this._dot(st==='failed'?'var(--danger)':'var(--ok)'), stStyle:this._statusPill(st) }));
+    const activityRows = this.ACTIVITY.map(([agent,skill,st,tok,cost,ago]) => ({ agent, skill, st, tok, cost, ago, stStyle:this._statusPill(st) }));
+
+    // agents
+    const agents = this.AGENTS.map(a => ({ ...a, initials:this._initials(a.name), skillsTxt:a.skills+' skill'+(a.skills===1?'':'s'), statusStyle:this._statusPill(a.status) }));
+
+    // skills tab
+    const domains = ['Research','Coding','Business','Content','Engineering','Productivity'];
+    const counts = {}; domains.forEach(d=>counts[d]=this.SKILLS.filter(x=>x[1]===d).length);
+    const chipBase = 'padding:7px 13px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); font-family:Montserrat,sans-serif; font-size:12px; font-weight:500; cursor:pointer;';
+    const chipActive = 'padding:7px 13px; border-radius:999px; border:1px solid var(--accent-line); background:var(--accent-bg); color:var(--accent-ink); font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer;';
+    const domainChips = [{ key:'all', label:'All', count:this.SKILLS.length, active:s.skillDomain==='all'?'true':'false', style:s.skillDomain==='all'?chipActive:chipBase }]
+      .concat(domains.map(d => ({ key:d, label:d, count:counts[d], active:s.skillDomain===d?'true':'false', style:s.skillDomain===d?chipActive:chipBase })));
+
+    const q = s.skillQuery.trim().toLowerCase();
+    const filtered = this.SKILLS.filter(x => (s.skillDomain==='all'||x[1]===s.skillDomain) && (q==='' || x[0].toLowerCase().includes(q) || x[3].toLowerCase().includes(q)));
+    const groupOrder = s.skillDomain==='all' ? domains : [s.skillDomain];
+    const skillGroups = groupOrder.map(d => {
+      const items = filtered.filter(x=>x[1]===d);
+      return { domain:d, count:items.length, skills: items.map(x=>({ name:x[0], sub:x[2], desc:x[3], status:x[4], statusStyle:this._statusPill(x[4]), mcp: x[5]==='none'?'':x[5], mcpStyle: x[5]==='none'?'display:none;':'font-family:ui-monospace,monospace; font-size:9.5px; padding:2px 7px; border-radius:5px; background:var(--accent-bg); color:var(--accent-ink); margin-left:auto;' })) };
+    }).filter(g=>g.skills.length>0);
+
+    // picker (drawer)
+    const pq = s.pickerQuery.trim().toLowerCase();
+    const pFiltered = this.SKILLS.filter(x => pq==='' || x[0].toLowerCase().includes(pq) || x[3].toLowerCase().includes(pq));
+    const rowBase = 'display:flex; align-items:flex-start; gap:10px; padding:9px 13px; cursor:pointer; border-bottom:1px solid var(--border);';
+    const pickerGroups = domains.map(d => {
+      const items = pFiltered.filter(x=>x[1]===d);
+      return { domain:d, skills: items.map(x=>({ name:x[0], desc:x[3], checked: f.skills.includes(x[0]) ? 'true':'', rowStyle: rowBase })) };
+    }).filter(g=>g.skills.length>0);
+    const selectedChips = f.skills.map(n=>({ name:n }));
+
+    const canSave = this._canSave();
+    const draftReady = s.draftPrompt.trim().length >= 10 && !s.drafting;
+    const draftBtnBase = 'flex:0 0 auto; padding:10px 14px; border-radius:8px; border:none; font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; background:var(--accent); color:#fff;';
+
+    return {
+      theme:s.theme, autonomy:s.autonomy, killed:s.killed, drawerOpen:s.drawerOpen,
+      crumb: s.view==='feature' ? 'Surfaces' : (onProject ? pj.name : (crumbMap[s.view] || '')),
+      isDash:s.view==='dashboard', isAgents:s.view==='agents', isIssues:s.view==='issues', isActivity:s.view==='activity',
+      isProjects: s.view==='projects' && !pj, isProject: onProject, isFeatures: s.view==='features', isSettings: s.view==='settings',
+      navItems, runtimes,
+      setView:this.setView, toggleTheme:this.toggleTheme, toggleAutonomy:this.toggleAutonomy, toggleKill:this.toggleKill,
+      openCreate:this.openCreate, openEdit:this.openEdit, closeDrawer:this.closeDrawer,
+      openSettings:this.openSettings, setSettingsTab:this.setSettingsTab, openProject:this.openProject, backToProjects:this.backToProjects, setProjTab:this.setProjTab, toggleFeature:this.toggleFeature,
+      settingsNavStyle: s.view==='settings' ? navActive : navBase, settingsCurrent: s.view==='settings' ? 'page' : 'false',
+      gearIcon: this.svg(['M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z','M19.4 13a7.8 7.8 0 0 0 .06-2l1.6-1.25-1.5-2.6-1.93.66a7.8 7.8 0 0 0-1.73-1l-.3-2H10.4l-.3 2a7.8 7.8 0 0 0-1.73 1l-1.93-.66-1.5 2.6L6.54 11a7.8 7.8 0 0 0 0 2l-1.6 1.25 1.5 2.6 1.93-.66a7.8 7.8 0 0 0 1.73 1l.3 2h3.2l.3-2a7.8 7.8 0 0 0 1.73-1l1.93.66 1.5-2.6z'], 17),
+      addIcon: this.svg(['M12 5v14','M5 12h14'], 16),
+      extIcon: this.svg(['M14 4h6v6','M20 4l-9 9','M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'], 13),
+
+      // projects
+      projectsList, projCount:String(this.PROJECTS.length),
+      projName: pj?pj.name:'', projPath: pj?pj.path:'', projRuntime: pj?pj.runtime:'', projRepo: pj?pj.repo:'', projRepoHost: pj&&pj.repo?pj.repo.replace('https://',''):'', projHasRepo: !!(pj&&pj.repo),
+      projTabBoard: s.projTab==='board', projTabKnowledge: s.projTab==='knowledge',
+      projBoardBtnStyle: s.projTab==='board' ? 'padding:9px 4px; margin-right:18px; border:none; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:600; color:var(--accent-ink); border-bottom:2px solid var(--accent); ' : 'padding:9px 4px; margin-right:18px; border:none; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:500; color:var(--text-3); border-bottom:2px solid transparent;',
+      projKnowledgeBtnStyle: s.projTab==='knowledge' ? 'padding:9px 4px; border:none; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:600; color:var(--accent-ink); border-bottom:2px solid var(--accent);' : 'padding:9px 4px; border:none; background:transparent; cursor:pointer; font-family:Montserrat,sans-serif; font-size:13px; font-weight:500; color:var(--text-3); border-bottom:2px solid transparent;',
+      projColumns, projCrew, hasProjCrew: projCrew.length>0, noProjCrew: projCrew.length===0, projWorktrees, hasProjWorktrees: projWorktrees.length>0, projKnowledgeNotes: projKnowledgeNotes.map(([n,d,st])=>({ name:n, desc:d, st, stStyle:this._statusPill(st==='ingested'?'active':'idle') })),
+      wtBtnStyle: 'padding:7px 13px; border-radius:7px; border:1px solid var(--border-2); background:var(--surface); color:var(--text-2); font-family:Montserrat,sans-serif; font-size:11.5px; font-weight:500; cursor:pointer; flex:0 0 auto;',
+
+      // features
+      featureGroups, enabledCount:String(enabledCount), featureTotal:String(this.FEATURES.length),
+      openFeature:this.openFeature, backToFeatures:this.backToFeatures,
+      isFeatureView: s.view==='feature',
+      featName, featDesc, featCat, featIcon: this.svg(this.FEATURE_ICONS[fk], 22),
+      showNotes: fk==='notes', showInbox: fk==='inbox', showAsk: fk==='ask', showGraph: fk==='graph', showLearning: fk==='learning', showResearch: fk==='research', showStudio: fk==='studio', showSessions: fk==='sessions', showAnalytics: fk==='analytics', showEvals: fk==='evals',
+      notesList, inboxList, askSources, topicsList, researchList, studioDocs, notebooksList, sessionsList, evalsRows, analyticsBars, graphNodes,
+
+      // settings
+      settingsTab:s.settingsTab, settingsRail,
+      setGeneral: s.settingsTab==='general', setFeatures: s.settingsTab==='features', setSkillsTab: s.settingsTab==='skills', setDocker: s.settingsTab==='docker', setKnowledge: s.settingsTab==='knowledge', setConnections: s.settingsTab==='connections',
+      featureRows, dockerStacks, dockerContainers, dockerVersion: this.DOCKER.available.version, connectionsList,
+      sched:s.sched, llm:s.llm, ingest:s.ingest,
+      toggleSched:this.toggleSched, toggleLlm:this.toggleLlm, toggleIngest:this.toggleIngest,
+      schedSwitch:this._switchTrack(s.sched), schedKnob:this._switchKnob(s.sched),
+      llmSwitch:this._switchTrack(s.llm), llmKnob:this._switchKnob(s.llm),
+      ingestSwitch:this._switchTrack(s.ingest), ingestKnob:this._switchKnob(s.ingest),
+      themeIcon: s.theme==='dark' ? this.svg(['M12 3v2M12 19v2M5 5l1.5 1.5M17.5 17.5L19 19M3 12h2M19 12h2M5 19l1.5-1.5M17.5 6.5L19 5','M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'],17) : this.svg('M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',17),
+      searchIcon: this.svg(['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M21 21l-4.3-4.3'],16),
+      sparkIcon: this.svg('M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z',15),
+
+      autonomyLabel: s.autonomy?'on':'off',
+      autonomyStyle: 'display:flex; align-items:center; gap:8px; padding:7px 13px; border-radius:8px; border:1px solid '+(s.autonomy?'var(--accent-line)':'var(--border)')+'; background:'+(s.autonomy?'var(--accent-bg)':'var(--surface)')+'; color:'+(s.autonomy?'var(--accent-ink)':'var(--text-2)')+'; font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer;',
+      autonomyDot: this._dot(s.autonomy?'var(--ok)':'var(--text-3)'),
+      killLabel: s.killed?'Disarm':'Kill switch',
+      killStyle: 'display:flex; align-items:center; gap:7px; padding:7px 13px; border-radius:8px; border:1px solid '+(s.killed?'var(--danger)':'var(--border)')+'; background:'+(s.killed?'var(--danger-bg)':'var(--surface)')+'; color:'+(s.killed?'var(--danger)':'var(--text-2)')+'; font-family:Montserrat,sans-serif; font-size:12px; font-weight:600; cursor:pointer;',
+
+      stats, activeRuns, recent, activityRows, agents,
+      kanban: this.KANBAN.map(c=>({ ...c, count:c.cards.length, dot:this._dot('var(--accent)'), cards:c.cards.map(cd=>({ ...cd, initials:this._initials(cd.agent) })) })),
+
+      skillsCount:String(this.SKILLS.length), domainCount:String(domains.length),
+      domainChips, setDomain:this.setDomain, onSkillSearch:this.onSkillSearch,
+      skillGroups, hasSkills: skillGroups.length>0, noSkills: skillGroups.length===0,
+
+      // toggle switches (dashboard 'today')
+      switchStyle: 'position:relative; width:40px; height:22px; border-radius:999px; border:none; cursor:pointer; padding:0; background:'+(s.autonomy?'var(--accent)':'var(--border-2)')+';',
+      switchKnob: 'position:absolute; top:3px; left:'+(s.autonomy?'21px':'3px')+'; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .18s ease; box-shadow:0 1px 2px rgba(0,0,0,.3);',
+
+      // drawer
+      drawerTitle: s.editSlug ? ('Edit '+s.editSlug) : 'New agent',
+      drawerEyebrow: s.editSlug ? 'Profile' : 'Create',
+      form:f, selectedCount:String(f.skills.length), hasSelected:f.skills.length>0, selectedChips,
+      pickerGroups, onPickerSearch:this.onPickerSearch, toggleSkill:this.toggleSkill,
+      setName:this.setName, setSlug:this.setSlug, setDesc:this.setDesc, setRuntime:this.setRuntime, setTools:this.setTools, setPrompt:this.setPrompt,
+      draftPrompt:s.draftPrompt, onDraftInput:this.onDraftInput, draftAi:this.draftAi,
+      draftLabel: s.drafting?'Drafting…':'Draft', draftDisabled: draftReady?'':'true',
+      draftBtnStyle: draftBtnBase + (draftReady?'':'opacity:.45; cursor:not-allowed;'),
+      saveAgent:this.saveAgent, saveLabel: s.editSlug?'Save':'Create agent', saveDisabled: canSave?'':'true',
+      saveHint: canSave ? '' : 'Name, slug & prompt required',
+      saveBtnStyle: 'padding:10px 18px; border-radius:8px; border:none; font-family:Montserrat,sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; background:var(--accent); color:#fff;'+(canSave?'':'opacity:.45; cursor:not-allowed;'),
+    };
+  }
+
+  _initials(name){ const parts = name.replace(/[^a-z0-9]+/gi,' ').trim().split(' '); return ((parts[0]||'')[0]||'').toUpperCase() + ((parts[1]||'')[0]||'').toUpperCase(); }
+}
+</script>
+</body>
+</html>

@@ -1,24 +1,34 @@
 # Agentic-OS
 
 A personal "Agentic OS" built on top of Claude Code: a single repo that holds
-your skills, automations, memory, and a local dashboard for delegating
-recurring work.
+your agents, skills, automations, memory, and a local command center for
+delegating recurring work to autonomous agents.
 
-> **Status:** scaffolding bootstrap. ~25 domain skills exist as spec-compliant
-> stubs; author them interactively via `/new-skill`. See `plan.md` for the
-> full design.
+> **Status:** command center shipped (June 2026, specs 0007-0012): kanban
+> agent assignment, dual runtimes (Claude Code on the Max plan + Gemini CLI
+> on Google AI Pro), agent creator with AI draft, autonomy with a kill
+> switch, vault knowledge graph, connections hub, and a create-project
+> orchestrator (`/new`: prompt → repo + GitHub remote + agent crew +
+> kickoff issues).
 
 ## Layers
 
 1. **Spec layer** — `product/`, `standards/`, `instructions/`, `specs/`
    (agent-os conventions for *how* we build).
-2. **Architecture layer** — `skills/` (Anthropic Skills spec) and
-   `automations/`.
-3. **Memory layer** — `vault/` (Obsidian: `raw/` → `wiki/` → `outputs/`).
-4. **Observability layer** — `dashboard/` (Next.js 15 + Tailwind + shadcn/ui +
-   SQLite). Spawns `claude -p` headless and streams output back over SSE.
+2. **Architecture layer** — `agents/` (one markdown profile per agent),
+   `skills/` (Anthropic Skills spec), and `automations/`.
+3. **Memory layer** — `vault/` (Obsidian: `raw/` → `wiki/` → `outputs/`),
+   indexed into SQLite for graph view and full-text search.
+4. **Command center** — `dashboard/` (Next.js 15 + React 19 + SQLite +
+   node-pty). Issues move across a kanban; agents run as real CLI sessions
+   in per-issue git worktrees, streamed to in-browser terminals; an
+   orchestrator routes queued work when autonomy is on.
 
 ## Quickstart
+
+Prerequisites: Node 22+, git, and the CLIs you plan to use logged in once
+(`claude` for the Max plan; optional `gemini` for Google AI Pro; `gh` for
+repo creation). Full walkthrough: `docs/setup.md`.
 
 ```bash
 # 1. Skills + memory are filesystem-only — nothing to install for those.
@@ -34,6 +44,56 @@ npm run dev          # http://localhost:3000
 #    This delegates to skills/_meta/skill-creator (Anthropic's production
 #    skill-creator) and writes the result under skills/<domain>/<name>/.
 ```
+
+## Views
+
+| View | What it is |
+|---|---|
+| `/` | Command-center home: stats row, active runs, recent activity, today panel, projects grid |
+| `/new` | Create-project orchestrator: prompt → repo, GitHub remote, agent crew, kickoff issues (`instructions/create-project.md`) |
+| `/issues` | Global kanban: Backlog → Queued → Running → Review → Done |
+| `/inbox` | Issues in review, failed runs, recent vault captures |
+| `/notes` | Vault notes with quick capture (Ctrl+Shift+K) |
+| `/ask` | Vault RAG: grounded answers with citations |
+| `/graph` | Vault knowledge graph (wikilinks, tags, FTS search) |
+| `/research` | Deep research projects with cited reports |
+| `/learning` | AI tutors, topics, spaced repetition |
+| `/studio` | Design studio (Excalidraw canvases, review by issue) |
+| `/activity` | Every run across all projects, newest first |
+| `/sessions` | CLI session index with token usage |
+| `/analytics` | Run volume, tokens, cost estimates |
+| `/evals` | Run grading: metrics + judge scores |
+| `/agents` | Agent profiles with AI draft assist, per-agent model + skills picker |
+| `/skills` | Skill inventory across `skills/` |
+| `/docker` | Compose stacks + containers (allowlist-gated) |
+| `/runtimes` | CLI runtimes, versions, capability flags |
+| `/connections` | claude / gemini / gh / MCP template status |
+| `/settings` | Tabbed: Features (surface toggles), General, Knowledge, Docker |
+
+Light/dark theming follows the design tokens in `docs/designs/` — toggle from the header; the choice persists to localStorage and settings.
+
+## Launch like a desktop app
+
+```powershell
+# One-time: create the Start Menu entry "Agentic OS".
+powershell -ExecutionPolicy Bypass -File bin/install-shortcut.ps1
+
+# Every launch after that: click "Agentic OS" in the Start Menu.
+# It installs deps on first run, starts (or reuses) the server, and opens
+# an app-frame browser window. Useful switches:
+bin/launch-dashboard.ps1 -Stop    # stop the background server
+bin/launch-dashboard.ps1 -Prod    # run the production build instead of dev
+```
+
+The dashboard is also an installable PWA: open http://localhost:3000 in
+Edge/Chrome and use the install-app affordance in the address bar.
+
+Runtimes: agent runs spawn your locally installed CLIs, so log each one in
+once manually first (`claude` for the Max plan, `gemini` for Google AI Pro
+after `npm i -g @google/gemini-cli`). The /runtimes view shows status.
+`docs/runtimes-and-clis.md` maps every feature to the CLI it needs;
+`docs/troubleshooting.md` covers the common failure modes (port 3000 in
+use, gh scopes, lost create jobs).
 
 ## Vendored reference skills
 

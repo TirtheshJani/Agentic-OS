@@ -664,3 +664,108 @@ validation can each target a different runtime to dodge shared-training bias).
 Cost: features that depend on hooks or transcript parsing degrade visibly for
 `agy` runs, same as gemini. Reversal: nothing in the registry blocks dropping a
 runtime; deregistering it in `server-init.ts` is the whole rollback.
+
+
+---
+
+## ADR-024: Domain glossary as shared vocabulary, injected at spawn
+
+**Date:** 2026-06-13 (Spec 0031, Phase 12)
+
+**Context.** ADR-007 routing scores an issue against agent descriptions and spec
+0028 enriched those descriptions, but operator and agents still drift on what a
+term means and a task that omits its intent forces the agent to guess. The roadmap
+parked a domain glossary plus a per-task "why" as the cheapest precision win.
+
+**Decision.** Keep one glossary source of truth at `product/glossary.md` (canonical
+term, one-line definition, optional aliases). Parse it once into a compact,
+budget-capped context block (`lib/glossary.ts`) that `startRun` prepends to the
+agent context the run already receives. Add an optional `## Why` line to issue
+templates, threaded to the agent. Expand the ADR-007 scorer so a glossary alias
+matches as its canonical term. All four are additive and default to today's
+behavior when the glossary or the why line is absent.
+
+**Consequences.** Vocabulary stays consistent across runs and routing without a new
+table or UI, and intent travels with the task. Cost: a small character budget spent
+on context, and the glossary must be maintained by hand. Reversal: delete
+`product/glossary.md` and the context block goes empty; the scorer change is inert
+without aliases.
+
+
+---
+
+## ADR-025: Behavioral validator exercises the app against the spec-0029 contract
+
+**Date:** 2026-06-13 (Spec 0032, Phase 12)
+
+**Context.** Spec 0029 grades each contract assertion, but the ADR-016 judge only
+reads the transcript and diff; it never runs the app, so a feature that is broken
+in the browser can still grade well. Spec 0029 named this validator as its intended
+consumer and left it for a separate spec. The vendored Playwright skill and the
+known `npm run dev` launch path are the missing-nothing pieces.
+
+**Decision.** Mark the behaviorally-testable assertions in the `## Acceptance
+contract` (an `(e2e)` marker). A harness (`lib/evals/behavioral.ts`) launches the
+app against the run worktree, drives the marked assertions via the Playwright
+skill, and emits per-assertion pass, fail, or inconclusive with a reason and
+optional screenshot, under a hard timeout. The whole path is gated by a default-off
+`behavioralValidator` flag. Results feed `buildJudgePrompt`; a behavioral fail
+forces that assertion to fail in the judge reconciliation. Unmarked assertions stay
+judge-only.
+
+**Consequences.** The user-testing half of the scrutiny-versus-user-testing split
+lands without changing spec 0029 when the flag is off. Cost: browser automation is
+slow and flaky, so it is opt-in and timeout-bounded, and CI uses an injected driver.
+Reversal: turn the flag off; nothing else depends on the harness.
+
+
+---
+
+## ADR-026: Role-based model assignment routes validation to a different runtime
+
+**Date:** 2026-06-13 (Spec 0033, extends ADR-023, Phase 12)
+
+**Context.** ADR-023 gave the registry a third seat, and the Factory argument is
+that a model grading its own work shares its blind spots. Today a run targets one
+runtime and the judge runs on the eval default, so plan, implementation, and
+validation can collapse onto one provider.
+
+**Decision.** Add an optional, default-off `roleAssignment` map in settings from
+`plan` / `implement` / `validate` to a runtime id. When `validate` is set, the
+ADR-016 judge and the spec-0026 revision spawn on that runtime; unset leaves the
+eval path unchanged. Resolution reuses the existing model-and-runtime threading onto
+the run row, checks capability flags from `lib/runtime/types.ts`, and falls back to
+the default with a visible downgrade log when a mapped runtime is unavailable.
+Per-agent `model` frontmatter still wins for the implementation seat.
+
+**Consequences.** The validator can run on a different model from the implementer
+without a new spawn mechanism, and the feature is inert until the operator sets the
+map. Cost: a misconfigured map degrades to the default rather than erroring, which
+must be logged so it is not silent. Reversal: clear the map.
+
+
+---
+
+## ADR-027: Mission/epic layer above issues, with dependency-ordered routing
+
+**Date:** 2026-06-13 (Spec 0034, Phase 12)
+
+**Context.** The board is a flat issue list; a multi-issue initiative lives only in
+handoff chains (ADR-010) with no object grouping it or rolling up its grades. The
+Factory missions talk calls this tier the orders-of-magnitude-harder-tasks unlock,
+and spec 0029 left the epic layer out of its scope.
+
+**Decision.** Add a first-class `epics` table plus `epic_id` and optional
+`depends_on` on issues (additive migration in `lib/db.ts`). An epic owns a shared
+contract and a milestone and derives a rollup status from its children's spec-0029
+contracts and grades (`lib/epics.ts`). The auto-router excludes a child with an
+unmet `depends_on` and runs independent children of the same epic concurrently up
+to the existing capacity cap, which settles the parked serial-versus-parallel fork
+as parallel-across-independent, serial-within-dependent. GitHub milestone mapping is
+optional.
+
+**Consequences.** Multi-issue missions become first-class without a parallel system,
+reusing the issues table, the router, and the kanban. This is the largest Phase 12
+spec and the one that forces the execution-model fork. Cost: a schema migration and
+a new view. Reversal: the migration is additive, so dropping the epics view and
+ignoring `epic_id` leaves issues working standalone.

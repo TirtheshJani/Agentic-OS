@@ -772,3 +772,41 @@ supersedes ADR-008's "Codex as candidate third runtime" but has no ADR of its
 own yet. It also widens the deferred role-based model-assignment idea from two
 seats to three (planning, implementation, validation can now each target a
 different runtime).
+
+## Phase 12: Compounding quality wave (planned 2026-06-13)
+
+The four candidates parked at the end of the Phase 11 grilling session, now
+promoted to specs 0031 through 0034 and ADRs 024 through 027. Ordered cheapest
+leverage first. Phase 11 (specs 0024 through 0030) shipped in full, and the same
+burst cleared the Phase 10 deferred backlog (GitHub issue sync, cost analytics,
+Gemini session resume, LLM-routing fallback, the events tab), so this wave starts
+from a near-empty board.
+
+- **Domain glossary** (spec 0031, ADR-024): a `product/glossary.md` source of
+  truth injected into agent context at spawn, plus an optional `## Why` line on
+  issues, plus glossary aliases credited in ADR-007 routing. The cheapest
+  precision win; folds into the spec-0028 agent-context injection. Author first.
+- **Role-based model assignment** (spec 0033, ADR-026): an optional, default-off
+  `roleAssignment` map sending plan, implementation, and validation to different
+  runtimes, so the judge can run on a different model from the implementer and
+  dodge shared-training bias. Self-contained; extends ADR-023's third seat.
+- **Behavioral end-to-end validator** (spec 0032, ADR-025): a default-off harness
+  that drives the running app via the vendored Playwright skill to check the
+  `(e2e)`-marked assertions of the spec-0029 contract, feeding per-assertion pass
+  or fail to the judge. The user-testing half of the scrutiny-versus-user-testing
+  split; spec 0029 was built to feed it.
+- **Mission/epic layer** (spec 0034, ADR-027): a first-class `epics` table above
+  issues with a shared contract, a rollup grade, and dependency-ordered routing
+  (parallel across independent children, serial within a dependent set). The
+  orders-of-magnitude-harder-tasks unlock and the largest spec; it settles the
+  serial-versus-parallel fork. Schedule last.
+
+**Phase 12 exit gate:** a spawned run carries the glossary block and a task `why`
+(0031); the judge can be pinned to a validation runtime distinct from the
+implementer (0033); a graded run with an `(e2e)` assertion is verified against the
+running app, not just the transcript (0032); a multi-issue epic shows a rollup
+status and the router honors its dependency order (0034).
+
+The three open issues at the start of this wave (#37 youtube-search, #39
+comment-digest, #40 external DB) are left as-is: the first two are blocked on
+external access and the third conflicts with ADR-001 (SQLite as system of record).

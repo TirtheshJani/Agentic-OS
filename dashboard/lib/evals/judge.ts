@@ -9,6 +9,7 @@ import { extractJsonObject } from "@/lib/llm/extractJson";
 import { parseClaudeSession } from "@/lib/sessions/parseClaude";
 import type { RunMetrics } from "@/lib/evals/metrics";
 import type { Assertion } from "@/lib/evals/contract";
+import { renderHandoff, type Handoff } from "@/lib/handoff";
 
 const INPUT_CHAR_BUDGET = 24_000;
 export const WEIGHTS = { correctness: 0.4, efficiency: 0.3, coherence: 0.3 } as const;
@@ -85,6 +86,7 @@ export function buildJudgePrompt(opts: {
   metrics: RunMetrics;
   transcriptPath: string | null;
   assertions?: Assertion[];
+  handoff?: Handoff | null;
 }): string {
   const contract = opts.assertions ?? [];
   const instruction =
@@ -114,6 +116,8 @@ export function buildJudgePrompt(opts: {
     opts.issueBody ? `Details: ${opts.issueBody}` : "",
     "",
     `Run metrics: ${JSON.stringify(opts.metrics)}`,
+    "",
+    opts.handoff ? `Agent handoff:\n${renderHandoff(opts.handoff)}` : "",
     "",
     "Final assistant output:",
     finalAssistantText(opts.transcriptPath),

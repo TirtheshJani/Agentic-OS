@@ -65,4 +65,26 @@ describe("designReviewIssue", () => {
     const noCanvas = designReviewIssue({ slug: "x", designDirAbs: "/v/d", canvasNames: [] });
     expect(noCanvas.body).toContain("No canvases exported yet");
   });
+
+  it("emits a ## Why section when a why is provided", () => {
+    const intent = "The architecture drifted from the docs last sprint.";
+    const t = designReviewIssue({
+      slug: "my-app",
+      designDirAbs: "/v/d",
+      canvasNames: [],
+      why: intent,
+    });
+    expect(t.body).toContain("## Why");
+    expect(t.body).toContain(intent);
+  });
+
+  it("is byte-identical with no why vs an absent/empty/blank why", () => {
+    const base = { slug: "my-app", designDirAbs: "/v/d", canvasNames: ["sys"] };
+    const absent = designReviewIssue(base);
+    const emptyString = designReviewIssue({ ...base, why: "" });
+    const blank = designReviewIssue({ ...base, why: "   " });
+    expect(absent.body).not.toContain("## Why");
+    expect(emptyString.body).toBe(absent.body);
+    expect(blank.body).toBe(absent.body);
+  });
 });

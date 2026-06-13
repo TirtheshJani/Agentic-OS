@@ -234,6 +234,36 @@ function applyV9(d: Database.Database): void {
   console.log("[db] applied schema migration v9 (runs.model)");
 }
 
+// V10: epic data model (spec 0034 / ADR-027). Epics group issues under a
+// project; issues gain an epic_id back-reference and a depends_on edge list.
+function applyV10(d: Database.Database): void {
+  const row = d.prepare("SELECT COUNT(*) as n FROM schema_migrations WHERE version = 10").get() as { n: number };
+  if (row.n > 0) return;
+  d.exec(`
+CREATE TABLE IF NOT EXISTS epics (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_slug    TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  why             TEXT NOT NULL DEFAULT '',
+  shared_contract TEXT NOT NULL DEFAULT '',
+  milestone       TEXT,
+  status          TEXT NOT NULL DEFAULT 'open',
+  created_at      INTEGER NOT NULL,
+  updated_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS epics_project_idx ON epics(project_slug, status);
+`);
+  const cols = d.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === "epic_id")) {
+    d.exec("ALTER TABLE issues ADD COLUMN epic_id INTEGER");
+  }
+  if (!cols.some(c => c.name === "depends_on")) {
+    d.exec("ALTER TABLE issues ADD COLUMN depends_on TEXT");
+  }
+  d.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (10, ?)").run(Date.now());
+  console.log("[db] applied schema migration v10 (epics, issues.epic_id, issues.depends_on)");
+}
+
 export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   if (db) return db;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -252,6 +282,7 @@ export function openDb(dbPath: string = STATE_DB_PATH): Database.Database {
   applyV7(db);
   applyV8(db);
   applyV9(db);
+  applyV10(db);
   return db;
 }
 

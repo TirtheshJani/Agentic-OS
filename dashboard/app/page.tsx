@@ -2,10 +2,14 @@
 import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/useProjects";
 import { useActivity } from "@/hooks/useActivity";
+import { useIssues } from "@/hooks/useIssues";
+import { useSettings } from "@/hooks/useSettings";
 import { ProjectCard } from "@/components/home/ProjectCard";
 import { ActiveRunsCard } from "@/components/home/ActiveRunsCard";
-import { RecentActivityCard } from "@/components/home/RecentActivityCard";
-import { TodayPanel } from "@/components/home/TodayPanel";
+import { OverviewQueuePane } from "@/components/home/OverviewQueuePane";
+import { OverviewInboxPane } from "@/components/home/OverviewInboxPane";
+import { OverviewCapacity } from "@/components/home/OverviewCapacity";
+import { OverviewEventStream } from "@/components/home/OverviewEventStream";
 import { StatCard } from "@/components/common/StatCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -14,30 +18,27 @@ import { NewProjectDialog } from "@/components/home/NewProjectDialog";
 interface Counts {
   agents: number | null;
   skills: number | null;
-  openIssues: number | null;
 }
 
 export default function Home() {
   const { projects, error } = useProjects();
   const { data: activity } = useActivity();
+  const { issues } = useIssues();
+  const { settings } = useSettings();
   const [dialogMode, setDialogMode] = useState<null | "link" | "clone">(null);
-  const [counts, setCounts] = useState<Counts>({ agents: null, skills: null, openIssues: null });
+  const [counts, setCounts] = useState<Counts>({ agents: null, skills: null });
 
   useEffect(() => {
     let alive = true;
     Promise.all([
       fetch("/api/agents", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
       fetch("/api/skills", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/issues", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([agents, skills, issues]) => {
+      .then(([agents, skills]) => {
         if (!alive) return;
         setCounts({
           agents: agents ? agents.agents.length : null,
           skills: skills ? skills.skills.length : null,
-          openIssues: issues
-            ? issues.issues.filter((i: { status: string }) => i.status !== "done").length
-            : null,
         });
       })
       .catch(() => undefined);
@@ -45,6 +46,8 @@ export default function Home() {
       alive = false;
     };
   }, []);
+
+  const openIssues = issues ? issues.filter((i) => i.status !== "done").length : null;
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -78,17 +81,28 @@ export default function Home() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <StatCard label="Active runs" value={activity ? activity.active.length : "–"} />
-        <StatCard label="Open issues" value={counts.openIssues ?? "–"} />
+        <StatCard label="Open issues" value={openIssues ?? "–"} />
         <StatCard label="Agents" value={counts.agents ?? "–"} />
         <StatCard label="Skills" value={counts.skills ?? "–"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3 mb-6">
+      {/* Top strip: running sessions */}
+      <div className="mb-3">
+        <ActiveRunsCard runs={activity?.active ?? []} />
+      </div>
+
+      {/* HUD: queue + capacity | inbox | live event stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
         <div className="space-y-3 min-w-0">
-          <ActiveRunsCard runs={activity?.active ?? []} />
-          <RecentActivityCard runs={activity?.recent ?? []} />
+          <OverviewQueuePane issues={issues} />
+          <OverviewCapacity settings={settings} activeCount={activity?.active.length ?? 0} />
         </div>
-        <TodayPanel activeRunCount={activity?.active.length ?? 0} />
+        <div className="min-w-0">
+          <OverviewInboxPane issues={issues} recentRuns={activity?.recent ?? []} />
+        </div>
+        <div className="min-w-0">
+          <OverviewEventStream />
+        </div>
       </div>
 
       <section>
@@ -100,7 +114,7 @@ export default function Home() {
           <EmptyState title="No projects yet" description='Click "+ New Project" to get started.' />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {projects.map(p => (
+            {projects.map((p) => (
               <ProjectCard
                 key={p.slug}
                 slug={p.slug}
@@ -116,9 +130,7 @@ export default function Home() {
         )}
       </section>
 
-      {dialogMode && (
-        <NewProjectDialog mode={dialogMode} onClose={() => setDialogMode(null)} />
-      )}
+      {dialogMode && <NewProjectDialog mode={dialogMode} onClose={() => setDialogMode(null)} />}
     </div>
   );
 }

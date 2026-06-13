@@ -6,7 +6,8 @@ import { defaultWorkspaceRoot, STATE_DIR as DEFAULT_STATE_DIR, SETTINGS_PATH as 
 const AutonomySchema = z.object({
   /** Global kill switch: when false, the auto-router and scheduler no-op. */
   enabled: z.boolean().default(false),
-  /** Allow one tiny headless claude -p call as a routing fallback (credit-pool cost). */
+  /** Route around an unavailable/failed primary runtime to another available
+   * runtime at spawn time (spec 0009). Default off: requested runtime used verbatim. */
   llmRouting: z.boolean().default(false),
   /** Fire automations/remote/*.md cron specs from inside the dashboard. */
   schedulerEnabled: z.boolean().default(false),

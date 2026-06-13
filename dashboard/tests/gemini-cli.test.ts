@@ -43,6 +43,9 @@ describe("claude-code capabilities", () => {
     expect(claudeCodeRuntime.capabilities.sessionResume).toBe(true);
     expect(claudeCodeRuntime.capabilities.externalTerminalEscape).toBe(true);
   });
+  it("declares transcript cost parsing (real usage parser exists)", () => {
+    expect(claudeCodeRuntime.capabilities.transcriptCostParsing).toBe(true);
+  });
 });
 
 describe("antigravity-cli runtime", () => {

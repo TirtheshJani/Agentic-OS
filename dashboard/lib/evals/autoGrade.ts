@@ -18,24 +18,31 @@ export function startEvalAutoGrade(): () => void {
   if (g[globalKey]) return g[globalKey]!.stop;
   const unsubscribe = subscribe(async (event) => {
     if (event.kind !== "run.finalized") return;
+    // publish() fans out listeners synchronously and does not await or catch
+    // async-listener rejections, so the whole body is wrapped: no rejection can
+    // escape this listener. The happy path is unchanged.
     try {
-      gradeRunMetrics(event.runId);
-    } catch (err) {
-      console.error(`[evals] metrics failed for run ${event.runId}:`, err);
-    }
-    const settings = getSettings();
-    if (settings.evals.autoGradeEnabled && settings.autonomy.enabled && event.exitStatus === "done") {
-      const result = await gradeRunWithJudge(event.runId);
-      if (!result.ok) {
-        console.error(`[evals] auto-judge failed for run ${event.runId}: ${result.error}`);
-      } else if (result.score < settings.evals.reviseThreshold) {
-        // Reflection loop (spec 0026): one revision when the grade is sub-threshold.
-        try {
-          fileRevision(event.runId);
-        } catch (err) {
-          console.error(`[evals] revision failed for run ${event.runId}:`, err);
+      try {
+        gradeRunMetrics(event.runId);
+      } catch (err) {
+        console.error(`[evals] metrics failed for run ${event.runId}:`, err);
+      }
+      const settings = getSettings();
+      if (settings.evals.autoGradeEnabled && settings.autonomy.enabled && event.exitStatus === "done") {
+        const result = await gradeRunWithJudge(event.runId);
+        if (!result.ok) {
+          console.error(`[evals] auto-judge failed for run ${event.runId}: ${result.error}`);
+        } else if (result.score < settings.evals.reviseThreshold) {
+          // Reflection loop (spec 0026): one revision when the grade is sub-threshold.
+          try {
+            fileRevision(event.runId);
+          } catch (err) {
+            console.error(`[evals] revision failed for run ${event.runId}:`, err);
+          }
         }
       }
+    } catch (err) {
+      console.error("[evals] auto-grade listener error", err);
     }
   });
   const stop = () => {

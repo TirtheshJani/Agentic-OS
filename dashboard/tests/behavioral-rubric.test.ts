@@ -103,6 +103,39 @@ describe("behavioral rubric persistence (spec 0032 / ADR-025)", () => {
     expect(shot?.screenshotPath).toBe("/tmp/shot-1.png");
   });
 
+  it("override fires when the judge reflows casing/punctuation of the assertion text", async () => {
+    enableBehavioral();
+    // The judge echoes the assertion with different casing and a trailing
+    // period; the behavioral validator fails the canonical text. Exact-string
+    // matching would miss, so the override would silently not fire. With
+    // normalizeAssertionText the override still flips the assertion to false.
+    const original = (cliReply as { text: string }).text;
+    (cliReply as { text: string }).text = JSON.stringify({
+      assertions: [
+        { text: "The Page Renders.", pass: true, reason: "judge thought so" },
+        { text: "Helper returns the right shape", pass: true, reason: "shape ok" },
+      ],
+      efficiency: 80,
+      coherence: 70,
+      rationale: "all good",
+    });
+    behavioralResults = [
+      { assertion: "the page renders", status: "fail", reason: "button missing in live app" },
+    ];
+    try {
+      const runId = seedRun();
+      const result = await gradeRunWithJudge(runId);
+      expect(result.ok).toBe(true);
+
+      const rubric = getJudgeRubric(runId);
+      const reflowed = rubric?.assertions?.find((a) => a.text === "The Page Renders.");
+      expect(reflowed?.pass).toBe(false);
+      expect(reflowed?.reason).toBe("button missing in live app");
+    } finally {
+      (cliReply as { text: string }).text = original;
+    }
+  });
+
   it("flag OFF: the persisted rubric has no `behavioral` key (regression guard)", async () => {
     // Flag defaults to off; do not enable it. A canned result would persist if
     // the harness ran, so its absence proves the harness never ran.

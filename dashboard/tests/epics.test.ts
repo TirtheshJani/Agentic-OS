@@ -157,6 +157,22 @@ describe("rollupStatus", () => {
     markContractPass(db, child, [text]);
     expect(rollupStatus(epicId)).toBe("done");
   });
+
+  it("matches a contract assertion against a reflowed graded rubric (casing/punctuation)", () => {
+    const db = openDb(dbPath);
+    const epicId = createEpic({ projectSlug: "demo", title: "epic" });
+    // The contract says "tests pass"; a real judge echoes it as "Tests pass."
+    // (capitalized, trailing period). Exact-string matching would fail and the
+    // child would never roll up. normalizeAssertionText makes it match.
+    const child = insertChild(db, {
+      epicId,
+      title: "c",
+      body: contractBody("tests pass"),
+      status: "done",
+    });
+    markContractPass(db, child, ["Tests pass."]);
+    expect(rollupStatus(epicId)).toBe("done");
+  });
 });
 
 describe("eligibleChildren", () => {

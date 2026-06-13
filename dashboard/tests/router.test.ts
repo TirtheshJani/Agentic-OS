@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { routeIssue, type RoutableAgent } from "@/lib/orchestrator/router";
+import { loadGlossaryTerms } from "@/lib/glossary";
 
 const agents: RoutableAgent[] = [
   {
@@ -131,6 +132,14 @@ describe("routeIssue", () => {
       roster
     );
     expect(noGlossary.assigneeSlug).toBeNull();
+  });
+
+  it("loadGlossaryTerms reads the real product/glossary.md (issue #54 wiring)", () => {
+    // The cached loader is what autoRoute passes as the 4th routeIssue arg in
+    // production. product/glossary.md exists and ships at least one term.
+    const terms = loadGlossaryTerms();
+    expect(terms.length).toBeGreaterThan(0);
+    expect(terms.some((t) => t.term === "run")).toBe(true);
   });
 
   it("leaves routing for non-glossary terms unchanged (regression guard)", () => {

@@ -5,6 +5,7 @@ import { listAgents } from "@/lib/agents";
 import { getSettings } from "@/lib/settings";
 import { appendEvent } from "@/lib/threads";
 import { routeIssue } from "@/lib/orchestrator/router";
+import { loadGlossaryTerms } from "@/lib/glossary";
 import { startRunForIssue } from "@/lib/startRun";
 import { ConcurrencyCapError } from "@/lib/runtime/types";
 import { getDb } from "@/lib/db";
@@ -60,7 +61,7 @@ export async function handleIssue(issueId: number, inFlight: Set<number>): Promi
     // Route when unassigned, or when "assigned" to a department lead (leads
     // dispatch work, they do not execute it).
     if (!assignee || assignee.endsWith("-lead")) {
-      const route = routeIssue(issue, project.capabilities, listAgents());
+      const route = routeIssue(issue, project.capabilities, listAgents(), loadGlossaryTerms());
       if (!route.assigneeSlug) {
         appendEvent({
           projectSlug: issue.projectSlug,

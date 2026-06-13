@@ -25,6 +25,21 @@ const CHECKLIST_RE = /^\s*-\s*\[[ xX]\]\s+(.+?)\s*$/;
 // A trailing `(e2e)` marker on an assertion (optional surrounding whitespace).
 const E2E_MARKER_RE = /\s*\(e2e\)\s*$/i;
 
+/**
+ * Canonicalize assertion text for robust matching between a contract assertion
+ * and a judge-echoed (or behavioral-echoed) one. A real judge reflows casing,
+ * whitespace, and trailing punctuation, so exact-string equality silently
+ * misses. Trim, lowercase, collapse internal whitespace to single spaces, and
+ * strip trailing `.`, `:`, `;`, `,`. Small and pure.
+ */
+export function normalizeAssertionText(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.:;,]+$/, "");
+}
+
 /** Extract acceptance-contract assertions from an issue body, or [] when absent. */
 export function parseContract(issueBody: string): Assertion[] {
   if (!issueBody) return [];

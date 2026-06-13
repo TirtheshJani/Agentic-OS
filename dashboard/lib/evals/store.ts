@@ -12,7 +12,7 @@ import {
   type Rubric,
 } from "@/lib/evals/judge";
 import { getIssue } from "@/lib/issues";
-import { parseContract } from "@/lib/evals/contract";
+import { parseContract, normalizeAssertionText } from "@/lib/evals/contract";
 import { parseHandoff } from "@/lib/handoff";
 import { runBehavioralAssertions, type BehavioralResult } from "@/lib/evals/behavioral";
 import { getSettings } from "@/lib/settings";
@@ -148,11 +148,17 @@ function reconcileBehavioral(rubric: Rubric, behavioral: BehavioralResult[] | un
   if (!behavioral || behavioral.length === 0) return rubric;
   if (!rubric.assertions || rubric.assertions.length === 0) return rubric;
 
-  const failed = new Map(behavioral.filter((b) => b.status === "fail").map((b) => [b.assertion, b.reason] as const));
+  const failed = new Map(
+    behavioral
+      .filter((b) => b.status === "fail")
+      .map((b) => [normalizeAssertionText(b.assertion), b.reason] as const)
+  );
   if (failed.size === 0) return rubric;
 
   const assertions = rubric.assertions.map((a) =>
-    failed.has(a.text) ? { ...a, pass: false, reason: failed.get(a.text) ?? a.reason } : a
+    failed.has(normalizeAssertionText(a.text))
+      ? { ...a, pass: false, reason: failed.get(normalizeAssertionText(a.text)) ?? a.reason }
+      : a
   );
   const passes = assertions.filter((a) => a.pass).length;
   const correctness = Math.round((100 * passes) / assertions.length);

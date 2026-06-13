@@ -1,6 +1,6 @@
 // dashboard/lib/epics.ts
 import { getDb } from "@/lib/db";
-import { parseContract } from "@/lib/evals/contract";
+import { parseContract, normalizeAssertionText } from "@/lib/evals/contract";
 
 export type EpicStatus = "open" | "closed";
 
@@ -62,8 +62,18 @@ function rowToChildIssue(row: any): ChildIssue {
     body: row.body,
     status: row.status,
     epicId: row.epic_id ?? null,
-    dependsOn: row.depends_on ? (JSON.parse(row.depends_on) as number[]) : [],
+    dependsOn: parseDependsOn(row.depends_on),
   };
+}
+
+/** Parse the depends_on JSON column, tolerating a hand-corrupted value (-> []). */
+function parseDependsOn(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as number[];
+  } catch {
+    return [];
+  }
 }
 
 export function createEpic(opts: CreateOpts): number {
@@ -172,7 +182,9 @@ export function childPasses(issue: ChildIssue): boolean {
 
   const rubric = JSON.parse(row.rubric) as { assertions?: Array<{ text: string; pass: boolean }> };
   const graded = rubric.assertions ?? [];
-  return assertions.every((a) => graded.some((g) => g.text === a.text && g.pass));
+  return assertions.every((a) =>
+    graded.some((g) => normalizeAssertionText(g.text) === normalizeAssertionText(a.text) && g.pass)
+  );
 }
 
 /**

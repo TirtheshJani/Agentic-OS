@@ -1,6 +1,9 @@
 // Domain glossary parser and context-block renderer (spec 0031, ADR-024).
 // Reads the markdown source of truth at product/glossary.md into terms, then
 // renders a compact, budget-capped block prepended to agent context at spawn.
+import fs from "node:fs";
+import path from "node:path";
+import { REPO_ROOT } from "@/lib/paths";
 
 export interface GlossaryTerm {
   term: string;
@@ -40,6 +43,24 @@ export function parseGlossary(md: string): GlossaryTerm[] {
     terms.push(parsed);
   }
   return terms;
+}
+
+let cachedTerms: GlossaryTerm[] | undefined;
+
+/**
+ * Load and parse product/glossary.md from the repo root, memoized at module
+ * scope so the file is read once. Any error or a missing file resolves to [],
+ * which keeps the ADR-007 router byte-identical to its no-glossary behavior.
+ */
+export function loadGlossaryTerms(): GlossaryTerm[] {
+  if (cachedTerms !== undefined) return cachedTerms;
+  try {
+    const md = fs.readFileSync(path.join(REPO_ROOT, "product", "glossary.md"), "utf8");
+    cachedTerms = parseGlossary(md);
+  } catch {
+    cachedTerms = [];
+  }
+  return cachedTerms;
 }
 
 const BLOCK_HEADER = "Glossary (shared vocabulary):";

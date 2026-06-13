@@ -25,8 +25,8 @@ const { startEvalAutoGrade } = await import("@/lib/evals/autoGrade");
 
 let stopAutoGrade: (() => void) | null = null;
 
-function seedRun(exitStatus = "done"): number {
-  const issueId = createIssue({ projectSlug: "p", title: "Do the task", body: "Acceptance: done" });
+function seedRun(exitStatus = "done", body = "Acceptance: done"): number {
+  const issueId = createIssue({ projectSlug: "p", title: "Do the task", body });
   const info = getDb()
     .prepare(
       "INSERT INTO runs (issue_id, agent_slug, runtime_id, worktree_path, started_at, ended_at, exit_status) VALUES (?, 'a', 'claude-code', ?, 1000, 61000, ?)"
@@ -82,6 +82,26 @@ describe("judge pure functions", () => {
     expect(parseJudgeReply("not json").ok).toBe(false);
     expect(parseJudgeReply('{"correctness": 150, "efficiency": 1, "coherence": 1}').ok).toBe(false);
   });
+
+  it("derives correctness from assertions and rejects replies lacking both", () => {
+    const ok = parseJudgeReply(
+      JSON.stringify({
+        assertions: [
+          { text: "x", pass: true, reason: "" },
+          { text: "y", pass: false, reason: "" },
+        ],
+        efficiency: 50,
+        coherence: 50,
+      })
+    );
+    expect(ok.ok).toBe(true);
+    if (ok.ok) {
+      expect(ok.rubric.correctness).toBe(50); // 1 of 2 passed
+      expect(ok.rubric.assertions).toHaveLength(2);
+    }
+    // No correctness and no assertions is not a gradeable rubric.
+    expect(parseJudgeReply('{"efficiency": 50, "coherence": 50}').ok).toBe(false);
+  });
 });
 
 describe("grading", () => {
@@ -121,6 +141,51 @@ describe("grading", () => {
     const b = seedRun();
     gradeRunWithJudge(a);
     expect(ungradedRunIds(10)).toEqual([b]);
+  });
+});
+
+describe("contract grading", () => {
+  const contractBody = ["Do the task.", "", "## Acceptance contract", "- [ ] A holds", "- [ ] B holds"].join("\n");
+
+  it("derives correctness from the pass fraction and persists the assertions", () => {
+    cliReply = {
+      ok: true,
+      text: JSON.stringify({
+        assertions: [
+          { text: "A holds", pass: true, reason: "did A" },
+          { text: "B holds", pass: false, reason: "missed B" },
+        ],
+        efficiency: 80,
+        coherence: 70,
+        rationale: "half done",
+      }),
+    };
+    const runId = seedRun("done", contractBody);
+    const result = gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+
+    const row = getDb()
+      .prepare("SELECT rubric, score FROM eval_results WHERE run_id = ? AND kind = 'judge'")
+      .get(runId) as { rubric: string; score: number };
+    const rubric = JSON.parse(row.rubric);
+    expect(rubric.correctness).toBe(50); // one of two assertions passed
+    expect(rubric.assertions).toHaveLength(2);
+    expect(rubric.assertions[1]).toMatchObject({ text: "B holds", pass: false });
+    expect(row.score).toBeCloseTo(50 * 0.4 + 80 * 0.3 + 70 * 0.3);
+  });
+
+  it("falls back to the generic rubric when the issue has no contract", () => {
+    // default cliReply is the generic 90/80/70 shape
+    const runId = seedRun("done", "Plain task. Acceptance: done");
+    const result = gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+
+    const row = getDb()
+      .prepare("SELECT rubric FROM eval_results WHERE run_id = ? AND kind = 'judge'")
+      .get(runId) as { rubric: string };
+    const rubric = JSON.parse(row.rubric);
+    expect(rubric.correctness).toBe(90);
+    expect(rubric.assertions).toBeUndefined();
   });
 });
 

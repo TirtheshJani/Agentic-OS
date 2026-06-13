@@ -12,6 +12,7 @@ import {
   type Rubric,
 } from "@/lib/evals/judge";
 import { getIssue } from "@/lib/issues";
+import { parseContract } from "@/lib/evals/contract";
 import { publish } from "@/lib/stream";
 
 export interface EvalRow {
@@ -72,6 +73,7 @@ export function gradeRunWithJudge(runId: number): { ok: true; score: number; gra
   if (!run) return { ok: false, error: "run not found" };
   const issue = getIssue(run.issueId);
   const metrics = computeRunMetrics(run);
+  const assertions = parseContract(issue?.body ?? "");
 
   const result = runJudge(
     buildJudgePrompt({
@@ -79,6 +81,7 @@ export function gradeRunWithJudge(runId: number): { ok: true; score: number; gra
       issueBody: issue?.body ?? "",
       metrics,
       transcriptPath: run.transcriptPath,
+      assertions,
     }),
     provider
   );

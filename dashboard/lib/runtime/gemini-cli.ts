@@ -83,14 +83,23 @@ export const geminiCliRuntime: Runtime = {
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
   ],
   capabilities: {
-    // Gemini CLI v0.46.0+ supports resume-by-uuid and has lifecycle hooks.
+    // Verified against gemini-cli v0.46.0:
+    // - resume is cwd-scoped via `--resume latest` (sessions are stored per
+    //   project derived from cwd); `--resume` takes "latest" or an index, NOT
+    //   a UUID, so the captured --session-id is not a resume key. Each worktree
+    //   holds one session, so cwd-scoped latest re-attaches that run.
+    // - no SessionStart-style lifecycle hooks exist (gemini --help has none);
+    //   startRun synthesizes SessionStart for hookless runtimes.
     sessionResume: true,
     sessionIdCapture: true,
-    hooks: true,
+    hooks: false,
     transcriptCostParsing: false,
     externalTerminalEscape: true,
   },
   detect: async () => detectGemini(),
   spawn: spawnGemini,
-  formatResumeCommand: (sid) => `gemini --resume ${sid}`,
+  // cwd-scoped resume: the external terminal opens in the run's worktree, where
+  // "latest" is this run's session. The session-id marker is ignored (gemini
+  // --resume does not accept a UUID), mirroring antigravity's --continue.
+  formatResumeCommand: () => `gemini --resume latest`,
 };

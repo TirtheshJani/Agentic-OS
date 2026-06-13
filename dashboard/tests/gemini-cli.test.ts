@@ -9,11 +9,13 @@ describe("gemini-cli runtime", () => {
     expect(geminiCliRuntime.displayName).toBe("Gemini CLI");
   });
 
-  it("declares honest capabilities", () => {
+  it("declares honest capabilities (cwd-scoped resume, no hooks)", () => {
+    // Verified against gemini-cli v0.46.0: --resume is "latest"/index (cwd
+    // scoped), not UUID; no SessionStart-style hooks exist.
     expect(geminiCliRuntime.capabilities).toEqual({
       sessionResume: true,
       sessionIdCapture: true,
-      hooks: true,
+      hooks: false,
       transcriptCostParsing: false,
       externalTerminalEscape: true,
     });
@@ -31,8 +33,10 @@ describe("gemini-cli runtime", () => {
     }
   });
 
-  it("formats a resume command using the provided session ID", () => {
-    expect(geminiCliRuntime.formatResumeCommand("uuid-123")).toBe("gemini --resume uuid-123");
+  it("resumes via cwd-scoped --resume latest (ignores the session-id marker)", () => {
+    // gemini --resume takes "latest" or an index, not a UUID; the external
+    // terminal opens in the run's worktree where "latest" is this run.
+    expect(geminiCliRuntime.formatResumeCommand("uuid-123")).toBe("gemini --resume latest");
   });
 });
 

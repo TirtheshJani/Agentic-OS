@@ -55,13 +55,8 @@ export function writeMcpTemplate(name: string, config: McpTemplate): void {
   console.log(`[mcp] wrote template ${name} (${Object.keys(config).length} server(s))`);
 }
 
-/**
- * Merge the named templates into <worktree>/.mcp.json and flip
- * enableAllProjectMcpServers in .claude/settings.local.json so the agent is
- * not blocked on an approval prompt. Returns the installed server names.
- * Both writes merge with existing content (same pattern as hookInstaller).
- */
-export function installWorktreeMcpConfig(worktreePath: string, templateNames: string[]): string[] {
+/** Merge the named templates into one server map. Missing templates are skipped. */
+function mergeTemplates(templateNames: string[]): McpTemplate {
   const merged: McpTemplate = {};
   for (const name of templateNames) {
     const tpl = readMcpTemplate(name);
@@ -71,6 +66,18 @@ export function installWorktreeMcpConfig(worktreePath: string, templateNames: st
     }
     Object.assign(merged, tpl);
   }
+  return merged;
+}
+
+/**
+ * Merge the named templates into <worktree>/.mcp.json and flip
+ * enableAllProjectMcpServers in .claude/settings.local.json so the agent is
+ * not blocked on an approval prompt. Returns the installed server names.
+ * Both writes merge with existing content (same pattern as hookInstaller).
+ * Claude-code only; Gemini uses installGeminiWorktreeMcpConfig.
+ */
+export function installWorktreeMcpConfig(worktreePath: string, templateNames: string[]): string[] {
+  const merged = mergeTemplates(templateNames);
   const servers = Object.keys(merged);
   if (servers.length === 0) return [];
 
@@ -101,5 +108,37 @@ export function installWorktreeMcpConfig(worktreePath: string, templateNames: st
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 
   console.log(`[mcp] installed ${servers.join(", ")} into ${worktreePath}`);
+  return servers;
+}
+
+/**
+ * Gemini reads MCP servers from <cwd>/.gemini/settings.json (workspace
+ * settings, merged over ~/.gemini/settings.json). This is the gemini-cli
+ * parallel to installWorktreeMcpConfig: merge the named templates under the
+ * `mcpServers` key of the worktree's workspace settings. No separate approval
+ * flag is needed because the runtime spawns with --yolo (auto-approve).
+ * Verified against gemini-cli v0.46.0: `gemini mcp list` resolves servers from
+ * a workspace-level .gemini/settings.json. Returns the installed server names.
+ */
+export function installGeminiWorktreeMcpConfig(worktreePath: string, templateNames: string[]): string[] {
+  const merged = mergeTemplates(templateNames);
+  const servers = Object.keys(merged);
+  if (servers.length === 0) return [];
+
+  const settingsDir = path.join(worktreePath, ".gemini");
+  const settingsPath = path.join(settingsDir, "settings.json");
+  fs.mkdirSync(settingsDir, { recursive: true });
+  let settings: { mcpServers?: Record<string, unknown> } = {};
+  if (fs.existsSync(settingsPath)) {
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    } catch {
+      settings = {};
+    }
+  }
+  settings.mcpServers = { ...(settings.mcpServers ?? {}), ...merged };
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+  console.log(`[mcp] installed gemini MCP ${servers.join(", ")} into ${worktreePath}`);
   return servers;
 }

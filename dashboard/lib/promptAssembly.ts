@@ -24,14 +24,23 @@ export function buildWorktreeContext(opts: {
   instructions: string;
   chunks: RetrievedChunk[];
   agentSystemPrompt?: string;
+  glossaryBlock?: string;
 }): WorktreeContextParts {
   const agentPrompt = opts.agentSystemPrompt?.trim() ?? "";
+  const glossaryBlock = opts.glossaryBlock?.trim() ?? "";
   const sections: string[] = [`# Agent context for ${opts.projectSlug}`, ""];
 
   // Agent profile goes first so the size cap truncates knowledge chunks
   // before it.
   if (agentPrompt) {
     sections.push("## Agent profile", "", agentPrompt, "");
+  }
+
+  // Shared glossary sits near the top (after the profile, before instructions
+  // and knowledge) so the vocabulary is read first. Absent/empty leaves the
+  // body byte-identical to before the glossary feature (regression guard).
+  if (glossaryBlock) {
+    sections.push("## Shared glossary", "", glossaryBlock, "");
   }
 
   if (opts.instructions.trim()) {

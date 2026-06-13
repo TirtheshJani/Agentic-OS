@@ -136,7 +136,24 @@ assertions, so keep their wording aligned. Once the reflection loop lands
 instruction will name the failed assertions; the agent needs to do nothing extra
 for that.
 
-## 6. Author checklist (before committing)
+## 6. Shared glossary (injected vocabulary)
+
+`product/glossary.md` is the source of truth for Agentic OS domain vocabulary
+(spec 0031, ADR-024). At spawn, the run pipeline parses it and prepends a
+budget-capped `## Shared glossary` block to the agent context written to
+`AGENT_CONTEXT.md`, near the top, right after the agent profile. Agents may
+therefore rely on those terms and their aliases being defined: a profile or an
+issue body can use a glossary word like "run", "worktree", or "handoff" without
+redefining it. The same file feeds the ADR-007 router, so an alias scores the
+same as its canonical term.
+
+Keep one term per line in the documented format and one-line definitions. If
+`product/glossary.md` is absent in a checkout, the block is simply omitted and
+the context is unchanged. An issue may also carry an optional `## Why` line that
+states the task intent; it reaches the agent context through the issue body, so
+prefer it for the reasoning behind a task rather than mechanics.
+
+## 7. Author checklist (before committing)
 
 - [ ] Filename `agents/<slug>.md`, kebab-case, matches `slug`.
 - [ ] Frontmatter has only the keys in §2; `name`, `slug`, `description`,

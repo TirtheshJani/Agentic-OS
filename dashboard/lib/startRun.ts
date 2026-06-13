@@ -16,6 +16,10 @@ import { installWorktreeMcpConfig, installGeminiWorktreeMcpConfig } from "@/lib/
 import { readInstructions, knowledgeScopePrefix } from "@/lib/projectKnowledge";
 import { retrieve } from "@/lib/rag/retrieval";
 import { buildWorktreeContext, installWorktreeContext } from "@/lib/promptAssembly";
+import { parseGlossary, glossaryContextBlock } from "@/lib/glossary";
+import { REPO_ROOT } from "@/lib/paths";
+import fs from "node:fs";
+import path from "node:path";
 
 /** Pipeline failure with an HTTP-ish status the API route can map directly. */
 export class StartRunError extends Error {
@@ -207,13 +211,26 @@ export async function startRunForIssue(
     });
     const MIN_CHUNK_SCORE = 0.005; // drop weak matches; RRF scores are small
     const chunks = kn.chunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
-    if (instructions.trim() || chunks.length > 0 || agent.systemPrompt.trim()) {
+    // Shared glossary (spec 0031, ADR-024): read product/glossary.md, parse it,
+    // and render a budget-capped block prepended to agent context. Absent file
+    // yields "", which leaves the context byte-identical to before this feature.
+    const GLOSSARY_BUDGET = 1500;
+    let glossaryBlock = "";
+    try {
+      const glossaryPath = path.join(REPO_ROOT, "product", "glossary.md");
+      const md = fs.existsSync(glossaryPath) ? fs.readFileSync(glossaryPath, "utf8") : "";
+      glossaryBlock = glossaryContextBlock(parseGlossary(md), GLOSSARY_BUDGET);
+    } catch (err) {
+      console.error(`[startRun] glossary load failed for issue ${issue.id}:`, err);
+    }
+    if (instructions.trim() || chunks.length > 0 || agent.systemPrompt.trim() || glossaryBlock) {
       const parts = buildWorktreeContext({
         projectSlug: project.slug,
         issueTitle: issue.title,
         instructions,
         chunks,
         agentSystemPrompt: agent.systemPrompt,
+        glossaryBlock,
       });
       installWorktreeContext(worktreePath, runtimeId, parts);
       contextPromptSuffix = parts.promptSuffix;

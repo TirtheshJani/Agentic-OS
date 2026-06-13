@@ -21,6 +21,18 @@ function acceptanceContract(...assertions: string[]): string[] {
   return ["", "## Acceptance contract", ...assertions.map((a) => `- [ ] ${a}`)];
 }
 
+/**
+ * An optional `## Why` section (spec 0031, ADR-024) carrying the task intent.
+ * `startRun` feeds the whole issue body into the agent context, so a `## Why`
+ * line authored here reaches the agent. Empty intent emits nothing, leaving
+ * the body byte-identical to a template authored without a why. The leading
+ * blank line spaces the section off where blanks are kept; blank-filtering
+ * templates drop it and the heading simply follows the prose.
+ */
+function why(text: string): string[] {
+  return text.trim() ? ["", "## Why", text.trim()] : [];
+}
+
 export function researchCollectionIssue(opts: {
   slug: string;
   question: string;
@@ -95,6 +107,7 @@ export function designReviewIssue(opts: {
   slug: string;
   designDirAbs: string;
   canvasNames: string[];
+  why?: string;
 }): IssueTemplate {
   return {
     title: `Design review: ${opts.slug}`,
@@ -112,6 +125,7 @@ export function designReviewIssue(opts: {
       ...acceptanceContract(
         `${opts.designDirAbs}/REVIEW-<YYYY-MM-DD>.md was written with a verdict, findings ordered by severity, and recommendations.`,
       ),
+      ...why(opts.why ?? ""),
     ].join("\n"),
     labels: ["design-review"],
   };

@@ -96,6 +96,54 @@ describe("buildWorktreeContext", () => {
     expect(parts.contextFileBody.length).toBeLessThan(13_000);
     expect(parts.contextFileBody).toContain("(truncated)");
   });
+
+  it("is byte-identical with no glossaryBlock vs an absent/empty one (regression guard)", () => {
+    const base = {
+      projectSlug: "p1",
+      issueTitle: "Do the thing",
+      instructions: "Use strict mode.",
+      chunks: [CHUNK],
+      agentSystemPrompt: "You are the research lead.",
+    };
+    const absent = buildWorktreeContext(base);
+    const emptyString = buildWorktreeContext({ ...base, glossaryBlock: "" });
+    const whitespace = buildWorktreeContext({ ...base, glossaryBlock: "   \n  " });
+    expect(absent.contextFileBody).not.toContain("## Shared glossary");
+    expect(emptyString.contextFileBody).toBe(absent.contextFileBody);
+    expect(whitespace.contextFileBody).toBe(absent.contextFileBody);
+  });
+
+  it("prepends a Shared glossary section near the top when a glossaryBlock is given", () => {
+    const block = "Glossary (shared vocabulary):\n- run (aka session): one CLI session.";
+    const parts = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "Use strict mode.",
+      chunks: [CHUNK],
+      agentSystemPrompt: "You are the research lead.",
+      glossaryBlock: block,
+    });
+    expect(parts.contextFileBody).toContain("## Shared glossary");
+    expect(parts.contextFileBody).toContain(block);
+    // After the agent profile, before project instructions and knowledge.
+    const glossaryIdx = parts.contextFileBody.indexOf("## Shared glossary");
+    expect(parts.contextFileBody.indexOf("## Agent profile")).toBeLessThan(glossaryIdx);
+    expect(glossaryIdx).toBeLessThan(parts.contextFileBody.indexOf("## Project instructions"));
+    expect(glossaryIdx).toBeLessThan(parts.contextFileBody.indexOf("## Relevant project knowledge"));
+  });
+
+  it("keeps the cap when a glossaryBlock is present alongside huge chunks", () => {
+    const big: RetrievedChunk = { ...CHUNK, content: "y".repeat(50_000) };
+    const parts = buildWorktreeContext({
+      projectSlug: "p1",
+      issueTitle: "t",
+      instructions: "",
+      chunks: [big],
+      glossaryBlock: "Glossary (shared vocabulary):\n- run: one CLI session.",
+    });
+    expect(parts.contextFileBody.length).toBeLessThan(13_000);
+    expect(parts.contextFileBody).toContain("(truncated)");
+  });
 });
 
 describe("installWorktreeContext", () => {

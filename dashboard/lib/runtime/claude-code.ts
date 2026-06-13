@@ -160,8 +160,10 @@ export const claudeCodeRuntime: Runtime = {
     sessionResume: true,
     sessionIdCapture: true,
     hooks: true,
-    // No transcript cost parser is implemented yet; flip when lib/usage lands.
-    transcriptCostParsing: false,
+    // Claude transcripts carry per-message `usage` (input/output/cache tokens),
+    // parsed by lib/sessions/parseClaude.ts and priced by lib/usage/pricing.ts,
+    // so cost parsing is real for this runtime.
+    transcriptCostParsing: true,
     externalTerminalEscape: true,
   },
   detect: async () => detectClaude(),

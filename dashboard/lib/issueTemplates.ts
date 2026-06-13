@@ -11,6 +11,41 @@ export interface IssueTemplate {
 }
 
 /**
+ * An issue template that also carries epic linkage (spec 0034 / ADR-027): the
+ * `epicId` files it under a mission and `dependsOn` (a JSON id array string) wires
+ * its dependency edges. The route layer threads these straight into createIssue.
+ */
+export interface EpicChildTemplate extends IssueTemplate {
+  epicId: number;
+  dependsOn: string | null;
+}
+
+/**
+ * Build a child issue under an epic. When `dependsOn` ids are given they are
+ * recorded as a JSON array string (the issues.depends_on convention) and a short
+ * "Depends on" line is appended to the body so the linkage is visible in the
+ * issue text too. Absent dependencies leave the body byte-identical to `base`
+ * and `dependsOn` null, so an unlinked template is unaffected.
+ */
+export function epicChildIssue(opts: {
+  epicId: number;
+  base: IssueTemplate;
+  dependsOn?: number[];
+}): EpicChildTemplate {
+  const deps = opts.dependsOn ?? [];
+  const body = deps.length
+    ? `${opts.base.body}\n\nDepends on: ${deps.map((d) => `#${d}`).join(", ")}`
+    : opts.base.body;
+  return {
+    title: opts.base.title,
+    body,
+    labels: opts.base.labels,
+    epicId: opts.epicId,
+    dependsOn: deps.length ? JSON.stringify(deps) : null,
+  };
+}
+
+/**
  * A starter `## Acceptance contract` section (spec 0029). The judge grades each
  * assertion pass/fail and derives correctness from the pass fraction; authors
  * edit or delete these when a task has no gradeable definition of done. The

@@ -73,6 +73,13 @@ const PatchSchema = z.object({
       connections: z.boolean(),
     })
     .optional(),
+  roleAssignment: z
+    .object({
+      plan: z.string().optional(),
+      implement: z.string().optional(),
+      validate: z.string().optional(),
+    })
+    .optional(),
 });
 
 export async function PATCH(req: Request) {

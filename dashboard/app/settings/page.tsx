@@ -42,7 +42,16 @@ interface SettingsData {
     reviseThreshold: number;
   };
   features: Record<FeatureKey, boolean>;
+  /** Per-role runtime assignment (spec 0033). Unset role uses today's default runtime. */
+  roleAssignment: { plan?: string; implement?: string; validate?: string };
 }
+
+/** The three handoff roles a runtime can be pinned to. */
+const ROLES = ["plan", "implement", "validate"] as const;
+type Role = (typeof ROLES)[number];
+
+/** Sentinel select value for "no runtime pinned" (clears the role key on save). */
+const UNSET = "";
 
 interface RagStatus {
   embeddingProvider: string;
@@ -110,6 +119,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [ragStatus, setRagStatus] = useState<RagStatus | null>(null);
   const [reindexing, setReindexing] = useState(false);
+  const [runtimeIds, setRuntimeIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/settings", { cache: "no-store" })
@@ -119,6 +129,12 @@ export default function SettingsPage() {
     fetch("/api/rag/status", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data && setRagStatus(data))
+      .catch(() => undefined);
+    fetch("/api/runtimes", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { runtimes?: Array<{ id: string }> } | null) =>
+        data?.runtimes && setRuntimeIds(data.runtimes.map((rt) => rt.id))
+      )
       .catch(() => undefined);
   }, []);
 
@@ -177,6 +193,15 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Set or clear a role->runtime pin. Empty value removes the key (unset). */
+  function setRole(role: Role, runtimeId: string) {
+    if (!settings) return;
+    const roleAssignment = { ...settings.roleAssignment };
+    if (runtimeId === UNSET) delete roleAssignment[role];
+    else roleAssignment[role] = runtimeId;
+    setSettings({ ...settings, roleAssignment });
   }
 
   /** Feature toggles persist immediately (no Save button round-trip). */
@@ -534,6 +559,30 @@ export default function SettingsPage() {
               }
             />
           </Field>
+
+          <section className="rounded-card border border-line p-4 space-y-3">
+            <h2 className="text-sm font-semibold">Role assignment</h2>
+            <p className="text-sm text-ink3">
+              Pin each handoff role to a registered runtime. Unset uses today&apos;s default runtime selection; the validate
+              seat also selects the eval judge.
+            </p>
+            {ROLES.map((role) => (
+              <Field key={role} label={role[0].toUpperCase() + role.slice(1)}>
+                <select
+                  value={settings.roleAssignment[role] ?? UNSET}
+                  onChange={(e) => setRole(role, e.target.value)}
+                  className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                >
+                  <option value={UNSET}>unset</option>
+                  {runtimeIds.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ))}
+          </section>
         </div>
       )}
 

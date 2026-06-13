@@ -106,6 +106,16 @@ export function getIssue(id: number): Issue | null {
   return row ? rowToIssue(row) : null;
 }
 
+/** Look up a local issue by its GitHub number within a project. The
+ * (project_slug, github_number) pair is the idempotency key for GitHub import. */
+export function getIssueByGitHubNumber(projectSlug: string, githubNumber: number): Issue | null {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM issues WHERE project_slug = ? AND github_number = ?")
+    .get(projectSlug, githubNumber);
+  return row ? rowToIssue(row) : null;
+}
+
 interface ListOpts {
   projectSlug?: string;
   status?: IssueStatus;

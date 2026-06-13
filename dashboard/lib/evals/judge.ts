@@ -5,6 +5,7 @@ import { z } from "zod";
 import fs from "node:fs";
 import { getSettings } from "@/lib/settings";
 import { runCliAnswer, type AnswerProviderId } from "@/lib/rag/answer/cliAnswer";
+import { runtimeToAnswerProvider } from "@/lib/runtime/roles";
 import { extractJsonObject } from "@/lib/llm/extractJson";
 import { parseClaudeSession } from "@/lib/sessions/parseClaude";
 import type { RunMetrics } from "@/lib/evals/metrics";
@@ -61,6 +62,21 @@ export function compositeScore(r: Rubric): number {
 
 export function resolveJudgeProvider(): AnswerProviderId | null {
   const s = getSettings();
+
+  // The validate seat (spec 0033, ADR-026) overrides the judge target when set.
+  // The seat stores a runtime id; bridge it to an answer-provider id. A runtime
+  // with no one-shot answer CLI (e.g. antigravity) maps to null: log one
+  // downgrade line and fall through to the existing chain. Never throw, never
+  // silently disable the judge.
+  const validateSeat = s.roleAssignment?.validate;
+  if (validateSeat) {
+    const seatProvider = runtimeToAnswerProvider(validateSeat);
+    if (seatProvider) return seatProvider;
+    console.info(
+      `[evals] validate seat ${validateSeat} has no one-shot answer CLI; falling back to the inherit chain`,
+    );
+  }
+
   const setting = s.evals.judgeProvider === "inherit" ? s.rag.answerProvider : s.evals.judgeProvider;
   return setting === "none" ? null : setting;
 }

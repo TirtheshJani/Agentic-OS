@@ -57,7 +57,7 @@ describe("finalizeRunExit", () => {
 });
 
 describe("reconcileOrphanedRuns", () => {
-  it("fails every run without ended_at and flips its issue, leaving finished runs alone", () => {
+  it("marks every run without ended_at interrupted and moves its issue to review, leaving finished runs alone (ADR-020)", () => {
     const orphanIssue = createIssue({ projectSlug: "x", title: "t", status: "running" });
     const orphanRun = createRun({ issueId: orphanIssue, agentSlug: "a", runtimeId: "claude-code", worktreePath: "/w1" });
     const doneIssue = createIssue({ projectSlug: "x", title: "t2", status: "running" });
@@ -65,9 +65,11 @@ describe("reconcileOrphanedRuns", () => {
     finalizeRunExit(doneRun, 0);
 
     expect(reconcileOrphanedRuns()).toBe(1);
-    expect(getRun(orphanRun)!.exitStatus).toBe("failed");
+    // Distinct from "failed": an environment interruption is not an agent failure.
+    expect(getRun(orphanRun)!.exitStatus).toBe("interrupted");
     expect(getRun(orphanRun)!.endedAt).not.toBeNull();
-    expect(getIssue(orphanIssue)!.status).toBe("failed");
+    // Human-gated triage, not a "the agent broke" state.
+    expect(getIssue(orphanIssue)!.status).toBe("review");
     expect(getRun(doneRun)!.exitStatus).toBe("done");
     expect(getIssue(doneIssue)!.status).toBe("review");
 

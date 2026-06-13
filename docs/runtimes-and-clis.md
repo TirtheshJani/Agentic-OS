@@ -1,34 +1,35 @@
 # Runtimes and CLIs: who needs what
 
-Three CLIs cover everything. With `claude` + `gemini` + `gh` installed
-and logged in, **no other CLI is needed**. (Codex remains a candidate
-third runtime — ADR-008 chose Gemini — and nothing in the runtime
-registry blocks adding it later.)
+`claude` + `gemini` + `gh` cover everything; `agy` (Antigravity) is an
+optional third runtime. With those installed and logged in, **no other CLI
+is needed**. (Antigravity superseded Codex as the third runtime — ADR-023;
+nothing in the runtime registry blocks adding more.)
 
 ## Feature × CLI matrix
 
-| Feature | claude | gemini | gh |
+| Feature | claude | gemini | agy | gh |
+|---|---|---|---|---|
+| Agent runs (claude-code runtime) | **required** | — | — | — |
+| Agent runs (gemini-cli runtime) | — | **required** | — | — |
+| Agent runs (antigravity-cli runtime) | — | — | **required** | — |
+| AI agent drafting (`/agents` → draft) | **required** (headless `claude -p`) | — | — | — |
+| `/new` orchestrator draft | **required** (headless `claude -p`) | — | — | — |
+| `/new` GitHub repo creation | — | — | — | **required** (else local-only) |
+| Clone-from-GitHub project mode | — | — | — | preferred (falls back to `git clone`) |
+| Agents using GitHub inside runs (PRs, issues) | — | — | — | required for those agents |
+| Scheduler / auto-router / handoffs | — | — | — | — (HTTP + SQLite only) |
+| MCP (Gmail, Calendar) per-project injection | claude-code runs only | global `~/.gemini/settings.json` only | global config only | — |
+
+## The three runtimes
+
+| | claude-code | gemini-cli | antigravity-cli |
 |---|---|---|---|
-| Agent runs (claude-code runtime) | **required** | — | — |
-| Agent runs (gemini-cli runtime) | — | **required** | — |
-| AI agent drafting (`/agents` → draft) | **required** (headless `claude -p`) | — | — |
-| `/new` orchestrator draft | **required** (headless `claude -p`) | — | — |
-| `/new` GitHub repo creation | — | — | **required** (else local-only) |
-| Clone-from-GitHub project mode | — | — | preferred (falls back to `git clone`) |
-| Agents using GitHub inside runs (PRs, issues) | — | — | required for those agents |
-| Scheduler / auto-router / handoffs | — | — | — (HTTP + SQLite only) |
-| MCP (Gmail, Calendar) per-project injection | claude-code runs only | global `~/.gemini/settings.json` only | — |
-
-## The two runtimes
-
-| | claude-code | gemini-cli |
-|---|---|---|
-| Bills | Claude Max plan (logged-in CLI) | Google AI Pro account |
-| Spawn | `claude --dangerously-skip-permissions` in a PTY | `gemini --yolo --skip-trust --session-id <uuid>` |
-| Session id | hook or jsonl watcher (30s race) | self-assigned UUID (instant) |
-| Resume / open-in-terminal | yes (`claude --resume <sid>`) | no (hidden in UI) |
-| Hooks (SessionStart etc.) | yes | no |
-| MCP injection per worktree | yes | no (global config only) |
+| Bills | Claude Max plan (logged-in CLI) | Google AI Pro account | Google Antigravity account |
+| Spawn | `claude --dangerously-skip-permissions` in a PTY | `gemini --yolo --skip-trust --session-id <uuid>` | `agy --prompt-interactive <prompt> --dangerously-skip-permissions` |
+| Session id | hook or jsonl watcher (30s race) | self-assigned UUID (instant) | self-assigned UUID marker (instant) |
+| Resume / open-in-terminal | yes (`claude --resume <sid>`) | no (hidden in UI) | yes (`agy --continue`, cwd-scoped) |
+| Hooks (SessionStart etc.) | yes | no | no |
+| MCP injection per worktree | yes | no (global config only) | no (global config only) |
 
 Capability flags live in `lib/runtime/types.ts`; the UI degrades per
 flag (spec 0007). Headless `claude -p` is reserved for the two one-shot

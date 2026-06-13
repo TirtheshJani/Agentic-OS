@@ -1,6 +1,6 @@
 # Spec 0025: Repo hygiene and CI
 
-**Status:** Draft (proposed)
+**Status:** Partially shipped; see Sync note
 **Owner:** TJ
 **Date:** 2026-06-12
 **Decision record:** none (no architectural decision; cleanup + automation)
@@ -59,3 +59,12 @@ locally.
 
 Coverage thresholds, release automation, branch protection rules, and any
 dependency upgrades. Those are separate decisions if wanted later.
+
+## Sync note (2026-06-12)
+
+Partially landed upstream. The 6.2M `docs/Claude-Control-Center-main` nested repo
+is gone (matches decision 1), and `dashboard/.eslintrc.json` plus the
+"add ESLint & network guards" commit cover part of the lint surface. Still
+pending: the `.github/workflows/ci.yml` that actually runs the test suite,
+validators, lint, and build on push (decision 2), and wiring `validate:agents`
+(spec 0028) into that job once it exists. Net: the cleanup is done, CI is not.

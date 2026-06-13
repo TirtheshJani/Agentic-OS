@@ -3,7 +3,8 @@ import { getProject } from "@/lib/projects";
 import { getAgent } from "@/lib/agents";
 import { getRuntime } from "@/lib/runtime/registry";
 import { assertCapacity } from "@/lib/runtime/concurrencyCap";
-import { createRun, getRun, updateRun, listActiveRuns } from "@/lib/runs";
+import { createRun, getRun, updateRun, listActiveRuns, type ExitStatus } from "@/lib/runs";
+import type { IssueStatus } from "@/lib/issues";
 import { createWorktree, worktreePathFor } from "@/lib/worktrees";
 import { registerLiveRun, dropLiveRun } from "@/lib/runtime/liveRuns";
 import { getSettings } from "@/lib/settings";
@@ -27,31 +28,26 @@ function publicBaseUrl(): string {
 }
 
 /**
- * Persist a run's exit and transition its issue. Idempotent (guarded by
- * ended_at), because it is called from two places that can race: the PTY
- * onExit listener attached at spawn time (covers unattended autonomous runs)
- * and the WebSocket handler in server.ts (covers attended runs).
+ * Persist a run's outcome and transition its issue. Idempotent (guarded by
+ * ended_at), so the racing callers — the PTY onExit listener attached at spawn
+ * time, the WebSocket handler in server.ts, and boot reconciliation — cannot
+ * double-write. Shared by `finalizeRunExit` (normal exits) and
+ * `reconcileOrphanedRuns` (ADR-020), so both take exactly one code path.
  */
-export function finalizeRunExit(runId: number, exitCode: number, signal?: number): void {
+function finalizeRun(runId: number, exitStatus: ExitStatus, issueStatus: IssueStatus, details: string): void {
   const run = getRun(runId);
   if (!run || run.endedAt != null) return;
-
-  // Code 0 means "agent finished cleanly, operator should review"; anything
-  // else (non-zero exit, killed by signal) is a failure the operator can retry.
-  const cleanExit = exitCode === 0 && !signal;
-  const exitStatus = cleanExit ? "done" : "failed";
-  const newIssueStatus = cleanExit ? "review" : "failed";
 
   updateRun(runId, { endedAt: Date.now(), exitStatus });
 
   const issue = getIssue(run.issueId);
   if (issue) {
-    updateIssue(issue.id, { status: newIssueStatus });
+    updateIssue(issue.id, { status: issueStatus });
     appendEvent({
       projectSlug: issue.projectSlug,
       issueId: issue.id,
       eventType: `run.${exitStatus}`,
-      details: `Run ${runId} exited with code ${exitCode}${signal ? ` (signal ${signal})` : ""}`,
+      details,
     });
     publish({ kind: "issue.changed", id: issue.id, projectSlug: issue.projectSlug, reason: "status" });
     publish({ kind: "thread.appended", issueId: issue.id });
@@ -60,17 +56,35 @@ export function finalizeRunExit(runId: number, exitCode: number, signal?: number
 }
 
 /**
- * Mark runs orphaned by a crash or restart as failed. PTYs die with the
+ * Persist a run's exit and transition its issue from a PTY exit code. Code 0
+ * means "agent finished cleanly, operator should review"; anything else
+ * (non-zero exit, killed by signal) is a failure the operator can retry.
+ */
+export function finalizeRunExit(runId: number, exitCode: number, signal?: number): void {
+  const cleanExit = exitCode === 0 && !signal;
+  finalizeRun(
+    runId,
+    cleanExit ? "done" : "failed",
+    cleanExit ? "review" : "failed",
+    `Run ${runId} exited with code ${exitCode}${signal ? ` (signal ${signal})` : ""}`,
+  );
+}
+
+/**
+ * Reconcile runs orphaned by a crash or restart (ADR-020). PTYs die with the
  * server process and nothing else ever sets ended_at, so each orphan would
- * otherwise show as active forever and permanently consume concurrency
- * capacity (assertCapacity counts ended_at-IS-NULL rows). Called once at
- * boot, before any run can spawn in this process.
+ * otherwise show as active forever and permanently consume concurrency capacity
+ * (assertCapacity counts ended_at-IS-NULL rows). Called once at boot, before any
+ * run can spawn in this process. Orphans are marked `interrupted` (distinct from
+ * `failed`, so an environment interruption is not scored as an agent failure)
+ * and their issue moves to `review` for human triage — resume, requeue, or
+ * discard. The shared ended_at guard keeps a late real onExit from overwriting.
  */
 export function reconcileOrphanedRuns(): number {
   const orphans = listActiveRuns();
   for (const run of orphans) {
     console.log(`[startRun] reconciling orphaned run ${run.id} (no live PTY after restart)`);
-    finalizeRunExit(run.id, -1);
+    finalizeRun(run.id, "interrupted", "review", `Run ${run.id} interrupted by restart (no live PTY)`);
   }
   return orphans.length;
 }

@@ -21,6 +21,30 @@ import { REPO_ROOT } from "@/lib/paths";
 import fs from "node:fs";
 import path from "node:path";
 
+/**
+ * Resolve the runtime to spawn for the implementation seat (spec 0033, ADR-026).
+ * Default-off and regression-safe: byte-identical to today's selection when
+ * `implementSeat` is unset.
+ *
+ * Precedence:
+ *  - An explicit caller pin (`requestedRuntimeId`) always wins.
+ *  - Otherwise the base is the agent's runtime, then the project default.
+ *  - The seat routes the base only when no per-agent `model` is pinned. A pinned
+ *    model wins: keep the agent's own runtime so the model is not dropped later.
+ */
+export function resolveImplementRuntime(opts: {
+  requestedRuntimeId?: string;
+  agentRuntime: string;
+  agentModel?: string;
+  implementSeat?: string;
+  projectDefault?: string;
+}): string {
+  if (opts.requestedRuntimeId) return opts.requestedRuntimeId;
+  const base = opts.agentRuntime || opts.projectDefault || "";
+  if (opts.implementSeat && !opts.agentModel) return opts.implementSeat;
+  return base;
+}
+
 /** Pipeline failure with an HTTP-ish status the API route can map directly. */
 export class StartRunError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -139,8 +163,18 @@ export async function startRunForIssue(
   const agent = getAgent(issue.assigneeSlug);
   if (!agent) throw new StartRunError("assignee agent not found", 404);
 
-  const requestedRuntimeId = opts.runtimeId ?? (agent.runtime || project["runtime-default"]);
   const settings = getSettings();
+
+  // The implementation seat (spec 0033, ADR-026) routes the base runtime when
+  // set and no per-agent model is pinned; unset, this is exactly today's
+  // `opts.runtimeId ?? (agent.runtime || project["runtime-default"])`.
+  const requestedRuntimeId = resolveImplementRuntime({
+    requestedRuntimeId: opts.runtimeId,
+    agentRuntime: agent.runtime,
+    agentModel: agent.model,
+    implementSeat: settings.roleAssignment?.implement,
+    projectDefault: project["runtime-default"],
+  });
 
   // Runtime resolution with the default-off LLM-routing fallback (spec 0009):
   // with the flag off this is a plain registry lookup (behavior unchanged);

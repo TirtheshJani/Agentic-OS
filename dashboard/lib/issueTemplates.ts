@@ -10,6 +10,17 @@ export interface IssueTemplate {
   labels: string[];
 }
 
+/**
+ * A starter `## Acceptance contract` section (spec 0029). The judge grades each
+ * assertion pass/fail and derives correctness from the pass fraction; authors
+ * edit or delete these when a task has no gradeable definition of done. The
+ * leading blank line spaces the section off in templates that keep blanks; the
+ * research template filters blanks, so the heading simply follows the prose.
+ */
+function acceptanceContract(...assertions: string[]): string[] {
+  return ["", "## Acceptance contract", ...assertions.map((a) => `- [ ] ${a}`)];
+}
+
 export function researchCollectionIssue(opts: {
   slug: string;
   question: string;
@@ -37,7 +48,11 @@ export function researchCollectionIssue(opts: {
       "   followed by a faithful summary plus the key extracts (quote sparingly, attribute clearly).",
       `3. When done, update ${opts.vaultDirAbs}/RESEARCH.md: set status: active in the frontmatter and append a one-paragraph collection log.`,
       "",
-      "Do not modify anything outside that vault folder. Acceptance: at least 3 source files with valid frontmatter.",
+      "Do not modify anything outside that vault folder.",
+      ...acceptanceContract(
+        `At least 3 source files exist in ${sourcesDir}/ with valid frontmatter.`,
+        `${opts.vaultDirAbs}/RESEARCH.md has status: active and a one-paragraph collection log.`,
+      ),
     ]
       .filter((l) => l !== "")
       .join("\n"),
@@ -66,6 +81,11 @@ export function learningSessionIssue(opts: {
       `End the session by appending a session log to ${opts.vaultDirAbs}/sessions/<YYYY-MM-DD>.md (create folders as needed): what was covered, what the operator struggled with, and what to review next. Update the syllabus checklist in ${opts.vaultDirAbs}/SYLLABUS.md if goals were completed.`,
       "",
       "The worktree you are in is scratch space for exercises; nothing in it is kept.",
+      ...acceptanceContract(
+        isSrs
+          ? `Last-reviewed dates were updated in ${opts.vaultDirAbs}/srs.md for the items quizzed.`
+          : `A session log was appended to ${opts.vaultDirAbs}/sessions/<YYYY-MM-DD>.md covering what was taught.`,
+      ),
     ].join("\n"),
     labels: ["learning", `learning:${opts.topic}`],
   };
@@ -89,6 +109,9 @@ export function designReviewIssue(opts: {
       `4. Write your findings to ${opts.designDirAbs}/REVIEW-<YYYY-MM-DD>.md: verdict summary, findings ordered by severity, concrete recommendations.`,
       "",
       "Do not change code in this run; it is a review.",
+      ...acceptanceContract(
+        `${opts.designDirAbs}/REVIEW-<YYYY-MM-DD>.md was written with a verdict, findings ordered by severity, and recommendations.`,
+      ),
     ].join("\n"),
     labels: ["design-review"],
   };

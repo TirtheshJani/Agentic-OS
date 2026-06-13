@@ -10,6 +10,7 @@ import { extractJsonObject } from "@/lib/llm/extractJson";
 import { parseClaudeSession } from "@/lib/sessions/parseClaude";
 import type { RunMetrics } from "@/lib/evals/metrics";
 import type { Assertion } from "@/lib/evals/contract";
+import type { BehavioralResult } from "@/lib/evals/behavioral";
 import { renderHandoff, type Handoff } from "@/lib/handoff";
 
 const INPUT_CHAR_BUDGET = 24_000;
@@ -103,6 +104,7 @@ export function buildJudgePrompt(opts: {
   transcriptPath: string | null;
   assertions?: Assertion[];
   handoff?: Handoff | null;
+  behavioral?: BehavioralResult[];
 }): string {
   const contract = opts.assertions ?? [];
   const instruction =
@@ -125,6 +127,18 @@ export function buildJudgePrompt(opts: {
           'Respond with ONLY a JSON object: {"correctness": n, "efficiency": n, "coherence": n, "rationale": "2-4 sentences"}.',
         ];
 
+  // Behavioral observations ride along only when the validator actually ran and
+  // produced results. An empty block is filtered out, so the absent/empty path
+  // is byte-identical to the judge-only prompt (regression guard).
+  const behavioral = opts.behavioral ?? [];
+  const behavioralBlock =
+    behavioral.length > 0
+      ? [
+          "Behavioral validator observations:",
+          ...behavioral.map((b) => `- ${b.assertion} -> ${b.status} (${b.reason})`),
+        ].join("\n")
+      : "";
+
   const prompt = [
     ...instruction,
     "",
@@ -135,6 +149,7 @@ export function buildJudgePrompt(opts: {
     "",
     opts.handoff ? `Agent handoff:\n${renderHandoff(opts.handoff)}` : "",
     "",
+    behavioralBlock,
     "Final assistant output:",
     finalAssistantText(opts.transcriptPath),
   ]

@@ -111,8 +111,18 @@ const SettingsSchema = z.object({
       batchLimit: z.number().int().positive().default(10),
       /** Judged composite below this files one auto-revision (ADR-021). 0 disables the loop. */
       reviseThreshold: z.number().int().min(0).max(100).default(70),
+      /** Run the behavioral validator (spec 0032 / ADR-025) over `(e2e)` assertions
+       * at grade time. Default off (absent or false): grading is byte-for-byte
+       * today's judge-only path. Optional so existing settings payloads still parse. */
+      behavioralEnabled: z.boolean().optional(),
     })
-    .default({ judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10, reviseThreshold: 70 }),
+    .default({
+      judgeProvider: "inherit",
+      autoGradeEnabled: false,
+      batchLimit: 10,
+      reviseThreshold: 70,
+      behavioralEnabled: false,
+    }),
   docker: z
     .object({
       enabled: z.boolean().default(false),
@@ -145,7 +155,13 @@ function defaults(): Settings {
     rag: { ...RAG_DEFAULTS },
     lightrag: { baseUrl: "http://localhost:9621", autoIngest: false },
     export: { notebookLmDir: "" },
-    evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10, reviseThreshold: 70 },
+    evals: {
+      judgeProvider: "inherit",
+      autoGradeEnabled: false,
+      batchLimit: 10,
+      reviseThreshold: 70,
+      behavioralEnabled: false,
+    },
     docker: { enabled: false, allowlist: [] },
     features: { ...FEATURES_DEFAULTS },
     roleAssignment: {},

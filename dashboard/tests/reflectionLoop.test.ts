@@ -59,6 +59,10 @@ function childIssuesOf(parentId: number): Array<{ id: number; status: string; as
     .all(parentId) as Array<{ id: number; status: string; assignee_slug: string; body: string }>;
 }
 
+// The auto-grade subscriber is async (it awaits the judge), so revision filing
+// lands on a later task. Drain the queue after publishing before asserting.
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 beforeEach(() => {
   cliCalls = 0;
   cliReply = { ok: true, text: LOW };
@@ -89,11 +93,12 @@ describe("reflection loop", () => {
     expect(childIssuesOf(issueId)).toHaveLength(0);
   });
 
-  it("files exactly one queued revision child on a sub-threshold score", () => {
+  it("files exactly one queued revision child on a sub-threshold score", async () => {
     gatesOn();
     const { runId, issueId } = seedRun({ assignee: "agent-x" });
     stopAutoGrade = startEvalAutoGrade();
     publish({ kind: "run.finalized", runId, issueId, projectSlug: "p", exitStatus: "done" });
+    await flush();
 
     expect(cliCalls).toBe(1);
     const children = childIssuesOf(issueId);
@@ -106,13 +111,14 @@ describe("reflection loop", () => {
     expect(events).toHaveLength(1);
   });
 
-  it("caps at one round: a low score on a revision escalates the issue to review", () => {
+  it("caps at one round: a low score on a revision escalates the issue to review", async () => {
     gatesOn();
     const parent = createIssue({ projectSlug: "p", title: "Original", body: "x", status: "done" });
     // The graded run sits on an issue that is itself a revision (has a parent).
     const { runId, issueId } = seedRun({ parentIssueId: parent });
     stopAutoGrade = startEvalAutoGrade();
     publish({ kind: "run.finalized", runId, issueId, projectSlug: "p", exitStatus: "done" });
+    await flush();
 
     expect(cliCalls).toBe(1);
     expect(childIssuesOf(issueId)).toHaveLength(0); // no grandchild

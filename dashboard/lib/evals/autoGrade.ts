@@ -16,7 +16,7 @@ const g = globalThis as unknown as Record<symbol, WorkerState | undefined>;
 
 export function startEvalAutoGrade(): () => void {
   if (g[globalKey]) return g[globalKey]!.stop;
-  const unsubscribe = subscribe((event) => {
+  const unsubscribe = subscribe(async (event) => {
     if (event.kind !== "run.finalized") return;
     try {
       gradeRunMetrics(event.runId);
@@ -25,7 +25,7 @@ export function startEvalAutoGrade(): () => void {
     }
     const settings = getSettings();
     if (settings.evals.autoGradeEnabled && settings.autonomy.enabled && event.exitStatus === "done") {
-      const result = gradeRunWithJudge(event.runId);
+      const result = await gradeRunWithJudge(event.runId);
       if (!result.ok) {
         console.error(`[evals] auto-judge failed for run ${event.runId}: ${result.error}`);
       } else if (result.score < settings.evals.reviseThreshold) {

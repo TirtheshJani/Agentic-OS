@@ -7,6 +7,8 @@ import { appendEvent } from "@/lib/threads";
 import { routeIssue } from "@/lib/orchestrator/router";
 import { startRunForIssue } from "@/lib/startRun";
 import { ConcurrencyCapError } from "@/lib/runtime/types";
+import { getDb } from "@/lib/db";
+import { eligibleChildren } from "@/lib/epics";
 
 const SWEEP_INTERVAL_MS = 60_000;
 
@@ -19,7 +21,7 @@ interface RouterState {
 const globalKey = Symbol.for("agentic-os.autoRouter");
 const g = globalThis as unknown as Record<symbol, RouterState | undefined>;
 
-async function handleIssue(issueId: number, inFlight: Set<number>): Promise<void> {
+export async function handleIssue(issueId: number, inFlight: Set<number>): Promise<void> {
   const settings = getSettings();
   if (!settings.autonomy.enabled) return;
   if (inFlight.has(issueId)) return;
@@ -29,6 +31,28 @@ async function handleIssue(issueId: number, inFlight: Set<number>): Promise<void
 
   const project = getProject(issue.projectSlug);
   if (!project) return;
+
+  // Epic dependency gate: a child issue may only run once its depends_on issues
+  // pass. eligibleChildren resolves that for the whole epic; if this issue is
+  // not among them, hold it queued. Non-epic issues (epic_id null) skip this
+  // and route exactly as before.
+  const epicRow = getDb()
+    .prepare("SELECT epic_id FROM issues WHERE id = ?")
+    .get(issueId) as { epic_id: number | null } | undefined;
+  const epicId = epicRow?.epic_id;
+  if (epicId != null) {
+    const eligible = eligibleChildren(epicId).some((c) => c.id === issueId);
+    if (!eligible) {
+      appendEvent({
+        projectSlug: issue.projectSlug,
+        issueId: issue.id,
+        eventType: "orchestrator.held",
+        details: "Epic dependency unmet; staying queued.",
+      });
+      publish({ kind: "thread.appended", issueId: issue.id });
+      return;
+    }
+  }
 
   inFlight.add(issueId);
   try {

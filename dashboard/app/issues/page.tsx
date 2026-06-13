@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/project/KanbanBoard";
 import { IssueDrawer } from "@/components/issue/IssueDrawer";
 import { NewIssueDialog } from "@/components/project/NewIssueDialog";
+import { ImportGitHubButton } from "@/components/project/ImportGitHubButton";
 import { Button } from "@/components/common/Button";
 import { useProjects } from "@/hooks/useProjects";
 import { useStream } from "@/hooks/useStream";
@@ -55,6 +56,12 @@ export default function IssuesPage() {
             >
               {projects.map(p => <option key={p.slug} value={p.slug}>{p.name}</option>)}
             </select>
+          )}
+          {newIssueProject && (
+            <ImportGitHubButton
+              projectSlug={newIssueProject}
+              repo={projects?.find((p) => p.slug === newIssueProject)?.repo}
+            />
           )}
           <Button
             variant="primary"

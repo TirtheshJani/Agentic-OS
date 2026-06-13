@@ -22,11 +22,21 @@ stress-tests the runtime abstraction on a non-Anthropic CLI.
 - `--yolo` auto-approves all actions (also `--approval-mode yolo`).
 - `--skip-trust` trusts the workspace for the session (no trust dialog).
 - `--session-id <uuid>` starts a session with a caller-provided UUID.
-- `--resume <"latest"|index>` resumes; resume-by-UUID is NOT documented, so
-  `sessionResume` stays `false` until verified.
-- No Claude Code-style lifecycle hooks; `gemini hooks` manages its own hook
-  system but there is no SessionStart HTTP callback equivalent.
-- MCP servers configured via `gemini mcp` / `~/.gemini/settings.json`.
+- `--resume <"latest"|index>` resumes; resume-by-UUID is NOT supported
+  (verified v0.46.0: `--resume` takes only "latest" or an index). Sessions are
+  stored per project derived from cwd (`~/.gemini/tmp/<project>/chats/`), so
+  resume is cwd-scoped. Each worktree holds one run's session, so
+  `gemini --resume latest` from the worktree re-attaches that run:
+  `sessionResume: true` via a cwd-scoped command (the captured UUID is a label,
+  not a resume key) — same shape as antigravity's `--continue`.
+- No Claude Code-style lifecycle hooks; no SessionStart HTTP callback
+  equivalent: `hooks: false` (startRun synthesizes SessionStart for hookless
+  runtimes, so the events feed stays uniform).
+- MCP servers: read from the standard settings hierarchy. A workspace-level
+  `<cwd>/.gemini/settings.json` (`mcpServers`) is merged over the user file,
+  verified via `gemini mcp list`. Per-worktree injection writes that file
+  (`installGeminiWorktreeMcpConfig`), the gemini parallel to claude's
+  `.mcp.json`. `--yolo` auto-approves, so no separate enable flag is needed.
 
 ## Implementation
 
@@ -42,8 +52,13 @@ stress-tests the runtime abstraction on a non-Anthropic CLI.
 - Prompt delivery: whitespace-collapsed body written at T+4s, then a
   separate `"\r"` write 250ms later (same ConPTY quirk fix as claude-code,
   commit 63a4ecd).
-- Capabilities: `{ sessionResume: false, sessionIdCapture: true, hooks:
-  false, transcriptCostParsing: false, externalTerminalEscape: false }`.
+- Capabilities (verified v0.46.0): `{ sessionResume: true, sessionIdCapture:
+  true, hooks: false, transcriptCostParsing: false, externalTerminalEscape:
+  true }`. `formatResumeCommand` returns `gemini --resume latest` (cwd-scoped,
+  ignores the session-id marker).
+- Per-worktree MCP: `installGeminiWorktreeMcpConfig` writes
+  `<worktree>/.gemini/settings.json` `mcpServers`; `startRun` dispatches on
+  runtime id (claude → `.mcp.json`, gemini → workspace settings).
 
 Carried over from spec 0006 unchanged:
 

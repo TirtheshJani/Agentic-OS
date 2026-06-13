@@ -12,7 +12,7 @@ import { publish } from "@/lib/stream";
 import { appendEvent } from "@/lib/threads";
 import { recordHookEvent } from "@/lib/hookEvents";
 import { parseHandoff, renderHandoff } from "@/lib/handoff";
-import { installWorktreeMcpConfig } from "@/lib/mcp";
+import { installWorktreeMcpConfig, installGeminiWorktreeMcpConfig } from "@/lib/mcp";
 import { readInstructions, knowledgeScopePrefix } from "@/lib/projectKnowledge";
 import { retrieve } from "@/lib/rag/retrieval";
 import { buildWorktreeContext, installWorktreeContext } from "@/lib/promptAssembly";
@@ -168,13 +168,17 @@ export async function startRunForIssue(
   }
 
   // Inject the project's MCP servers into the worktree before spawn. Claude
-  // Code reads <worktree>/.mcp.json; Gemini reads ~/.gemini/settings.json
-  // globally, so per-worktree injection only applies to claude-code.
+  // Code reads <worktree>/.mcp.json; Gemini reads a workspace-level
+  // <worktree>/.gemini/settings.json (mcpServers), both injected per-worktree.
+  // Antigravity has no per-worktree MCP path yet, so it gets none.
   const mcpTemplates = project["mcp-servers"] ?? [];
-  if (runtimeId === "claude-code" && mcpTemplates.length > 0) {
+  if (mcpTemplates.length > 0) {
     try {
-      const servers = installWorktreeMcpConfig(worktreePath, mcpTemplates);
-      if (servers.length > 0) console.log(`[startRun] issue ${issue.id}: MCP servers ${servers.join(", ")}`);
+      const servers =
+        runtimeId === "claude-code" ? installWorktreeMcpConfig(worktreePath, mcpTemplates)
+        : runtimeId === "gemini-cli" ? installGeminiWorktreeMcpConfig(worktreePath, mcpTemplates)
+        : [];
+      if (servers.length > 0) console.log(`[startRun] issue ${issue.id}: MCP servers ${servers.join(", ")} (${runtimeId})`);
     } catch (err) {
       // Non-fatal: the run proceeds without MCP tools.
       console.error(`[startRun] MCP install failed for issue ${issue.id}:`, err);

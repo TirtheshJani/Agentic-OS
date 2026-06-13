@@ -3,7 +3,7 @@ import { describe, it, expect, afterAll, beforeEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { writeMcpTemplate, readMcpTemplate, listMcpTemplates, installWorktreeMcpConfig } from "@/lib/mcp";
+import { writeMcpTemplate, readMcpTemplate, listMcpTemplates, installWorktreeMcpConfig, installGeminiWorktreeMcpConfig } from "@/lib/mcp";
 
 afterAll(() => {
   cleanupTestRepoRoot();
@@ -58,5 +58,32 @@ describe("installWorktreeMcpConfig", () => {
   it("no-ops when no templates resolve", () => {
     expect(installWorktreeMcpConfig(worktree, ["missing"])).toEqual([]);
     expect(fs.existsSync(path.join(worktree, ".mcp.json"))).toBe(false);
+  });
+});
+
+describe("installGeminiWorktreeMcpConfig", () => {
+  it("writes mcpServers into <worktree>/.gemini/settings.json, merging existing keys", () => {
+    writeMcpTemplate("gmail", { "gmail-personal": { command: "npx" } });
+
+    // Simulate a pre-existing workspace settings file (e.g. auth selection).
+    const settingsDir = path.join(worktree, ".gemini");
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(settingsDir, "settings.json"),
+      JSON.stringify({ security: { auth: { selectedType: "oauth-personal" } } })
+    );
+
+    const servers = installGeminiWorktreeMcpConfig(worktree, ["gmail", "nonexistent"]);
+    expect(servers).toEqual(["gmail-personal"]);
+
+    const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, "settings.json"), "utf8"));
+    expect(settings.mcpServers["gmail-personal"].command).toBe("npx");
+    // Existing keys are preserved (merge, not clobber).
+    expect(settings.security.auth.selectedType).toBe("oauth-personal");
+  });
+
+  it("no-ops when no templates resolve", () => {
+    expect(installGeminiWorktreeMcpConfig(worktree, ["missing"])).toEqual([]);
+    expect(fs.existsSync(path.join(worktree, ".gemini", "settings.json"))).toBe(false);
   });
 });

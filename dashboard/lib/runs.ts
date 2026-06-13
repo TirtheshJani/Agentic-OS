@@ -121,6 +121,9 @@ interface UpdateOpts {
   exitStatus?: ExitStatus;
   transcriptPath?: string;
   ptySessionId?: string;
+  /** Rewritten when a spawn-time runtime fallback re-targets the run (spec 0009). */
+  runtimeId?: string;
+  model?: string;
 }
 
 export function updateRun(id: number, patch: UpdateOpts): void {
@@ -134,6 +137,7 @@ export function updateRun(id: number, patch: UpdateOpts): void {
       k === "exitStatus" ? "exit_status" :
       k === "transcriptPath" ? "transcript_path" :
       k === "ptySessionId" ? "pty_session_id" :
+      k === "runtimeId" ? "runtime_id" :
       k;
     sets.push(`${column} = ?`);
     params.push(v);

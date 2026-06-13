@@ -38,8 +38,13 @@ Deterministic scoring per ADR-007: description-keyword matches weigh 3,
 skill-name matches weigh 1, candidates filtered by project capability
 eligibility, lead agents (`*-lead` slugs) excluded as targets, ties break
 alphabetically. Returns `{ assigneeSlug | null, reason }`; the reason is
-written to the issue thread. `settings.autonomy.llmRouting` reserves an
-optional one-call headless fallback; it ships disabled and unimplemented.
+written to the issue thread. `settings.autonomy.llmRouting` (default off)
+enables a deterministic runtime fallback in the run pipeline: an unavailable
+or unregistered primary runtime, or a spawn failure, routes to the first
+other registered runtime whose `detect()` reports available, and the run row
+records the runtime actually used (`lib/runtime/registry.ts` `resolveRuntime`
+/ `firstAvailableRuntime`, wired in `lib/startRun.ts`). With the flag off the
+requested runtime is used verbatim, behavior unchanged.
 
 ### Auto-router (`lib/orchestrator/autoRoute.ts`)
 

@@ -1,7 +1,7 @@
 import { getIssue, updateIssue } from "@/lib/issues";
 import { getProject } from "@/lib/projects";
 import { getAgent } from "@/lib/agents";
-import { getRuntime } from "@/lib/runtime/registry";
+import { resolveRuntime, firstAvailableRuntime } from "@/lib/runtime/registry";
 import { assertCapacity } from "@/lib/runtime/concurrencyCap";
 import { createRun, getRun, updateRun, listActiveRuns, type ExitStatus } from "@/lib/runs";
 import type { IssueStatus } from "@/lib/issues";
@@ -135,19 +135,28 @@ export async function startRunForIssue(
   const agent = getAgent(issue.assigneeSlug);
   if (!agent) throw new StartRunError("assignee agent not found", 404);
 
-  const runtimeId = opts.runtimeId ?? (agent.runtime || project["runtime-default"]);
-  const runtime = getRuntime(runtimeId);
-  if (!runtime) throw new StartRunError(`runtime not registered: ${runtimeId}`, 400);
+  const requestedRuntimeId = opts.runtimeId ?? (agent.runtime || project["runtime-default"]);
+  const settings = getSettings();
+
+  // Runtime resolution with the default-off LLM-routing fallback (spec 0009):
+  // with the flag off this is a plain registry lookup (behavior unchanged);
+  // with it on, an unavailable primary routes to any available runtime.
+  const resolution = await resolveRuntime(requestedRuntimeId, settings.autonomy.llmRouting);
+  if (!resolution) throw new StartRunError(`runtime not registered: ${requestedRuntimeId}`, 400);
+  let { runtime } = resolution;
+  let runtimeId = resolution.runtimeId;
+  if (resolution.fellBack) {
+    console.log(`[startRun] issue ${issue.id}: primary runtime ${requestedRuntimeId} unavailable; routing to ${runtimeId} (llmRouting fallback)`);
+  }
 
   // The agent's model only applies on the agent's own runtime: a Claude model
   // alias passed to `gemini -m` (or vice versa) would fail the run.
   let model = agent.model;
   if (model && runtimeId !== agent.runtime) {
-    console.log(`[startRun] issue ${issue.id}: dropping agent model ${model} (runtime override ${runtimeId} != ${agent.runtime})`);
+    console.log(`[startRun] issue ${issue.id}: dropping agent model ${model} (runtime ${runtimeId} != ${agent.runtime})`);
     model = undefined;
   }
 
-  const settings = getSettings();
   // ConcurrencyCapError propagates as-is; callers treat it as "stay queued".
   assertCapacity({
     projectSlug: project.slug,
@@ -240,7 +249,29 @@ export async function startRunForIssue(
       model,
     });
   } catch (err) {
-    throw new StartRunError(`spawn failed: ${(err as Error).message}`, 500);
+    // Spawn-time arm of the LLM-routing fallback (spec 0009): when enabled,
+    // a spawn failure on the primary retries once on another available runtime
+    // and rewrites the run row to the runtime actually used. Disabled (default)
+    // rethrows unchanged.
+    const alt = settings.autonomy.llmRouting ? await firstAvailableRuntime([runtimeId]) : null;
+    if (!alt) throw new StartRunError(`spawn failed: ${(err as Error).message}`, 500);
+    console.log(`[startRun] run ${runId}: spawn on ${runtimeId} failed (${(err as Error).message}); retrying on ${alt.id} (llmRouting fallback)`);
+    runtime = alt;
+    runtimeId = alt.id;
+    model = alt.id === agent.runtime ? agent.model : undefined;
+    updateRun(runId, { runtimeId, model });
+    try {
+      spawned = await runtime.spawn({
+        worktreePath,
+        initialPrompt,
+        runId,
+        issueId: issue.id,
+        projectSlug: project.slug,
+        model,
+      });
+    } catch (err2) {
+      throw new StartRunError(`spawn failed: ${(err2 as Error).message}`, 500);
+    }
   }
   registerLiveRun(runId, spawned);
 

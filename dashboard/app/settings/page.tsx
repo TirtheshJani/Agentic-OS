@@ -35,6 +35,11 @@ interface SettingsData {
     enabled: boolean;
     allowlist: string[];
   };
+  evals: {
+    judgeProvider: "inherit" | "gemini-cli" | "claude-cli" | "none";
+    autoGradeEnabled: boolean;
+    batchLimit: number;
+  };
   features: Record<FeatureKey, boolean>;
 }
 
@@ -50,7 +55,7 @@ interface RagStatus {
   answerProvider: string;
 }
 
-const TABS = ["Features", "General", "Knowledge", "Docker"] as const;
+const TABS = ["Features", "General", "Knowledge", "Docker", "Evals"] as const;
 type Tab = (typeof TABS)[number];
 
 /** Display metadata for the feature flags, grouped per the mockup. */
@@ -461,6 +466,52 @@ export default function SettingsPage() {
                     ...settings.docker,
                     allowlist: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                   },
+                })
+              }
+            />
+          </Field>
+        </div>
+      )}
+
+      {tab === "Evals" && (
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.evals.autoGradeEnabled}
+              onChange={(e) => setSettings({ ...settings, evals: { ...settings.evals, autoGradeEnabled: e.target.checked } })}
+            />
+            <span>
+              <span className="font-medium">Auto-grade finished runs</span>
+              <span className="text-ink3"> (also requires the global autonomy switch; one judge CLI call per grade)</span>
+            </span>
+          </label>
+          <Field label="Judge provider" hint="inherit follows the vault RAG answer provider.">
+            <select
+              value={settings.evals.judgeProvider}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  evals: { ...settings.evals, judgeProvider: e.target.value as SettingsData["evals"]["judgeProvider"] },
+                })
+              }
+              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+            >
+              <option value="inherit">inherit</option>
+              <option value="gemini-cli">gemini-cli</option>
+              <option value="claude-cli">claude-cli</option>
+              <option value="none">none</option>
+            </select>
+          </Field>
+          <Field label="Batch limit" hint="Max runs graded per auto-grade pass.">
+            <Input
+              type="number"
+              min={1}
+              value={settings.evals.batchLimit}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  evals: { ...settings.evals, batchLimit: parseInt(e.target.value, 10) || 1 },
                 })
               }
             />

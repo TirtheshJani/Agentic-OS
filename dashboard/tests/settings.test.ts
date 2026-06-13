@@ -53,4 +53,21 @@ describe("settings", () => {
     expect(s.features.docker).toBe(false);
     expect(s.features.notes).toBe(true);
   });
+
+  it("defaults the evals block", () => {
+    const s = getSettings();
+    expect(s.evals.judgeProvider).toBe("inherit");
+    expect(s.evals.autoGradeEnabled).toBe(false);
+    expect(s.evals.batchLimit).toBe(10);
+  });
+
+  it("persists an evals patch without wiping sibling evals fields", () => {
+    setSettings({ evals: { ...getSettings().evals, autoGradeEnabled: true } });
+    setSettings({ workspaceRoot: "/tmp/e" });
+    const s = getSettings();
+    expect(s.evals.autoGradeEnabled).toBe(true);
+    expect(s.evals.batchLimit).toBe(10);
+    expect(s.evals.judgeProvider).toBe("inherit");
+    expect(s.workspaceRoot).toBe("/tmp/e");
+  });
 });

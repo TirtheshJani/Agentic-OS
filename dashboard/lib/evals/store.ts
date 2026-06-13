@@ -14,7 +14,13 @@ import {
 import { getIssue } from "@/lib/issues";
 import { parseContract } from "@/lib/evals/contract";
 import { parseHandoff } from "@/lib/handoff";
+import { runBehavioralAssertions, type BehavioralResult } from "@/lib/evals/behavioral";
+import { getSettings } from "@/lib/settings";
 import { publish } from "@/lib/stream";
+
+/** Hard cap for the behavioral harness at grade time. Keeps a hung app from
+ * blocking finalize; the harness resolves everything past this to inconclusive. */
+const BEHAVIORAL_TIMEOUT_MS = 120_000;
 
 export interface EvalRow {
   id: number;
@@ -66,8 +72,11 @@ export function gradeRunMetrics(runId: number): RunMetrics | null {
   return metrics;
 }
 
-/** Layer B: one LLM-judge call. Returns an error string instead of throwing. */
-export function gradeRunWithJudge(runId: number): { ok: true; score: number; grade: string } | { ok: false; error: string } {
+/** Layer B: one LLM-judge call, optionally cross-checked by the behavioral
+ * validator (spec 0032 / ADR-025). Returns an error string instead of throwing. */
+export async function gradeRunWithJudge(
+  runId: number
+): Promise<{ ok: true; score: number; grade: string } | { ok: false; error: string }> {
   const provider = resolveJudgeProvider();
   if (!provider) return { ok: false, error: "judge provider is none; enable one in settings" };
   const run = getRun(runId);
@@ -77,6 +86,27 @@ export function gradeRunWithJudge(runId: number): { ok: true; score: number; gra
   const assertions = parseContract(issue?.body ?? "");
   const handoff = parseHandoff(run.worktreePath);
 
+  // Behavioral validation (default off). Runs only when the flag is on AND the
+  // contract carries at least one `(e2e)` assertion. The harness never throws
+  // and is timeout-bounded, so a hung app cannot block finalize. When skipped,
+  // `behavioral` stays undefined and the path is identical to the judge-only one.
+  let behavioral: BehavioralResult[] | undefined;
+  const e2eAssertions = assertions.filter((a) => a.e2e);
+  if (getSettings().evals.behavioralEnabled && e2eAssertions.length > 0) {
+    try {
+      behavioral = await runBehavioralAssertions(
+        run.worktreePath,
+        e2eAssertions.map((a) => a.text),
+        { timeoutMs: BEHAVIORAL_TIMEOUT_MS }
+      );
+    } catch (err) {
+      // The harness already swallows infra errors to inconclusive; this is belt
+      // and braces. A harness fault must never fail the grade.
+      console.error(`[evals] behavioral harness threw for run ${runId}:`, err);
+      behavioral = undefined;
+    }
+  }
+
   const result = runJudge(
     buildJudgePrompt({
       issueTitle: issue?.title ?? "(unknown task)",
@@ -85,16 +115,44 @@ export function gradeRunWithJudge(runId: number): { ok: true; score: number; gra
       transcriptPath: run.transcriptPath,
       assertions,
       handoff,
+      behavioral,
     }),
     provider
   );
   if (!result.ok) return result;
 
-  const score = compositeScore(result.rubric);
+  // Reconciliation: a behavioral `fail` is ground truth and overrides the judge
+  // verdict for the matching assertion (by exact text). `inconclusive` does not
+  // override. After overriding, recompute correctness as the assertion pass
+  // fraction and the composite score from the reconciled rubric.
+  const rubric = reconcileBehavioral(result.rubric, behavioral);
+  const score = compositeScore(rubric);
   const grade = letterGrade(score);
-  upsert({ runId, kind: "judge", rubric: result.rubric, score, grade, judgeProvider: provider });
+  upsert({ runId, kind: "judge", rubric, score, grade, judgeProvider: provider });
   publish({ kind: "eval.completed", runId, score, grade });
   return { ok: true, score, grade };
+}
+
+/**
+ * Fold behavioral failures into the judge rubric. For each behavioral result
+ * with status "fail", flip the matching rubric assertion (exact text) to
+ * `pass: false` and attach the behavioral reason. Then recompute correctness as
+ * the pass fraction over the rubric assertions. "inconclusive" never overrides.
+ * Returns the rubric unchanged when there is nothing to reconcile.
+ */
+function reconcileBehavioral(rubric: Rubric, behavioral: BehavioralResult[] | undefined): Rubric {
+  if (!behavioral || behavioral.length === 0) return rubric;
+  if (!rubric.assertions || rubric.assertions.length === 0) return rubric;
+
+  const failed = new Map(behavioral.filter((b) => b.status === "fail").map((b) => [b.assertion, b.reason] as const));
+  if (failed.size === 0) return rubric;
+
+  const assertions = rubric.assertions.map((a) =>
+    failed.has(a.text) ? { ...a, pass: false, reason: failed.get(a.text) ?? a.reason } : a
+  );
+  const passes = assertions.filter((a) => a.pass).length;
+  const correctness = Math.round((100 * passes) / assertions.length);
+  return { ...rubric, correctness, assertions };
 }
 
 /** The persisted judge rubric for a run, or null if it has not been judged. */

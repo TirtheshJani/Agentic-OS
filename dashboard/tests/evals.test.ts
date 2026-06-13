@@ -19,6 +19,22 @@ vi.mock("@/lib/rag/answer/cliAnswer", () => ({
   },
 }));
 
+// Mock the behavioral harness for determinism: tests script the validator's
+// outcome instead of launching a live app. `behavioralResults` is the canned
+// return; `behavioralCalls` records the call so the flag-off regression guard
+// can assert the harness was never invoked.
+import type { BehavioralResult } from "@/lib/evals/behavioral";
+let behavioralResults: BehavioralResult[] = [];
+let behavioralCalls = 0;
+let behavioralArgs: { worktreePath: string; assertions: string[] } | null = null;
+vi.mock("@/lib/evals/behavioral", () => ({
+  runBehavioralAssertions: async (worktreePath: string, assertions: string[]) => {
+    behavioralCalls++;
+    behavioralArgs = { worktreePath, assertions };
+    return behavioralResults;
+  },
+}));
+
 const { gradeRunMetrics, gradeRunWithJudge, ungradedRunIds } = await import("@/lib/evals/store");
 const { buildJudgePrompt, compositeScore, letterGrade, parseJudgeReply } = await import("@/lib/evals/judge");
 const { startEvalAutoGrade } = await import("@/lib/evals/autoGrade");
@@ -38,6 +54,9 @@ function seedRun(exitStatus = "done", body = "Acceptance: done"): number {
 beforeEach(() => {
   cliCalls = 0;
   cliReply = { ok: true, text: '{"correctness": 90, "efficiency": 80, "coherence": 70, "rationale": "solid"}' };
+  behavioralCalls = 0;
+  behavioralResults = [];
+  behavioralArgs = null;
   // Unique state dir per test: setSettings persists to disk, and a stale
   // settings.json from a prior test would leak provider config.
   process.env.AGENTIC_OS_STATE_DIR = path.join(TEST_REPO_ROOT, `.agentic-os-${Date.now()}-${Math.random()}`);
@@ -114,14 +133,14 @@ describe("grading", () => {
     expect(row.kind).toBe("metrics");
   });
 
-  it("judge grading stores score, grade, and rubric; re-grade replaces", () => {
+  it("judge grading stores score, grade, and rubric; re-grade replaces", async () => {
     const runId = seedRun();
-    const result = gradeRunWithJudge(runId);
+    const result = await gradeRunWithJudge(runId);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.grade).toBe("B");
 
     cliReply = { ok: true, text: '{"correctness": 100, "efficiency": 100, "coherence": 100, "rationale": "perfect"}' };
-    const second = gradeRunWithJudge(runId);
+    const second = await gradeRunWithJudge(runId);
     if (second.ok) expect(second.grade).toBe("A");
     const n = (getDb().prepare("SELECT COUNT(*) AS n FROM eval_results WHERE run_id = ? AND kind = 'judge'").get(runId) as {
       n: number;
@@ -129,17 +148,17 @@ describe("grading", () => {
     expect(n).toBe(1);
   });
 
-  it("returns an error when the provider is none", () => {
+  it("returns an error when the provider is none", async () => {
     setSettings({ rag: { answerProvider: "none" } as never });
-    const result = gradeRunWithJudge(seedRun());
+    const result = await gradeRunWithJudge(seedRun());
     expect(result.ok).toBe(false);
     expect(cliCalls).toBe(0);
   });
 
-  it("lists ungraded runs", () => {
+  it("lists ungraded runs", async () => {
     const a = seedRun();
     const b = seedRun();
-    gradeRunWithJudge(a);
+    await gradeRunWithJudge(a);
     expect(ungradedRunIds(10)).toEqual([b]);
   });
 });
@@ -147,7 +166,7 @@ describe("grading", () => {
 describe("contract grading", () => {
   const contractBody = ["Do the task.", "", "## Acceptance contract", "- [ ] A holds", "- [ ] B holds"].join("\n");
 
-  it("derives correctness from the pass fraction and persists the assertions", () => {
+  it("derives correctness from the pass fraction and persists the assertions", async () => {
     cliReply = {
       ok: true,
       text: JSON.stringify({
@@ -161,7 +180,7 @@ describe("contract grading", () => {
       }),
     };
     const runId = seedRun("done", contractBody);
-    const result = gradeRunWithJudge(runId);
+    const result = await gradeRunWithJudge(runId);
     expect(result.ok).toBe(true);
 
     const row = getDb()
@@ -174,10 +193,10 @@ describe("contract grading", () => {
     expect(row.score).toBeCloseTo(50 * 0.4 + 80 * 0.3 + 70 * 0.3);
   });
 
-  it("falls back to the generic rubric when the issue has no contract", () => {
+  it("falls back to the generic rubric when the issue has no contract", async () => {
     // default cliReply is the generic 90/80/70 shape
     const runId = seedRun("done", "Plain task. Acceptance: done");
-    const result = gradeRunWithJudge(runId);
+    const result = await gradeRunWithJudge(runId);
     expect(result.ok).toBe(true);
 
     const row = getDb()
@@ -186,6 +205,156 @@ describe("contract grading", () => {
     const rubric = JSON.parse(row.rubric);
     expect(rubric.correctness).toBe(90);
     expect(rubric.assertions).toBeUndefined();
+  });
+});
+
+describe("behavioral reconciliation (spec 0032 / ADR-025)", () => {
+  // Contract with one `(e2e)` (behavioral) assertion and one judge-only assertion.
+  const e2eBody = [
+    "Do the task.",
+    "",
+    "## Acceptance contract",
+    "- [ ] The page renders (e2e)",
+    "- [ ] Helper returns the right shape",
+  ].join("\n");
+
+  // The judge passes BOTH assertions; correctness would be 100 absent any override.
+  function judgeBothPass(): void {
+    cliReply = {
+      ok: true,
+      text: JSON.stringify({
+        assertions: [
+          { text: "The page renders", pass: true, reason: "looks right" },
+          { text: "Helper returns the right shape", pass: true, reason: "shape ok" },
+        ],
+        efficiency: 80,
+        coherence: 70,
+        rationale: "all good",
+      }),
+    };
+  }
+
+  function persistedRubric(runId: number): {
+    correctness: number;
+    assertions: Array<{ text: string; pass: boolean; reason: string }>;
+  } {
+    const row = getDb()
+      .prepare("SELECT rubric FROM eval_results WHERE run_id = ? AND kind = 'judge'")
+      .get(runId) as { rubric: string };
+    return JSON.parse(row.rubric);
+  }
+
+  it("flag OFF: grading is byte-for-byte today's and the harness is never called", async () => {
+    judgeBothPass();
+    // Flag defaults to off; do not enable it.
+    behavioralResults = [{ assertion: "The page renders", status: "fail", reason: "would override if run" }];
+    const runId = seedRun("done", e2eBody);
+    const result = await gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+
+    expect(behavioralCalls).toBe(0); // harness must not run when the flag is off
+    const rubric = persistedRubric(runId);
+    // Both assertions stay pass -> correctness 100, untouched by the (ignored) fail.
+    expect(rubric.correctness).toBe(100);
+    expect(rubric.assertions.every((a) => a.pass)).toBe(true);
+  });
+
+  it("flag ON: a behavioral fail overrides the judge pass and drops correctness", async () => {
+    setSettings({
+      evals: {
+        judgeProvider: "inherit",
+        autoGradeEnabled: false,
+        batchLimit: 10,
+        reviseThreshold: 70,
+        behavioralEnabled: true,
+      },
+    });
+    judgeBothPass();
+    behavioralResults = [{ assertion: "The page renders", status: "fail", reason: "button missing in live app" }];
+    const runId = seedRun("done", e2eBody);
+    const result = await gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+
+    expect(behavioralCalls).toBe(1);
+    // Only the `(e2e)` assertion is handed to the harness.
+    expect(behavioralArgs?.assertions).toEqual(["The page renders"]);
+
+    const rubric = persistedRubric(runId);
+    const rendered = rubric.assertions.find((a) => a.text === "The page renders");
+    expect(rendered?.pass).toBe(false); // behavioral fail wins
+    expect(rendered?.reason).toBe("button missing in live app");
+    expect(rubric.correctness).toBe(50); // 1 of 2 now passes
+  });
+
+  it("flag ON: an inconclusive behavioral result does not override the judge verdict", async () => {
+    setSettings({
+      evals: {
+        judgeProvider: "inherit",
+        autoGradeEnabled: false,
+        batchLimit: 10,
+        reviseThreshold: 70,
+        behavioralEnabled: true,
+      },
+    });
+    judgeBothPass();
+    behavioralResults = [{ assertion: "The page renders", status: "inconclusive", reason: "could not tell" }];
+    const runId = seedRun("done", e2eBody);
+    const result = await gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+
+    expect(behavioralCalls).toBe(1);
+    const rubric = persistedRubric(runId);
+    // Judge said pass; inconclusive is not a fail, so the verdict stands.
+    expect(rubric.assertions.every((a) => a.pass)).toBe(true);
+    expect(rubric.correctness).toBe(100);
+  });
+
+  it("flag ON but no (e2e) assertion: harness is skipped and grading is unchanged", async () => {
+    setSettings({
+      evals: {
+        judgeProvider: "inherit",
+        autoGradeEnabled: false,
+        batchLimit: 10,
+        reviseThreshold: 70,
+        behavioralEnabled: true,
+      },
+    });
+    cliReply = {
+      ok: true,
+      text: JSON.stringify({
+        assertions: [{ text: "A holds", pass: true, reason: "did A" }],
+        efficiency: 80,
+        coherence: 70,
+        rationale: "ok",
+      }),
+    };
+    const noE2eBody = ["Do the task.", "", "## Acceptance contract", "- [ ] A holds"].join("\n");
+    const runId = seedRun("done", noE2eBody);
+    const result = await gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+    expect(behavioralCalls).toBe(0); // no `(e2e)` assertion -> no harness run
+  });
+
+  it("flag ON: a timeout-bounded inconclusive still completes grading without hanging", async () => {
+    setSettings({
+      evals: {
+        judgeProvider: "inherit",
+        autoGradeEnabled: false,
+        batchLimit: 10,
+        reviseThreshold: 70,
+        behavioralEnabled: true,
+      },
+    });
+    judgeBothPass();
+    // Simulate the harness hitting its cap: it resolves (never hangs) to
+    // inconclusive with a timeout reason. Grading must complete.
+    behavioralResults = [{ assertion: "The page renders", status: "inconclusive", reason: "behavioral timeout after 120000ms" }];
+    const runId = seedRun("done", e2eBody);
+    const result = await gradeRunWithJudge(runId);
+    expect(result.ok).toBe(true);
+    expect(behavioralCalls).toBe(1);
+    // Inconclusive (even from a timeout) does not override; correctness stays 100.
+    expect(persistedRubric(runId).correctness).toBe(100);
   });
 });
 

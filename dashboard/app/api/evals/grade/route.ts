@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const results: Array<{ runId: number; ok: boolean; grade?: string; error?: string }> = [];
     for (const runId of ids) {
       gradeRunMetrics(runId);
-      const r = gradeRunWithJudge(runId);
+      const r = await gradeRunWithJudge(runId);
       results.push(r.ok ? { runId, ok: true, grade: r.grade } : { runId, ok: false, error: r.error });
       if (!r.ok && r.error.includes("provider is none")) break;
     }
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   if (!body.runId) return NextResponse.json({ error: "runId is required" }, { status: 400 });
   gradeRunMetrics(body.runId);
-  const result = gradeRunWithJudge(body.runId);
+  const result = await gradeRunWithJudge(body.runId);
   if (!result.ok) {
     const status = result.error.includes("provider is none") ? 409 : 502;
     return NextResponse.json({ error: result.error }, { status });

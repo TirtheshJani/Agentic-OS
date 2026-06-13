@@ -49,6 +49,7 @@ const PatchSchema = z.object({
       autoGradeEnabled: z.boolean(),
       batchLimit: z.number().int().positive(),
       reviseThreshold: z.number().int().min(0).max(100),
+      behavioralEnabled: z.boolean().optional(),
     })
     .optional(),
   docker: z

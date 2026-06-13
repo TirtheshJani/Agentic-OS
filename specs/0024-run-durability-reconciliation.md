@@ -1,6 +1,6 @@
 # Spec 0024: Run durability and boot-time reconciliation
 
-**Status:** Core shipped (commit 538c359); diverges from ADR-020, see Sync note
+**Status:** Shipped and aligned to ADR-020 (see Resolution note)
 **Owner:** TJ
 **Date:** 2026-06-12
 **Decision record:** ADR-020
@@ -111,3 +111,22 @@ Recommendation: align the code to ADR-020 with a small follow-up (add an
 honest about what was an agent failure versus an environment interruption. The
 alternative is a conscious amendment to ADR-020 accepting the simpler `failed`
 behavior. This is an open decision, not yet resolved.
+
+## Resolution note (2026-06-13)
+
+Resolved in favor of aligning the code to ADR-020 (epic #13, issues #17/#18). The
+sync note above is historical; all three divergences are closed:
+
+1. `ExitStatus` now includes `interrupted` (`lib/runs.ts`); reconciliation marks
+   orphans `interrupted`, not `failed`.
+2. `reconcileOrphanedRuns()` routes orphans through a shared `finalizeRun` helper
+   with `("interrupted", "review", ...)`, so the issue moves to `review` for
+   human-gated triage (`lib/startRun.ts`).
+3. The inbox flags interrupted issues with an "interrupted" badge
+   (`app/inbox/page.tsx`), and `lib/evals/autoGrade.ts` gates on
+   `exitStatus === "done"`, so neither the judge nor the reflection loop fires on
+   an environment interruption.
+
+Covered by `tests/reconcile.test.ts` (interrupted/review, idempotency, late-onExit
+no-double-write, thread event, leaves finished runs untouched). Issue #45, filed
+to track this alignment, was closed as already-resolved.

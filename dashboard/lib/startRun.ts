@@ -10,6 +10,7 @@ import { registerLiveRun, dropLiveRun } from "@/lib/runtime/liveRuns";
 import { getSettings } from "@/lib/settings";
 import { publish } from "@/lib/stream";
 import { appendEvent } from "@/lib/threads";
+import { recordHookEvent } from "@/lib/hookEvents";
 import { parseHandoff, renderHandoff } from "@/lib/handoff";
 import { installWorktreeMcpConfig } from "@/lib/mcp";
 import { readInstructions, knowledgeScopePrefix } from "@/lib/projectKnowledge";
@@ -40,6 +41,15 @@ function finalizeRun(runId: number, exitStatus: ExitStatus, issueStatus: IssueSt
   if (!run || run.endedAt != null) return;
 
   updateRun(runId, { endedAt: Date.now(), exitStatus });
+
+  // Lifecycle event: no runtime has a Stop hook wired, so SessionEnd is always
+  // synthesized from the PTY exit (or reconciliation). Recorded inside the
+  // ended_at guard so it fires exactly once per run.
+  recordHookEvent({
+    runId,
+    eventType: "SessionEnd",
+    payload: { synthetic: true, runtimeId: run.runtimeId, detail: `run ${exitStatus}` },
+  });
 
   const issue = getIssue(run.issueId);
   if (issue) {
@@ -233,6 +243,18 @@ export async function startRunForIssue(
     throw new StartRunError(`spawn failed: ${(err as Error).message}`, 500);
   }
   registerLiveRun(runId, spawned);
+
+  // Lifecycle event: hook-capable runtimes (claude-code) emit a real SessionStart
+  // via their hook callback, persisted in the hook endpoint. Hookless runtimes
+  // (gemini-cli, antigravity) get a synthetic SessionStart here so the events
+  // feed is uniform across runtimes.
+  if (!runtime.capabilities.hooks) {
+    recordHookEvent({
+      runId,
+      eventType: "SessionStart",
+      payload: { synthetic: true, runtimeId, detail: `spawned ${agent.slug} via ${runtimeId}` },
+    });
+  }
 
   // Persist exit at spawn time. Without this, a run nobody watches in a
   // browser would never transition its issue (the server.ts WS handler only

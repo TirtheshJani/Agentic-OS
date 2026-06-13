@@ -30,6 +30,25 @@ describe("routeIssue", () => {
     expect(r.reason).toContain("nih");
   });
 
+  it("a skill-free prompt routes to the member with domain vocabulary (spec 0028)", () => {
+    // Two members share the same skill tag; only the enriched description names
+    // the domain. A prompt that mentions no skill must route on description.
+    const roster: RoutableAgent[] = [
+      {
+        slug: "data-scientist",
+        description: "Builds classification and regression models, feature engineering, scikit-learn pipelines.",
+        skills: ["research"],
+      },
+      { slug: "generalist", description: "Handles miscellaneous research work.", skills: ["research"] },
+    ];
+    const r = routeIssue(
+      { title: "Build a classification model with feature engineering", body: "" },
+      [],
+      roster
+    );
+    expect(r.assigneeSlug).toBe("data-scientist");
+  });
+
   it("routes by skill-name match when descriptions are silent", () => {
     const r = routeIssue(
       { title: "Run a literature-review on diffusion models", body: "" },

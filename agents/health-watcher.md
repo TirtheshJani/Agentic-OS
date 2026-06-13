@@ -9,7 +9,6 @@ allowed-tools:
   - Write
   - WebFetch
   - WebSearch
-default-repo: .
 slug: health-watcher
 runtime: claude-code
 created: '2026-05-21'

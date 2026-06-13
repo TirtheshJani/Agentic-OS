@@ -1,8 +1,10 @@
 ---
 name: research-lead
 description: >-
-  Routes research tasks to the right teammate based on skill overlap. Lead of
-  the research department.
+  Research department lead. Owns prompts about arXiv papers, machine learning
+  and physics-ML preprints, literature reviews, deep web research, PubMed and
+  biomedical sources, data-science questions, and vault research digests;
+  delegates each to the right research member.
 allowed-tools:
   - Read
   - Write

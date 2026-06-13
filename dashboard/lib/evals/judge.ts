@@ -47,6 +47,10 @@ export interface Rubric {
   coherence: number;
   rationale: string;
   assertions?: AssertionResult[];
+  // Raw behavioral validator results (spec 0032 / ADR-025), persisted only when
+  // the harness actually ran. Carries screenshots and inconclusive statuses the
+  // reconciled `assertions` drop, so the UI can surface them. Absent otherwise.
+  behavioral?: BehavioralResult[];
 }
 
 export function letterGrade(score: number): string {

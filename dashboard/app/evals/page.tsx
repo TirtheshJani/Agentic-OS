@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Bars } from "@/components/charts/Bars";
@@ -27,6 +27,27 @@ const GRADE_COLORS: Record<string, string> = {
   C: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
   D: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
   F: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+};
+
+// Behavioral validator results (spec 0032 / ADR-025) ride along on the persisted
+// rubric only when the harness ran. The page reads them read-only; the shape
+// mirrors `BehavioralResult` in @/lib/evals/behavioral.
+interface BehavioralEntry {
+  assertion: string;
+  status: "pass" | "fail" | "inconclusive";
+  reason: string;
+  screenshotPath?: string;
+}
+
+interface ParsedRubric {
+  rationale?: unknown;
+  behavioral?: BehavioralEntry[];
+}
+
+const BEHAVIORAL_COLORS: Record<BehavioralEntry["status"], string> = {
+  pass: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+  fail: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  inconclusive: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
 };
 
 export default function EvalsPage() {
@@ -119,9 +140,11 @@ export default function EvalsPage() {
           <tbody>
             {rows.map((r) => {
               const metrics = r.metricsJson ? (JSON.parse(r.metricsJson) as Record<string, unknown>) : null;
-              const rubric = r.rubricJson ? (JSON.parse(r.rubricJson) as Record<string, unknown>) : null;
+              const rubric = r.rubricJson ? (JSON.parse(r.rubricJson) as ParsedRubric) : null;
+              const behavioral = rubric?.behavioral?.length ? rubric.behavioral : null;
               return (
-                <tr key={r.runId} className="border-b border-line align-top">
+                <Fragment key={r.runId}>
+                <tr className="border-b border-line align-top">
                   <td className="py-1.5 pr-2">{r.runId}</td>
                   <td className="py-1.5 pr-2 max-w-64 truncate" title={r.issueTitle}>
                     {r.parentIssueId != null && (
@@ -143,7 +166,7 @@ export default function EvalsPage() {
                       ? `${metrics.durationMs != null ? `${Math.round((metrics.durationMs as number) / 1000)}s` : "?"} · ${
                           metrics.toolCalls ?? "?"
                         } tools · ${metrics.tokensOut ?? "n/a"} out`
-                      : "—"}
+                      : "-"}
                   </td>
                   <td className="py-1.5 pr-2">
                     {r.grade ? (
@@ -163,6 +186,35 @@ export default function EvalsPage() {
                     </Button>
                   </td>
                 </tr>
+                {behavioral && (
+                  <tr className="border-b border-line">
+                    <td className="pb-2 pr-2 text-xs text-ink3" colSpan={7}>
+                      <span className="mr-2 font-medium">Behavioral checks</span>
+                      <span className="inline-flex flex-wrap gap-1.5 align-middle">
+                        {behavioral.map((b, i) => (
+                          <span
+                            key={i}
+                            className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${BEHAVIORAL_COLORS[b.status]}`}
+                            title={`${b.assertion}: ${b.reason}`}
+                          >
+                            {b.status} · {b.assertion}
+                            {b.screenshotPath && (
+                              <a
+                                href={`file://${b.screenshotPath}`}
+                                className="underline"
+                                title={b.screenshotPath}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                shot
+                              </a>
+                            )}
+                          </span>
+                        ))}
+                      </span>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>

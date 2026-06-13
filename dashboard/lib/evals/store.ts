@@ -125,7 +125,11 @@ export async function gradeRunWithJudge(
   // verdict for the matching assertion (by exact text). `inconclusive` does not
   // override. After overriding, recompute correctness as the assertion pass
   // fraction and the composite score from the reconciled rubric.
-  const rubric = reconcileBehavioral(result.rubric, behavioral);
+  const reconciled = reconcileBehavioral(result.rubric, behavioral);
+  // Attach the raw behavioral array (screenshots + inconclusive statuses) so the
+  // UI can render them. Only when the harness ran; otherwise the rubric is
+  // byte-for-byte today's (no `behavioral` key) as a regression guard.
+  const rubric = behavioral && behavioral.length ? { ...reconciled, behavioral } : reconciled;
   const score = compositeScore(rubric);
   const grade = letterGrade(score);
   upsert({ runId, kind: "judge", rubric, score, grade, judgeProvider: provider });

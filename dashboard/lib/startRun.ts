@@ -10,6 +10,7 @@ import { registerLiveRun, dropLiveRun } from "@/lib/runtime/liveRuns";
 import { getSettings } from "@/lib/settings";
 import { publish } from "@/lib/stream";
 import { appendEvent } from "@/lib/threads";
+import { parseHandoff, renderHandoff } from "@/lib/handoff";
 import { installWorktreeMcpConfig } from "@/lib/mcp";
 import { readInstructions, knowledgeScopePrefix } from "@/lib/projectKnowledge";
 import { retrieve } from "@/lib/rag/retrieval";
@@ -43,6 +44,21 @@ function finalizeRun(runId: number, exitStatus: ExitStatus, issueStatus: IssueSt
   const issue = getIssue(run.issueId);
   if (issue) {
     updateIssue(issue.id, { status: issueStatus });
+    // Read HANDOFF.md from the worktree before any prune and record it as a
+    // thread event. A missing or unparseable handoff is a note, not a failure.
+    let handoffDetails = "(no handoff written)";
+    try {
+      const handoff = parseHandoff(run.worktreePath);
+      if (handoff) handoffDetails = renderHandoff(handoff);
+    } catch (err) {
+      console.log(`[startRun] failed to parse handoff for run ${runId}:`, err);
+    }
+    appendEvent({
+      projectSlug: issue.projectSlug,
+      issueId: issue.id,
+      eventType: "run.handoff",
+      details: handoffDetails,
+    });
     appendEvent({
       projectSlug: issue.projectSlug,
       issueId: issue.id,

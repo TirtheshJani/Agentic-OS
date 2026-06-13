@@ -16,6 +16,13 @@ describe("researchCollectionIssue", () => {
     expect(t.body).toContain("RESEARCH.md");
     expect(t.labels).toEqual(["research", "research:qml-dx"]);
   });
+
+  it("emits an acceptance-contract checklist instead of a bare Acceptance: line", () => {
+    const t = researchCollectionIssue({ slug: "s", question: "q", vaultDirAbs: "/v" });
+    expect(t.body).toContain("## Acceptance contract");
+    expect(t.body).toMatch(/- \[ \] At least 3 source files/);
+    expect(t.body).not.toContain("Acceptance: at least 3 source files");
+  });
 });
 
 describe("learningSessionIssue", () => {
@@ -32,9 +39,12 @@ describe("learningSessionIssue", () => {
     expect(tutor.body).toContain("C:/repo/vault/learning/linear-algebra/sessions/");
     expect(tutor.labels).toContain("learning:linear-algebra");
 
+    expect(tutor.body).toContain("## Acceptance contract");
+
     const srs = learningSessionIssue({ ...base, kind: "srs-review" });
     expect(srs.title).toContain("SRS review");
     expect(srs.body).toContain("srs.md");
+    expect(srs.body).toContain("## Acceptance contract");
   });
 });
 
@@ -49,6 +59,8 @@ describe("designReviewIssue", () => {
     expect(t.body).toContain("system-overview.svg");
     expect(t.body).toContain("REVIEW-<YYYY-MM-DD>.md");
     expect(t.labels).toEqual(["design-review"]);
+
+    expect(t.body).toContain("## Acceptance contract");
 
     const noCanvas = designReviewIssue({ slug: "x", designDirAbs: "/v/d", canvasNames: [] });
     expect(noCanvas.body).toContain("No canvases exported yet");

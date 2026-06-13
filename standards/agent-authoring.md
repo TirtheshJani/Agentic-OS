@@ -89,15 +89,52 @@ vocabulary out of `description` (where the router reads it) into a body the
 matcher never sees, which is exactly the ADR-007 failure mode this standard
 guards against.
 
-## 5. Handoff (forward reference)
+## 5. Handoff and acceptance contracts
 
 Validation contracts and structured handoffs are specified in
-`specs/0029-validation-contracts-and-handoffs.md`. When that lands, agents
-will write a `HANDOFF.md` to their worktree (completed work, remaining work,
-commands run with exit codes, issues discovered, and a per-assertion
-self-assessment), and acceptance assertions will be phrased as a checklist
-under an `## Acceptance contract` issue section. Until then this section is a
-placeholder; do not hand-author `HANDOFF.md`.
+`specs/0029-validation-contracts-and-handoffs.md` (ADR-022).
+
+**Acceptance contracts.** An issue may carry an optional `## Acceptance contract`
+section: a checklist of assertions that define done independently of how the work
+is implemented. The judge grades each assertion pass or fail and sets correctness
+to the pass fraction, so phrase each as a single verifiable claim about an
+observable end state, not a step to perform. Use one claim per checkbox line, in a
+present-tense done-state that names the artifact and where it lands, and avoid
+compound claims joined by "and" so the judge can pass one and fail another.
+
+**HANDOFF.md.** At the end of a run, write a `HANDOFF.md` to the worktree by
+absolute path. Worktrees live outside the repo, so a relative path is ambiguous;
+this is the same absolute-path rule the issue templates use for vault writes. The
+run pipeline reads the file before the worktree is pruned, records a `run.handoff`
+thread event, and feeds it to the judge. All sections are optional; omit what does
+not apply:
+
+```
+# Handoff
+
+## Completed
+What this run actually finished.
+
+## Remaining
+What is left for the next run or a human.
+
+## Commands run
+- `npm test` exit 0
+- `npm run build` exit 1
+
+## Issues discovered
+Anything surprising found along the way.
+
+## Assertions
+- [x] First acceptance assertion :: verified by tests/foo.test.ts
+- [ ] Second acceptance assertion :: not reached this run
+```
+
+The handoff self-assessment, the contract, and the grade all reference the same
+assertions, so keep their wording aligned. Once the reflection loop lands
+(`specs/0026-reflection-loop.md`, Epic #14), a sub-threshold run's revision
+instruction will name the failed assertions; the agent needs to do nothing extra
+for that.
 
 ## 6. Author checklist (before committing)
 

@@ -17,6 +17,10 @@ export interface Issue {
   githubUrl: string | null;
   githubNumber: number | null;
   parentIssueId: number | null;
+  /** Epic (mission) this issue is filed under, or null for a standalone issue. */
+  epicId: number | null;
+  /** Raw JSON array of issue ids this one depends on, or null. */
+  dependsOn: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -33,6 +37,8 @@ interface CreateOpts {
   githubUrl?: string | null;
   githubNumber?: number | null;
   parentIssueId?: number | null;
+  epicId?: number | null;
+  dependsOn?: string | null;
 }
 
 function rowToIssue(row: any): Issue {
@@ -49,6 +55,8 @@ function rowToIssue(row: any): Issue {
     githubUrl: row.github_url,
     githubNumber: row.github_number,
     parentIssueId: row.parent_issue_id ?? null,
+    epicId: row.epic_id ?? null,
+    dependsOn: row.depends_on ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -59,8 +67,8 @@ export function createIssue(opts: CreateOpts): number {
   const now = Date.now();
   const info = db.prepare(`
     INSERT INTO issues
-      (project_slug, title, body, assignee_slug, status, mode, priority, labels, github_url, github_number, parent_issue_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (project_slug, title, body, assignee_slug, status, mode, priority, labels, github_url, github_number, parent_issue_id, epic_id, depends_on, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     opts.projectSlug,
     opts.title,
@@ -73,6 +81,8 @@ export function createIssue(opts: CreateOpts): number {
     opts.githubUrl ?? null,
     opts.githubNumber ?? null,
     opts.parentIssueId ?? null,
+    opts.epicId ?? null,
+    opts.dependsOn ?? null,
     now,
     now
   );

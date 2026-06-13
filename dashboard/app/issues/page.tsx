@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/project/KanbanBoard";
+import { EpicsBoard } from "@/components/project/EpicsBoard";
 import { IssueDrawer } from "@/components/issue/IssueDrawer";
 import { NewIssueDialog } from "@/components/project/NewIssueDialog";
 import { ImportGitHubButton } from "@/components/project/ImportGitHubButton";
@@ -72,6 +73,8 @@ export default function IssuesPage() {
           </Button>
         </div>
       </header>
+
+      <EpicsBoard />
 
       <KanbanBoard onOpenIssue={setOpenIssueId} agents={agents ?? []} />
 

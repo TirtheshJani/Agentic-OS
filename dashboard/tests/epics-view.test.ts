@@ -5,7 +5,7 @@ import os from "node:os";
 import { openDb, getDb, closeDb } from "@/lib/db";
 import { createIssue } from "@/lib/issues";
 import { createEpic } from "@/lib/epics";
-import { assembleEpicsView } from "@/app/api/epics/route";
+import { assembleEpicsView } from "@/lib/epicsView";
 import { epicChildIssue, type IssueTemplate } from "@/lib/issueTemplates";
 
 let dbPath: string;

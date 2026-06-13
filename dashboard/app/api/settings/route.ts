@@ -48,6 +48,7 @@ const PatchSchema = z.object({
       judgeProvider: z.enum(["inherit", "gemini-cli", "claude-cli", "none"]),
       autoGradeEnabled: z.boolean(),
       batchLimit: z.number().int().positive(),
+      reviseThreshold: z.number().int().min(0).max(100),
     })
     .optional(),
   docker: z

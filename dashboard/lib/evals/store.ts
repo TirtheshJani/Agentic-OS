@@ -97,6 +97,15 @@ export function gradeRunWithJudge(runId: number): { ok: true; score: number; gra
   return { ok: true, score, grade };
 }
 
+/** The persisted judge rubric for a run, or null if it has not been judged. */
+export function getJudgeRubric(runId: number): Rubric | null {
+  const row = getDb()
+    .prepare(`SELECT rubric FROM eval_results WHERE run_id = ? AND kind = 'judge'`)
+    .get(runId) as { rubric: string | null } | undefined;
+  if (!row?.rubric) return null;
+  return JSON.parse(row.rubric) as Rubric;
+}
+
 export function listEvals(filters: { projectSlug?: string } = {}): Array<Record<string, unknown>> {
   const clauses = ["1=1"];
   const params: unknown[] = [];
@@ -107,7 +116,7 @@ export function listEvals(filters: { projectSlug?: string } = {}): Array<Record<
   return getDb()
     .prepare(
       `SELECT r.id AS runId, r.agent_slug AS agentSlug, r.runtime_id AS runtimeId, r.exit_status AS exitStatus,
-              i.id AS issueId, i.title AS issueTitle, i.project_slug AS projectSlug,
+              i.id AS issueId, i.title AS issueTitle, i.project_slug AS projectSlug, i.parent_issue_id AS parentIssueId,
               m.metrics AS metricsJson,
               j.score AS score, j.grade AS grade, j.rubric AS rubricJson, j.judge_provider AS judgeProvider,
               j.graded_at AS gradedAt

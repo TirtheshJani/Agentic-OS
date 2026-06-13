@@ -100,8 +100,10 @@ const SettingsSchema = z.object({
       /** Auto-judge finished runs; also requires the global autonomy switch. */
       autoGradeEnabled: z.boolean().default(false),
       batchLimit: z.number().int().positive().default(10),
+      /** Judged composite below this files one auto-revision (ADR-021). 0 disables the loop. */
+      reviseThreshold: z.number().int().min(0).max(100).default(70),
     })
-    .default({ judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 }),
+    .default({ judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10, reviseThreshold: 70 }),
   docker: z
     .object({
       enabled: z.boolean().default(false),
@@ -133,7 +135,7 @@ function defaults(): Settings {
     rag: { ...RAG_DEFAULTS },
     lightrag: { baseUrl: "http://localhost:9621", autoIngest: false },
     export: { notebookLmDir: "" },
-    evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10 },
+    evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10, reviseThreshold: 70 },
     docker: { enabled: false, allowlist: [] },
     features: { ...FEATURES_DEFAULTS },
   };

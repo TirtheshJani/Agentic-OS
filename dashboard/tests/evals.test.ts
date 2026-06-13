@@ -202,7 +202,7 @@ describe("autoGrade gating", () => {
   it("judges only when autoGrade AND autonomy are both on", () => {
     setSettings({
       autonomy: { enabled: true, llmRouting: false, schedulerEnabled: false, maxChainDepth: 3 },
-      evals: { judgeProvider: "inherit", autoGradeEnabled: true, batchLimit: 10 },
+      evals: { judgeProvider: "inherit", autoGradeEnabled: true, batchLimit: 10, reviseThreshold: 70 },
     });
     const runId = seedRun();
     stopAutoGrade = startEvalAutoGrade();

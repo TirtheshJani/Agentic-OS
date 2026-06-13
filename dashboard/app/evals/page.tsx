@@ -13,6 +13,7 @@ interface EvalRow {
   issueId: number;
   issueTitle: string;
   projectSlug: string;
+  parentIssueId: number | null;
   metricsJson: string | null;
   score: number | null;
   grade: string | null;
@@ -48,7 +49,9 @@ export default function EvalsPage() {
   }, [load]);
 
   useStream((event) => {
-    if (event.kind === "eval.completed") void load();
+    if (event.kind === "eval.completed" || event.kind === "revision.filed" || event.kind === "revision.escalated") {
+      void load();
+    }
   });
 
   async function grade(runId: number | "batch") {
@@ -121,6 +124,14 @@ export default function EvalsPage() {
                 <tr key={r.runId} className="border-b border-line align-top">
                   <td className="py-1.5 pr-2">{r.runId}</td>
                   <td className="py-1.5 pr-2 max-w-64 truncate" title={r.issueTitle}>
+                    {r.parentIssueId != null && (
+                      <span
+                        className="mr-1 rounded bg-blue-100 px-1 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        title={`Revision of issue ${r.parentIssueId}`}
+                      >
+                        ↻ rev of #{r.parentIssueId}
+                      </span>
+                    )}
                     {r.projectSlug}: {r.issueTitle}
                   </td>
                   <td className="py-1.5 pr-2">

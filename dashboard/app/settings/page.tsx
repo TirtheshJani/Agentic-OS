@@ -39,6 +39,7 @@ interface SettingsData {
     judgeProvider: "inherit" | "gemini-cli" | "claude-cli" | "none";
     autoGradeEnabled: boolean;
     batchLimit: number;
+    reviseThreshold: number;
   };
   features: Record<FeatureKey, boolean>;
 }
@@ -512,6 +513,23 @@ export default function SettingsPage() {
                 setSettings({
                   ...settings,
                   evals: { ...settings.evals, batchLimit: parseInt(e.target.value, 10) || 1 },
+                })
+              }
+            />
+          </Field>
+          <Field
+            label="Revision threshold"
+            hint="Judged score (0-100) below which one auto-revision is filed. 0 disables the loop. Requires both gates above."
+          >
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={settings.evals.reviseThreshold}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  evals: { ...settings.evals, reviseThreshold: Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)) },
                 })
               }
             />

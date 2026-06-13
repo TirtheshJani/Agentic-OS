@@ -59,6 +59,7 @@ describe("settings", () => {
     expect(s.evals.judgeProvider).toBe("inherit");
     expect(s.evals.autoGradeEnabled).toBe(false);
     expect(s.evals.batchLimit).toBe(10);
+    expect(s.evals.reviseThreshold).toBe(70);
   });
 
   it("persists an evals patch without wiping sibling evals fields", () => {
@@ -68,6 +69,16 @@ describe("settings", () => {
     expect(s.evals.autoGradeEnabled).toBe(true);
     expect(s.evals.batchLimit).toBe(10);
     expect(s.evals.judgeProvider).toBe("inherit");
+    expect(s.evals.reviseThreshold).toBe(70);
     expect(s.workspaceRoot).toBe("/tmp/e");
+  });
+
+  it("persists a reviseThreshold patch and survives an unrelated update", () => {
+    setSettings({ evals: { ...getSettings().evals, reviseThreshold: 55 } });
+    setSettings({ workspaceRoot: "/tmp/rt" });
+    const s = getSettings();
+    expect(s.evals.reviseThreshold).toBe(55);
+    expect(s.evals.autoGradeEnabled).toBe(false);
+    expect(s.workspaceRoot).toBe("/tmp/rt");
   });
 });

@@ -67,6 +67,14 @@ const FEATURES_DEFAULTS: z.infer<typeof FeaturesSchema> = {
   connections: true,
 };
 
+/** Per-role runtime assignment (spec 0033, ADR-026). Each value is a runtime id
+ * or unset. Default-off: an unset role uses today's default runtime selection. */
+const RoleAssignmentSchema = z.object({
+  plan: z.string().optional(),
+  implement: z.string().optional(),
+  validate: z.string().optional(),
+});
+
 const SettingsSchema = z.object({
   workspaceRoot: z.string(),
   concurrency: z.object({
@@ -113,6 +121,7 @@ const SettingsSchema = z.object({
     })
     .default({ enabled: false, allowlist: [] }),
   features: FeaturesSchema.default(FEATURES_DEFAULTS),
+  roleAssignment: RoleAssignmentSchema.default({}),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -139,6 +148,7 @@ function defaults(): Settings {
     evals: { judgeProvider: "inherit", autoGradeEnabled: false, batchLimit: 10, reviseThreshold: 70 },
     docker: { enabled: false, allowlist: [] },
     features: { ...FEATURES_DEFAULTS },
+    roleAssignment: {},
   };
 }
 
@@ -170,6 +180,7 @@ export function setSettings(patch: Partial<Settings>): Settings {
     evals: { ...current.evals, ...(patch.evals ?? {}) },
     docker: { ...current.docker, ...(patch.docker ?? {}) },
     features: { ...current.features, ...(patch.features ?? {}) },
+    roleAssignment: { ...current.roleAssignment, ...(patch.roleAssignment ?? {}) },
   };
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));

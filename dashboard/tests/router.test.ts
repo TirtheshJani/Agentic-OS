@@ -83,4 +83,75 @@ describe("routeIssue", () => {
     expect(r.assigneeSlug).toBeNull();
     expect(r.reason).toBeTruthy();
   });
+
+  it("credits a glossary alias as its canonical term (spec 0031, ADR-024)", () => {
+    // The only discriminating token shared between an issue and an agent
+    // description is the canonical term "session". No other word overlaps, so
+    // routing here turns solely on whether the alias collapses to "session".
+    const roster: RoutableAgent[] = [
+      {
+        slug: "session-keeper",
+        description: "Owns session bookkeeping.",
+        skills: ["ops"],
+      },
+      {
+        slug: "doc-writer",
+        description: "Owns paperwork and manuals.",
+        skills: ["ops"],
+      },
+    ];
+    const glossary = [
+      { term: "session", definition: "An interactive agent run.", aliases: ["run"] },
+    ];
+
+    // Canonical term in the issue routes to the agent whose description names it.
+    const canonical = routeIssue(
+      { title: "Audit the session", body: "" },
+      [],
+      roster
+    );
+    expect(canonical.assigneeSlug).toBe("session-keeper");
+
+    // An issue using ONLY the alias "run" routes to the SAME agent once the
+    // glossary is supplied, because the alias collapses to its canonical term.
+    const aliasOnly = routeIssue(
+      { title: "Audit the run", body: "" },
+      [],
+      roster,
+      glossary
+    );
+    expect(aliasOnly.assigneeSlug).toBe("session-keeper");
+    expect(aliasOnly.assigneeSlug).toBe(canonical.assigneeSlug);
+
+    // Without the glossary, "run" is an unknown token that matches no
+    // description, so the same alias-only issue routes to no one.
+    const noGlossary = routeIssue(
+      { title: "Audit the run", body: "" },
+      [],
+      roster
+    );
+    expect(noGlossary.assigneeSlug).toBeNull();
+  });
+
+  it("leaves routing for non-glossary terms unchanged (regression guard)", () => {
+    // A term absent from the supplied glossary must route exactly as the
+    // three-argument form does.
+    const glossary = [
+      { term: "session", definition: "An interactive agent run.", aliases: ["run"] },
+    ];
+    const withGlossary = routeIssue(
+      { title: "Summarize the NIH stance on FHIR-RAG", body: "" },
+      [],
+      agents,
+      glossary
+    );
+    const withoutGlossary = routeIssue(
+      { title: "Summarize the NIH stance on FHIR-RAG", body: "" },
+      [],
+      agents
+    );
+    expect(withGlossary.assigneeSlug).toBe("health-watcher");
+    expect(withGlossary.assigneeSlug).toBe(withoutGlossary.assigneeSlug);
+    expect(withGlossary.reason).toBe(withoutGlossary.reason);
+  });
 });

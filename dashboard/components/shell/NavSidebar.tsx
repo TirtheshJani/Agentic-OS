@@ -44,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Telemetry",
     items: [
       { href: "/activity", label: "Activity" },
+      { href: "/events", label: "Events" },
       { href: "/sessions", label: "Sessions", feature: "sessions" },
       { href: "/analytics", label: "Analytics", feature: "analytics" },
       { href: "/evals", label: "Evals", feature: "evals" },

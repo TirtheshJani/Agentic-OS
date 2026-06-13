@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getRun, updateRun } from "@/lib/runs";
 import { notifyExternalSessionId } from "@/lib/runtime/liveRuns";
+import { recordHookEvent } from "@/lib/hookEvents";
 import { openDb } from "@/lib/db";
 
 openDb();
@@ -28,6 +29,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (parsed.data.transcriptPath) {
     updateRun(n, { transcriptPath: parsed.data.transcriptPath });
   }
+  // Real hook event from a hook-capable runtime (claude-code SessionStart).
+  recordHookEvent({
+    runId: n,
+    sessionId: parsed.data.sessionId,
+    eventType: "SessionStart",
+    payload: { synthetic: false, runtimeId: "claude-code", detail: "SessionStart hook" },
+  });
   console.log(`[hook] run ${n}: session_id=${parsed.data.sessionId}, transcript=${parsed.data.transcriptPath ?? "none"}`);
   return new Response(null, { status: 204 });
 }

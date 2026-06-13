@@ -6,7 +6,7 @@
     "dev": "tsx watch server.ts",
     "build": "next build",
     "start": "cross-env NODE_ENV=production tsx server.ts",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "migrate": "tsx scripts/migrate-to-0002.ts",

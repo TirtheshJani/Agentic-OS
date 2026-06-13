@@ -707,7 +707,10 @@ Deferred, in rough priority order:
 
 Six specs (0024-0029) and three ADRs (020-022), grilled from the current run
 lifecycle plus the Factory missions talk and Matt Pocock's Claude Code material.
-Ordered reliability first. None shipped yet; all are drafts under `specs/`.
+Ordered reliability first. Status as of 2026-06-12: 0024 core shipped (boot
+reconciliation; ADR-020 alignment to the distinct `interrupted` status tracked in
+issue #13), 0025 partially shipped (nested repo extracted, ESLint landed; CI
+workflow pending), 0026 through 0029 still drafts under `specs/`.
 
 - **Run durability** (spec 0024, ADR-020): a boot-time reconciliation pass in
   `ensureServerBooted` marks orphaned runs `interrupted`, moves their issues to
@@ -760,3 +763,11 @@ pass or fail and writes a parsed handoff (0029).
 - Prompt-driven orchestration versus deterministic pipelines (ADR-012). Factory
   keeps orchestration in prompts and skills so it compounds with each model
   release; the current pipelines are deterministic for cost and testability.
+
+### Sync note (2026-06-12)
+
+Independent of this wave, a third runtime — Antigravity (`agy`) — was registered
+in `server-init.ts` alongside Claude Code and Gemini CLI (commit f3110fa, spec
+0030, ADR-023). It supersedes ADR-008's "Codex as candidate third runtime" and
+widens the deferred role-based model-assignment idea from two seats to three
+(planning, implementation, and validation can each target a different runtime).

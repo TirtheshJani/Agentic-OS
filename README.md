@@ -5,11 +5,11 @@ your agents, skills, automations, memory, and a local command center for
 delegating recurring work to autonomous agents.
 
 > **Status:** command center shipped (June 2026, specs 0007-0012): kanban
-> agent assignment, dual runtimes (Claude Code on the Max plan + Gemini CLI
-> on Google AI Pro), agent creator with AI draft, autonomy with a kill
-> switch, vault knowledge graph, connections hub, and a create-project
-> orchestrator (`/new`: prompt → repo + GitHub remote + agent crew +
-> kickoff issues).
+> agent assignment, three runtimes (Claude Code on the Max plan, Gemini CLI
+> on Google AI Pro, and Antigravity CLI), agent creator with AI draft,
+> autonomy with a kill switch, vault knowledge graph, connections hub, and a
+> create-project orchestrator (`/new`: prompt → repo + GitHub remote + agent
+> crew + kickoff issues).
 
 ## Layers
 
@@ -27,8 +27,8 @@ delegating recurring work to autonomous agents.
 ## Quickstart
 
 Prerequisites: Node 22+, git, and the CLIs you plan to use logged in once
-(`claude` for the Max plan; optional `gemini` for Google AI Pro; `gh` for
-repo creation). Full walkthrough: `docs/setup.md`.
+(`claude` for the Max plan; optional `gemini` for Google AI Pro and `agy` for
+Antigravity; `gh` for repo creation). Full walkthrough: `docs/setup.md`.
 
 ```bash
 # 1. Skills + memory are filesystem-only — nothing to install for those.
@@ -90,7 +90,8 @@ Edge/Chrome and use the install-app affordance in the address bar.
 
 Runtimes: agent runs spawn your locally installed CLIs, so log each one in
 once manually first (`claude` for the Max plan, `gemini` for Google AI Pro
-after `npm i -g @google/gemini-cli`). The /runtimes view shows status.
+after `npm i -g @google/gemini-cli`, and `agy` for Antigravity after
+`agy install`). The /runtimes view shows status.
 `docs/runtimes-and-clis.md` maps every feature to the CLI it needs;
 `docs/troubleshooting.md` covers the common failure modes (port 3000 in
 use, gh scopes, lost create jobs).

@@ -1,4 +1,5 @@
 import type { CreateStepId, StepStatus } from "@/lib/createProject/steps";
+import type { ExitStatus } from "@/lib/runs";
 
 export type StreamEvent =
   | { kind: "project.changed"; slug: string; reason: "create" | "update" | "delete" }
@@ -9,7 +10,7 @@ export type StreamEvent =
   | { kind: "project.create.progress"; jobId: string; step: CreateStepId; status: StepStatus; detail?: string; error?: string }
   | { kind: "project.create.done"; jobId: string; status: "succeeded" | "failed" }
   | { kind: "rag.embeddings"; embedded: number; pending: number; model: string; error?: string }
-  | { kind: "run.finalized"; runId: number; issueId: number; projectSlug: string; exitStatus: "done" | "failed" }
+  | { kind: "run.finalized"; runId: number; issueId: number; projectSlug: string; exitStatus: ExitStatus }
   | { kind: "sessions.indexed"; scanned: number; updated: number }
   | { kind: "eval.completed"; runId: number; score: number; grade: string };
 

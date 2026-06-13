@@ -12,7 +12,9 @@ export type StreamEvent =
   | { kind: "rag.embeddings"; embedded: number; pending: number; model: string; error?: string }
   | { kind: "run.finalized"; runId: number; issueId: number; projectSlug: string; exitStatus: ExitStatus }
   | { kind: "sessions.indexed"; scanned: number; updated: number }
-  | { kind: "eval.completed"; runId: number; score: number; grade: string };
+  | { kind: "eval.completed"; runId: number; score: number; grade: string }
+  | { kind: "revision.filed"; runId: number; issueId: number; revisionIssueId: number; projectSlug: string }
+  | { kind: "revision.escalated"; runId: number; issueId: number; projectSlug: string };
 
 type Listener = (event: StreamEvent) => void;
 

@@ -5,6 +5,7 @@
 import { subscribe } from "@/lib/stream";
 import { getSettings } from "@/lib/settings";
 import { gradeRunMetrics, gradeRunWithJudge } from "@/lib/evals/store";
+import { fileRevision } from "@/lib/evals/revise";
 
 interface WorkerState {
   stop: () => void;
@@ -25,7 +26,16 @@ export function startEvalAutoGrade(): () => void {
     const settings = getSettings();
     if (settings.evals.autoGradeEnabled && settings.autonomy.enabled && event.exitStatus === "done") {
       const result = gradeRunWithJudge(event.runId);
-      if (!result.ok) console.error(`[evals] auto-judge failed for run ${event.runId}: ${result.error}`);
+      if (!result.ok) {
+        console.error(`[evals] auto-judge failed for run ${event.runId}: ${result.error}`);
+      } else if (result.score < settings.evals.reviseThreshold) {
+        // Reflection loop (spec 0026): one revision when the grade is sub-threshold.
+        try {
+          fileRevision(event.runId);
+        } catch (err) {
+          console.error(`[evals] revision failed for run ${event.runId}:`, err);
+        }
+      }
     }
   });
   const stop = () => {

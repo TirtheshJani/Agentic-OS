@@ -14,7 +14,9 @@ export type StreamEventKind =
   | "rag.embeddings"
   | "run.finalized"
   | "sessions.indexed"
-  | "eval.completed";
+  | "eval.completed"
+  | "revision.filed"
+  | "revision.escalated";
 
 export interface StreamEventPayload {
   kind: StreamEventKind;

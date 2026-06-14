@@ -1,10 +1,11 @@
 import clsx from "clsx";
 
-type Tone = "accent" | "ok" | "danger" | "neutral";
+type Tone = "accent" | "ok" | "warn" | "danger" | "neutral";
 
 const tones: Record<Tone, string> = {
   accent: "bg-accent-bg text-accent-ink",
   ok: "bg-ok-bg text-ok",
+  warn: "bg-warn-bg text-warn",
   danger: "bg-danger-bg text-danger",
   neutral: "bg-surface2 text-ink2",
 };

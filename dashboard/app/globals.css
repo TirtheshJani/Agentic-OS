@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens from docs/designs/Agentic OS.dc.html. Light on :root, dark
+/* Design tokens from docs/designs (now agentic-os-v2). Light on :root, dark
    overrides on [data-theme="dark"] (set pre-hydration by the inline script
    in app/layout.tsx). Tailwind maps these in tailwind.config.ts; components
-   use the mapped utilities (bg-surface, text-ink2, border-line, ...). */
+   use the mapped utilities (bg-surface, text-ink2, border-line, ...). The
+   warn/glow/star/grid tokens are agentic-os-v2 additions for the amber
+   semantic state and the cosmic atmosphere (see body::before/::after below). */
 :root {
   color-scheme: light;
   --bg: #f4f6f8;
@@ -25,8 +27,13 @@
   --ok-bg: rgba(44, 138, 114, 0.1);
   --danger: #c0392b;
   --danger-bg: rgba(192, 57, 43, 0.08);
+  --warn: #b7791f;
+  --warn-bg: rgba(183, 121, 31, 0.1);
   --shadow: 0 1px 2px rgba(13, 22, 40, 0.04), 0 8px 24px -18px rgba(13, 22, 40, 0.3);
   --shadow-lg: 0 24px 60px -28px rgba(13, 22, 40, 0.45);
+  --glow: 0 0 14px rgba(74, 143, 209, 0.35);
+  --star-op: 0;
+  --grid-op: 0.04;
 }
 
 [data-theme="dark"] {
@@ -48,12 +55,118 @@
   --ok-bg: rgba(74, 168, 150, 0.16);
   --danger: #e0796d;
   --danger-bg: rgba(192, 57, 43, 0.16);
+  --warn: #e3b341;
+  --warn-bg: rgba(227, 179, 65, 0.14);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px -20px rgba(0, 0, 0, 0.8);
   --shadow-lg: 0 30px 70px -30px rgba(0, 0, 0, 0.85);
+  --glow: 0 0 14px rgba(74, 143, 209, 0.55);
+  --star-op: 1;
+  --grid-op: 0.05;
 }
 
 body {
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
+}
+
+/* Cosmic atmosphere (agentic-os-v2): fixed, non-interactive layers behind all
+   content. Starfield is theme-reactive via --star-op (on in dark, off in
+   light); the accent glow is subtle in both themes. Pure CSS, so there is no
+   hydration flash — the pre-paint theme script in app/layout.tsx sets
+   data-theme before first paint. AppShell raises its content above these with
+   `relative z-[1]` and keeps a transparent background so the field shows. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--star-op);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.7) 0, transparent 1.4px),
+    radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.5) 0, transparent 1.2px),
+    radial-gradient(circle at 42% 62%, rgba(255, 255, 255, 0.45) 0, transparent 1px),
+    radial-gradient(circle at 88% 74%, rgba(255, 255, 255, 0.55) 0, transparent 1.2px),
+    radial-gradient(circle at 26% 86%, rgba(255, 255, 255, 0.4) 0, transparent 1px),
+    radial-gradient(circle at 62% 32%, rgba(255, 255, 255, 0.35) 0, transparent 1px);
+  background-size: 520px 520px, 420px 420px, 600px 600px, 480px 480px, 560px 560px, 500px 500px;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 60% at 88% 4%, rgba(74, 143, 209, 0.1), transparent 60%),
+    radial-gradient(60% 50% at 4% 96%, rgba(111, 174, 243, 0.08), transparent 60%);
+}
+
+/* Entrance + live-status motion (agentic-os-v2). Named ao-* so they don't
+   clobber Tailwind's own pulse/spin/ping keyframes. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ao-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 143, 209, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(74, 143, 209, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 143, 209, 0);
+  }
+}
+@keyframes ao-dash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ao-pulse {
+  animation: ao-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Opt-in custom scrollbar for scroll regions. */
+.ao-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ao-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.ao-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

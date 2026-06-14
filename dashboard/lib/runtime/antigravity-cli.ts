@@ -1,9 +1,10 @@
 import * as pty from "node-pty";
-import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { Runtime, SpawnOpts, SpawnedRun, RuntimeAvailability } from "@/lib/runtime/types";
+import { resolveLaunch } from "@/lib/runtime/launch";
+import { probeVersion } from "@/lib/runtime/detect";
 
 // Google Antigravity ships a real .exe (not an npm .cmd shim). `agy install`
 // adds its bin dir to PATH, but that only reaches processes started afterward;
@@ -11,7 +12,9 @@ import type { Runtime, SpawnOpts, SpawnedRun, RuntimeAvailability } from "@/lib/
 // the binary at its documented install location (%LOCALAPPDATA%\agy\bin on
 // Windows, ~/.local/share/agy/bin elsewhere) and fall back to the bare name on
 // PATH. Resolving an absolute path also lets node-pty launch it directly.
+// Overridable via env for tests / non-standard installs.
 function resolveAgyBin(): string {
+  if (process.env.AGENTIC_OS_AGY_BIN) return process.env.AGENTIC_OS_AGY_BIN;
   if (process.platform === "win32") {
     const localAppData = process.env.LOCALAPPDATA;
     if (localAppData) {
@@ -28,22 +31,14 @@ function resolveAgyBin(): string {
   return "agy";
 }
 
-const AGY_BIN = resolveAgyBin();
-
-function detectAgy(): RuntimeAvailability {
-  // No shell: agy is a real executable (resolved to an absolute path when
-  // installed), so CreateProcess/PATH lookup handles it and paths with spaces
-  // stay intact. shell:true is only needed for the .cmd shims of npm CLIs.
-  const r = spawnSync(AGY_BIN, ["--version"], { encoding: "utf8" });
-  if (r.status !== 0) {
-    return {
-      available: false,
-      version: null,
-      error: r.stderr || "agy not on PATH (install: irm https://antigravity.google/cli/install.ps1 | iex, then `agy install`)",
-    };
-  }
-  const m = r.stdout.match(/(\d+\.\d+\.\d+)/);
-  return { available: true, version: m ? m[1] : r.stdout.trim() };
+function detectAgy(): Promise<RuntimeAvailability> {
+  // agy is a real .exe (resolved to an absolute path when installed), so
+  // resolveLaunch passes it through directly — no cmd.exe wrapper. Resolved per
+  // call so an env override applies post-boot and tests can point it at a stub.
+  return probeVersion(
+    resolveAgyBin(),
+    "agy not on PATH (install: irm https://antigravity.google/cli/install.ps1 | iex, then `agy install`)"
+  );
 }
 
 /**
@@ -76,7 +71,12 @@ async function spawnAgy(opts: SpawnOpts): Promise<SpawnedRun> {
   // declared false: the id is a local marker, not a real captured agy id.
   const sessionId = randomUUID();
 
-  const term = pty.spawn(AGY_BIN, agySpawnArgs(opts.initialPrompt, opts.model), {
+  // agy is a real .exe, so resolveLaunch passes it through unchanged (no cmd.exe
+  // wrapper); the arbitrary prompt therefore travels as a clean argv element,
+  // not through a shell command line. Routed through resolveLaunch for parity
+  // with the other runtimes and to honor an env-overridden stub bin in tests.
+  const launch = resolveLaunch({ bin: resolveAgyBin(), args: agySpawnArgs(opts.initialPrompt, opts.model) });
+  const term = pty.spawn(launch.file, launch.args, {
     name: "xterm-color",
     cols: opts.cols ?? 120,
     rows: opts.rows ?? 30,
@@ -117,7 +117,7 @@ export const antigravityCliRuntime: Runtime = {
     transcriptCostParsing: false,
     externalTerminalEscape: true,
   },
-  detect: async () => detectAgy(),
+  detect: detectAgy,
   spawn: spawnAgy,
   // sid is unused: --continue is cwd-scoped and the open-terminal route runs it
   // from the run's worktree, landing on this run's conversation.

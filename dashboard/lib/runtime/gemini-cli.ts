@@ -1,19 +1,20 @@
 import * as pty from "node-pty";
-import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { Runtime, SpawnOpts, SpawnedRun, RuntimeAvailability } from "@/lib/runtime/types";
+import { resolveLaunch } from "@/lib/runtime/launch";
+import { probeVersion } from "@/lib/runtime/detect";
+import { injectPrompt } from "@/lib/runtime/promptInjector";
 
-// Same .cmd shim situation as claude-code.ts: npm-installed CLIs on Windows
-// are .cmd files, and node-pty's CreateProcess needs the explicit name.
-const GEMINI_BIN = process.platform === "win32" ? "gemini.cmd" : "gemini";
+// Same .cmd shim situation as claude-code.ts: npm-installed CLIs on Windows are
+// .cmd files; the PTY launch is routed through cmd.exe by resolveLaunch.
+// Resolved per call so an env override applies post-boot and tests can point it
+// at a stub.
+function geminiBin(): string {
+  return process.env.AGENTIC_OS_GEMINI_BIN || (process.platform === "win32" ? "gemini.cmd" : "gemini");
+}
 
-function detectGemini(): RuntimeAvailability {
-  const r = spawnSync(GEMINI_BIN, ["--version"], { encoding: "utf8", shell: process.platform === "win32" });
-  if (r.status !== 0) {
-    return { available: false, version: null, error: r.stderr || "gemini not on PATH (npm i -g @google/gemini-cli)" };
-  }
-  const m = r.stdout.match(/(\d+\.\d+\.\d+)/);
-  return { available: true, version: m ? m[1] : r.stdout.trim() };
+function detectGemini(): Promise<RuntimeAvailability> {
+  return probeVersion(geminiBin(), "gemini not on PATH (npm i -g @google/gemini-cli)");
 }
 
 /** Exported for tests: argv construction is pure, the PTY spawn is not. */
@@ -34,7 +35,8 @@ async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
   // --dangerously-skip-permissions; the worktree bounds the blast radius).
   // --skip-trust suppresses the workspace trust dialog for this session, so
   // unlike claude-code no blind Enter is needed.
-  const term = pty.spawn(GEMINI_BIN, geminiSpawnArgs(sessionId, opts.model), {
+  const launch = resolveLaunch({ bin: geminiBin(), args: geminiSpawnArgs(sessionId, opts.model) });
+  const term = pty.spawn(launch.file, launch.args, {
     name: "xterm-color",
     cols: opts.cols ?? 120,
     rows: opts.rows ?? 30,
@@ -42,23 +44,12 @@ async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
     env: { ...process.env } as Record<string, string>,
   });
 
-  // Deliver the prompt after the TUI has booted. Same ConPTY quirk handling
-  // as claude-code.ts: collapse whitespace to keep the input single-line, and
-  // send Enter as a separate delayed write so the TUI registers a discrete
-  // keypress (body + "\r" in one chunk is not reliably parsed).
-  const PROMPT_READY_DELAY_MS = 4000;
-  setTimeout(() => {
-    try {
-      const body = opts.initialPrompt.replace(/\s+/g, " ").trim();
-      if (body.length > 0) {
-        console.log(`[gemini-cli] run ${opts.runId}: writing initial prompt (${body.length} chars) to PTY`);
-        term.write(body);
-        setTimeout(() => { try { term.write("\r"); } catch { /* PTY dead */ } }, 250);
-      }
-    } catch (err) {
-      console.error(`[gemini-cli] run ${opts.runId}: PTY write failed:`, err);
-    }
-  }, PROMPT_READY_DELAY_MS);
+  // Deliver the prompt once the TUI has rendered and gone quiet (settle-based;
+  // see promptInjector). No blind Enter: --skip-trust suppresses the trust
+  // dialog, so there is nothing to dismiss before the input prompt.
+  const disposeInject = injectPrompt(term, opts.initialPrompt, {
+    log: (m) => console.log(`[gemini-cli] run ${opts.runId}: ${m}`),
+  });
 
   return {
     pty: term,
@@ -70,6 +61,7 @@ async function spawnGemini(opts: SpawnOpts): Promise<SpawnedRun> {
       // No external capture path exists for gemini; the self-assigned id wins.
     },
     async cleanup() {
+      disposeInject();
       try { term.kill(); } catch { /* already dead */ }
     },
   };
@@ -96,7 +88,7 @@ export const geminiCliRuntime: Runtime = {
     transcriptCostParsing: false,
     externalTerminalEscape: true,
   },
-  detect: async () => detectGemini(),
+  detect: detectGemini,
   spawn: spawnGemini,
   // cwd-scoped resume: the external terminal opens in the run's worktree, where
   // "latest" is this run's session. The session-id marker is ignored (gemini

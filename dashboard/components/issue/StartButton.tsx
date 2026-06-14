@@ -18,11 +18,17 @@ export function StartButton({ issueId, disabled, disabledReason, runtimeId, onSt
   async function start() {
     setBusy(true);
     setError(null);
+    // Hard client-side timeout so a hung server (e.g. a stalled git worktree on
+    // the single-threaded backend) can never leave the button stuck on
+    // "Starting..." forever — it surfaces as a visible error instead.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
     try {
       const res = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(runtimeId ? { issueId, runtimeId } : { issueId }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -30,8 +36,14 @@ export function StartButton({ issueId, disabled, disabledReason, runtimeId, onSt
       }
       onStarted();
     } catch (err) {
-      setError((err as Error).message);
+      const e = err as Error;
+      setError(
+        e.name === "AbortError"
+          ? "Start timed out — the server did not respond. Check the dashboard logs."
+          : e.message
+      );
     } finally {
+      clearTimeout(timeout);
       setBusy(false);
     }
   }

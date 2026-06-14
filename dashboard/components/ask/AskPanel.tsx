@@ -123,17 +123,18 @@ export function AskPanel() {
             </p>
           )}
           {result.answer && (
-            <section className="rounded-md border border-line p-4">
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">{result.answer}</p>
+            <section className="rounded-card border border-line bg-surface p-4">
+              <p className="text-sm whitespace-pre-wrap leading-relaxed text-ink">{result.answer}</p>
               {result.citations.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {result.citations.map((c) => (
                     <button
                       key={c.n}
                       onClick={() => openNote(c.notePath, c.title)}
-                      className="text-xs px-2 py-0.5 rounded-full border border-line2 hover:bg-surface2"
+                      className="text-xs px-2 py-0.5 rounded-pill border border-line2 text-ink2 hover:border-accent-line hover:bg-surface2"
                     >
-                      [{c.n}] {c.title} <span className="text-ink3 font-mono">{c.notePath}</span>
+                      <span className="font-label font-semibold text-accent-ink">[{c.n}]</span> {c.title}{" "}
+                      <span className="text-ink3 font-mono">{c.notePath}</span>
                     </button>
                   ))}
                 </div>
@@ -141,7 +142,7 @@ export function AskPanel() {
             </section>
           )}
           <section>
-            <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
+            <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-3">
               Retrieved context ({result.chunks.length})
             </h2>
             {result.chunks.length === 0 ? (
@@ -165,14 +166,14 @@ export function AskPanel() {
           footer={
             <a
               href={`obsidian://open?vault=vault&file=${encodeURIComponent(preview.path)}`}
-              className="text-sm px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+              className="text-sm px-3 py-1.5 rounded-pill bg-accent text-white shadow-glow hover:opacity-90"
             >
               Open in Obsidian
             </a>
           }
         >
           <p className="text-xs text-ink3 font-mono mb-3">{preview.path}</p>
-          <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono">{preview.content}</pre>
+          <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono text-ink2">{preview.content}</pre>
         </Drawer>
       )}
     </div>

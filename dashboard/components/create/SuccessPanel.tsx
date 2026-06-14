@@ -11,7 +11,7 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
   if (job.status === "failed") {
     return (
       <div className="space-y-4">
-        <div className="rounded-md border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950 p-4">
+        <div className="rounded-card border border-danger bg-danger-bg p-4">
           <p className="text-sm font-medium text-danger">
             Create failed at: {failedStep?.id ?? "unknown step"}
           </p>
@@ -42,12 +42,12 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-green-300 dark:border-green-900 bg-green-50 dark:bg-green-950 p-4">
+      <div className="rounded-card border border-ok bg-ok-bg p-4">
         <p className="text-sm font-medium text-ok">
           Project created{r.projectSlug ? `: ${r.projectSlug}` : ""}
         </p>
         {r.projectPath && (
-          <p className="text-xs text-ok mt-1">{r.projectPath}</p>
+          <p className="text-xs text-ok mt-1 font-mono">{r.projectPath}</p>
         )}
       </div>
 
@@ -61,7 +61,7 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
         )}
         {r.repoUrl && (
           <li>
-            <a className="text-accent hover:underline" href={r.repoUrl} target="_blank" rel="noreferrer">
+            <a className="text-accent hover:underline font-mono" href={r.repoUrl} target="_blank" rel="noreferrer">
               {r.repoUrl}
             </a>
           </li>
@@ -83,9 +83,9 @@ export function SuccessPanel({ job, onReset }: { job: CreateJob; onReset: () => 
       </ul>
 
       {r.warnings.length > 0 && (
-        <div className="rounded-md border border-yellow-300 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950 p-3">
-          <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-1">Warnings</p>
-          <ul className="list-disc ml-4 text-xs text-yellow-700 dark:text-yellow-300 space-y-0.5">
+        <div className="rounded-card border border-warn bg-warn-bg p-3">
+          <p className="text-xs font-medium text-warn mb-1 font-label uppercase tracking-wide">Warnings</p>
+          <ul className="list-disc ml-4 text-xs text-warn space-y-0.5">
             {r.warnings.map((w, i) => (
               <li key={i} className="break-words">{w}</li>
             ))}

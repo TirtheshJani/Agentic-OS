@@ -74,7 +74,7 @@ export function NotesPanel() {
             <select
               value={folder}
               onChange={(e) => setFolder(e.target.value)}
-              className="flex-1 min-w-0 rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
+              className="flex-1 min-w-0 rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink"
             >
               <option value="">All folders</option>
               {folders.map((f) => (
@@ -91,17 +91,17 @@ export function NotesPanel() {
           {!notes && !listError && <p className="text-sm text-ink3">Loading notes...</p>}
           {notes && notes.length === 0 && <p className="text-sm text-ink3">No notes in this folder.</p>}
           {notes && notes.length > 0 && (
-            <div className="flex-1 overflow-y-auto rounded-md border border-line divide-y divide-line">
+            <div className="flex-1 overflow-y-auto rounded-card border border-line bg-surface divide-y divide-line">
               {notes.map((n) => (
                 <button
                   key={n.path}
                   onClick={() => setSelected(n.path)}
                   className={clsx(
-                    "block w-full text-left px-3 py-2 hover:bg-surface2",
-                    selected === n.path && "bg-accent-bg"
+                    "block w-full text-left px-3 py-2 transition-colors",
+                    selected === n.path ? "bg-accent-bg text-accent-ink" : "text-ink2 hover:bg-surface2"
                   )}
                 >
-                  <span className="block text-sm font-medium truncate">{n.title}</span>
+                  <span className="block text-sm font-medium truncate text-ink">{n.title}</span>
                   <span className="block text-xs text-ink3 font-mono truncate">{n.path}</span>
                 </button>
               ))}

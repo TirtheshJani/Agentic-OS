@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
 import { Textarea } from "@/components/common/Field";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { useStream } from "@/hooks/useStream";
 import type { ResearchProject, ResearchSource, ResearchNote } from "@/lib/research/projects";
 
@@ -101,21 +102,26 @@ export function ResearchDetail({ slug }: { slug: string }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-semibold">{data.meta.title}</h1>
-        <Button onClick={collect} disabled={collecting}>
-          {collecting ? "Filing..." : "Run collection"}
-        </Button>
-      </div>
-      <p className="text-sm text-ink3 mb-1">{data.meta.question}</p>
-      <p className="text-xs text-ink3 mb-4">
+      <SectionHeader
+        kicker="DEEP WORK"
+        title={data.meta.title}
+        description={data.meta.question}
+        action={
+          <Button onClick={collect} disabled={collecting}>
+            {collecting ? "Filing..." : "Run collection"}
+          </Button>
+        }
+      />
+      <p className="text-xs text-ink3 mb-4 -mt-2">
         status: {data.meta.status}
         {collectMsg && <span className="ml-2 text-ink2">{collectMsg}</span>}
       </p>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section>
-          <h2 className="text-sm font-semibold mb-2">Sources ({data.sources.length})</h2>
+          <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mb-2">
+            Sources ({data.sources.length})
+          </h2>
           {data.sources.length === 0 && (
             <p className="text-sm text-ink3">No sources yet. Run a collection or drop .md files into sources/.</p>
           )}
@@ -130,9 +136,9 @@ export function ResearchDetail({ slug }: { slug: string }) {
                   aria-label={`Include ${s.title} in chat context`}
                 />
                 <div>
-                  <span className="font-medium">{s.title}</span>
+                  <span className="font-medium text-ink">{s.title}</span>
                   {!s.attributed && (
-                    <span className="ml-1.5 rounded bg-yellow-100 dark:bg-yellow-950 px-1 py-0.5 text-xs text-yellow-700 dark:text-yellow-300">
+                    <span className="ml-1.5 rounded-pill bg-warn-bg px-2 py-0.5 font-label text-[9px] uppercase tracking-wide text-warn">
                       unattributed
                     </span>
                   )}
@@ -153,8 +159,10 @@ export function ResearchDetail({ slug }: { slug: string }) {
             ))}
           </ul>
 
-          <h2 className="text-sm font-semibold mt-5 mb-2">Notes ({data.notes.length})</h2>
-          <ul className="space-y-1 text-sm">
+          <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mt-5 mb-2">
+            Notes ({data.notes.length})
+          </h2>
+          <ul className="space-y-1 text-sm text-ink2">
             {data.notes.map((n) => (
               <li key={n.relPath} className="flex items-center gap-2">
                 <input
@@ -170,7 +178,7 @@ export function ResearchDetail({ slug }: { slug: string }) {
         </section>
 
         <section>
-          <h2 className="text-sm font-semibold mb-2">
+          <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mb-2">
             Chat {selected.size > 0 ? `(scoped to ${selected.size} selected)` : "(whole project)"}
           </h2>
           <Textarea
@@ -193,12 +201,12 @@ export function ResearchDetail({ slug }: { slug: string }) {
             <div className="mt-4 space-y-3">
               {answer.error && <p className="text-sm text-danger">{answer.error}</p>}
               {answer.degraded.vector && (
-                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                <p className="rounded-card border border-line bg-warn-bg px-3 py-2 text-xs text-warn">
                   Keyword + link-graph retrieval only ({answer.degraded.reason ?? "no embedding provider"}).
                 </p>
               )}
               {answer.answer ? (
-                <pre className="whitespace-pre-wrap text-sm font-sans rounded-md border border-line p-3">
+                <pre className="whitespace-pre-wrap text-sm font-sans rounded-card border border-line bg-surface p-4 text-ink">
                   {answer.answer}
                 </pre>
               ) : (
@@ -211,11 +219,14 @@ export function ResearchDetail({ slug }: { slug: string }) {
                   </summary>
                   <div className="mt-2 space-y-2">
                     {answer.chunks.map((c, i) => (
-                      <div key={i} className="rounded border border-line p-2">
-                        <div className="text-xs text-ink3">
-                          [{i + 1}] {c.notePath} · {c.score.toFixed(3)}
+                      <div key={i} className="rounded-card border border-line bg-surface p-3">
+                        <div className="text-xs text-ink3 font-mono">
+                          <span className="font-label font-semibold text-accent-ink">[{i + 1}]</span> {c.notePath} ·{" "}
+                          {c.score.toFixed(3)}
                         </div>
-                        <pre className="whitespace-pre-wrap text-xs mt-1 max-h-32 overflow-auto">{c.content}</pre>
+                        <pre className="whitespace-pre-wrap text-xs mt-1 max-h-32 overflow-auto font-mono text-ink2">
+                          {c.content}
+                        </pre>
                       </div>
                     ))}
                   </div>

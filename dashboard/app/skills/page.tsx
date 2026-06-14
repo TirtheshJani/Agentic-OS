@@ -1,11 +1,14 @@
 import { listSkills } from "@/lib/skills";
+import { Card } from "@/components/common/Card";
+import { Pill } from "@/components/common/Pill";
+import { SectionHeader } from "@/components/common/SectionHeader";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_STYLES: Record<string, string> = {
-  authored: "bg-ok-bg text-ok",
-  stub: "bg-surface2 text-ink2",
-  blocked: "bg-danger-bg text-danger",
+const STATUS_TONES: Record<string, "ok" | "warn" | "danger" | "neutral"> = {
+  authored: "ok",
+  stub: "warn",
+  blocked: "danger",
 };
 
 export default function SkillsPage() {
@@ -18,36 +21,35 @@ export default function SkillsPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <header className="flex items-baseline justify-between mb-6">
-        <h1 className="text-xl font-semibold">Skills</h1>
-        <span className="text-sm text-ink3">{skills.length} skills</span>
-      </header>
+      <SectionHeader
+        kicker="INVENTORY"
+        title="Skills"
+        action={<span className="text-sm text-ink3">{skills.length} skills</span>}
+      />
 
       {Array.from(domains.entries()).map(([domain, items]) => (
         <section key={domain} className="mb-8">
-          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
+          <h2 className="font-label text-sm uppercase tracking-wide text-ink3 mb-3">
             {domain} <span className="text-ink3 normal-case">({items.length})</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {items.map((s) => (
-              <article
+              <Card
                 key={s.folder}
-                className="rounded-md border border-line p-3 text-sm"
+                className="p-3 text-sm transition-colors hover:border-accent-line"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-medium">{s.name}</h3>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${STATUS_STYLES[s.status] ?? STATUS_STYLES.stub}`}
-                  >
+                  <h3 className="font-display font-semibold text-ink">{s.name}</h3>
+                  <Pill tone={STATUS_TONES[s.status] ?? "neutral"} className="shrink-0">
                     {s.status}
-                  </span>
+                  </Pill>
                 </div>
-                <p className="text-ink3 mt-1 line-clamp-3">{s.description}</p>
+                <p className="text-ink2 mt-1 line-clamp-3">{s.description}</p>
                 <div className="flex gap-2 mt-2 text-[10px] text-ink3 font-mono">
                   <span>{s.folder}</span>
                   {s.mcpServer && s.mcpServer !== "none" && <span>mcp:{s.mcpServer}</span>}
                 </div>
-              </article>
+              </Card>
             ))}
           </div>
         </section>

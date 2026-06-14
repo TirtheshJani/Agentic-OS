@@ -1,8 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import clsx from "clsx";
 import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
 import { Field, Textarea } from "@/components/common/Field";
+import { StatusDot } from "@/components/common/StatusDot";
 import { useStream } from "@/hooks/useStream";
 import type { CreateJob } from "@/lib/createProject/jobs";
 import { StepChecklist } from "@/components/create/StepChecklist";
@@ -16,7 +19,53 @@ interface RuntimeOption {
 type Visibility = "private" | "public" | "local-only";
 
 const selectBase =
-  "w-full rounded-md border border-line2 bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
+  "w-full rounded-card border border-line2 bg-surface text-ink px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
+
+const EXAMPLE_PROMPTS = [
+  "A CLI tool that tracks my reading list and syncs highlights to the vault",
+  "A research project auditing interpretability of clinical risk models, with cited reports",
+  "A weekly newsletter pipeline that drafts from my saved articles",
+];
+
+const WIZARD_STEPS = ["Describe", "Build", "Done"] as const;
+
+/** Numbered step circles: accent for done/current, surface2/line for pending. */
+function StepProgress({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-0 mb-7">
+      {WIZARD_STEPS.map((label, i) => {
+        const active = i <= current;
+        return (
+          <div key={label} className="flex items-center">
+            <div className="flex flex-col items-center gap-1.5 w-28">
+              <div
+                className={clsx(
+                  "grid h-[30px] w-[30px] place-items-center rounded-full border font-label text-xs transition-colors",
+                  active
+                    ? "border-accent-line bg-accent-bg text-accent-ink"
+                    : "border-line2 bg-surface2 text-ink3"
+                )}
+              >
+                {i + 1}
+              </div>
+              <span
+                className={clsx(
+                  "font-label uppercase tracking-[0.1em] text-[9px]",
+                  active ? "text-accent-ink" : "text-ink3"
+                )}
+              >
+                {label}
+              </span>
+            </div>
+            {i < WIZARD_STEPS.length - 1 && (
+              <div className={clsx("h-px w-6 -mt-5", i < current ? "bg-accent-line" : "bg-line2")} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function CreateProjectWizard() {
   const router = useRouter();
@@ -150,7 +199,16 @@ export function CreateProjectWizard() {
     if (job.status === "running") {
       return (
         <div className="space-y-6">
-          <StepChecklist steps={job.steps} />
+          <StepProgress current={1} />
+          <Card shadow className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <StatusDot tone="ok" pulse />
+              <span className="font-label uppercase tracking-[0.14em] text-[11px] text-ink2">
+                Building project
+              </span>
+            </div>
+            <StepChecklist steps={job.steps} />
+          </Card>
           <p className="text-xs text-ink3">
             Safe to navigate away; come back via this URL. The draft step costs one headless
             Claude call.
@@ -160,7 +218,10 @@ export function CreateProjectWizard() {
     }
     return (
       <div className="space-y-6">
-        <StepChecklist steps={job.steps} />
+        <StepProgress current={2} />
+        <Card shadow className="p-5">
+          <StepChecklist steps={job.steps} />
+        </Card>
         <SuccessPanel job={job} onReset={reset} />
       </div>
     );
@@ -173,71 +234,93 @@ export function CreateProjectWizard() {
   // --- form ---
   const canSubmit = prompt.trim().length >= 10 && !submitting;
   return (
-    <div className="space-y-5">
-      <Field
-        label="What should this project be?"
-        hint="One or two sentences. The orchestrator names the project, drafts 2-4 agents, and writes kickoff tasks from this."
-      >
-        <Textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Build a CLI tool that tracks my reading list and syncs highlights to the vault..."
-          rows={5}
-          autoFocus
-        />
-      </Field>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="GitHub repo" hint="local-only skips repo creation">
-          <select
-            className={selectBase}
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value as Visibility)}
-          >
-            <option value="private">Private repo</option>
-            <option value="public">Public repo</option>
-            <option value="local-only">Local only (no GitHub)</option>
-          </select>
+    <div className="space-y-6">
+      <StepProgress current={0} />
+      <Card shadow className="p-5 space-y-5">
+        <Field
+          label="What should this project be?"
+          hint="One or two sentences. The orchestrator names the project, drafts 2-4 agents, and writes kickoff tasks from this."
+        >
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Build a CLI tool that tracks my reading list and syncs highlights to the vault..."
+            rows={5}
+            autoFocus
+          />
         </Field>
-        <Field label="Default runtime" hint="Agents may override per profile">
-          <select
-            className={selectBase}
-            value={runtimeDefault}
-            onChange={(e) => setRuntimeDefault(e.target.value)}
-          >
-            {runtimes.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.displayName}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink2">
-        <input
-          type="checkbox"
-          checked={fileIssues}
-          onChange={(e) => setFileIssues(e.target.checked)}
-          className="rounded border-line2"
-        />
-        File kickoff issues in the backlog
-      </label>
+        <div className="flex flex-wrap gap-2">
+          {EXAMPLE_PROMPTS.map((ex) => (
+            <button
+              key={ex}
+              type="button"
+              onClick={() => setPrompt(ex)}
+              className="rounded-pill border border-line2 bg-surface2 px-3 py-1.5 text-xs text-ink2 transition-colors hover:border-accent-line hover:text-ink"
+            >
+              {ex.length > 52 ? `${ex.slice(0, 52)}…` : ex}
+            </button>
+          ))}
+        </div>
 
-      <div className="rounded-md bg-raise border border-line px-3 py-2">
-        <p className="text-xs text-ink2">
-          New repo folder is created in{" "}
-          <span className="font-mono">{workspaceRoot ?? "(loading settings...)"}</span>
-          {" - "}change <span className="font-medium">workspaceRoot</span> in{" "}
-          <a className="text-accent hover:underline" href="/settings">Settings</a>.
-        </p>
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="GitHub repo" hint="local-only skips repo creation">
+            <select
+              className={selectBase}
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as Visibility)}
+            >
+              <option value="private">Private repo</option>
+              <option value="public">Public repo</option>
+              <option value="local-only">Local only (no GitHub)</option>
+            </select>
+          </Field>
+          <Field label="Default runtime" hint="Agents may override per profile">
+            <select
+              className={selectBase}
+              value={runtimeDefault}
+              onChange={(e) => setRuntimeDefault(e.target.value)}
+            >
+              {runtimes.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.displayName}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+        <label className="flex items-center gap-2 text-sm text-ink2">
+          <input
+            type="checkbox"
+            checked={fileIssues}
+            onChange={(e) => setFileIssues(e.target.checked)}
+            className="rounded border-line2 accent-accent"
+          />
+          File kickoff issues in the backlog
+        </label>
 
-      <Button variant="primary" onClick={submit} disabled={!canSubmit}>
-        {submitting ? "Starting..." : "Create project"}
-      </Button>
+        <div className="rounded-card bg-raise border border-line px-3 py-2">
+          <p className="text-xs text-ink2">
+            New repo folder is created in{" "}
+            <span className="font-mono text-ink3">{workspaceRoot ?? "(loading settings...)"}</span>
+            {" - "}change <span className="font-medium">workspaceRoot</span> in{" "}
+            <a className="text-accent hover:underline" href="/settings">Settings</a>.
+          </p>
+        </div>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ink3">Drafting uses one headless orchestrator call (no loops).</span>
+          <Button variant="primary" onClick={submit} disabled={!canSubmit} className="ml-auto flex items-center gap-2">
+            {submitting && (
+              <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            )}
+            {submitting ? "Starting..." : "Create project"}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

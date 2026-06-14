@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
+import { Pill } from "@/components/common/Pill";
 import { useStream } from "@/hooks/useStream";
 
 interface SessionRow {
@@ -72,7 +73,7 @@ export function SessionList() {
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
-          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
+          className="rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink"
         >
           <option value="">All providers</option>
           <option value="claude-code">claude-code</option>
@@ -88,50 +89,44 @@ export function SessionList() {
           description="CLI transcripts from ~/.claude and ~/.gemini appear here after the first scan."
         />
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full border-separate border-spacing-y-1.5 text-sm">
           <thead>
-            <tr className="text-left text-ink3 border-b border-line">
-              <th className="py-1.5 pr-2">Provider</th>
-              <th className="py-1.5 pr-2">Project</th>
-              <th className="py-1.5 pr-2">Started</th>
-              <th className="py-1.5 pr-2">Turns</th>
-              <th className="py-1.5 pr-2">Tokens in/out</th>
-              <th className="py-1.5 pr-2">Est. cost</th>
-              <th className="py-1.5 pr-2">Run</th>
+            <tr className="text-left font-label uppercase tracking-wide text-[10px] text-ink3">
+              <th className="px-3 py-1 font-normal">Provider</th>
+              <th className="px-3 py-1 font-normal">Project</th>
+              <th className="px-3 py-1 font-normal">Started</th>
+              <th className="px-3 py-1 font-normal">Turns</th>
+              <th className="px-3 py-1 font-normal">Tokens in/out</th>
+              <th className="px-3 py-1 font-normal">Est. cost</th>
+              <th className="px-3 py-1 font-normal">Run</th>
             </tr>
           </thead>
           <tbody>
             {sessions.map((s) => (
-              <tr key={s.id} className="border-b border-line hover:bg-surface2">
-                <td className="py-1.5 pr-2">
-                  <span
-                    className={
-                      s.provider === "claude-code"
-                        ? "rounded bg-orange-100 dark:bg-orange-950 px-1.5 py-0.5 text-xs text-orange-700 dark:text-orange-300"
-                        : "rounded bg-blue-100 dark:bg-blue-950 px-1.5 py-0.5 text-xs text-accent-ink"
-                    }
-                  >
-                    {s.provider}
-                  </span>
+              <tr key={s.id} className="rounded-card border border-line bg-surface hover:border-accent-line">
+                <td className="px-3 py-2 rounded-l-card border-y border-l border-line">
+                  <Pill tone={s.provider === "claude-code" ? "warn" : "accent"}>{s.provider}</Pill>
                 </td>
-                <td className="py-1.5 pr-2 max-w-48 truncate" title={s.projectDir ?? undefined}>
-                  <Link href={`/sessions/${s.id}`} className="hover:underline">
+                <td className="px-3 py-2 max-w-48 truncate border-y border-line" title={s.projectDir ?? undefined}>
+                  <Link href={`/sessions/${s.id}`} className="text-ink hover:text-accent hover:underline">
                     {s.projectSlug ?? s.projectDir?.split(/[\\/]/).pop() ?? s.sessionId.slice(0, 8)}
                   </Link>
                 </td>
-                <td className="py-1.5 pr-2 text-ink3">
+                <td className="px-3 py-2 text-ink3 border-y border-line">
                   {s.startedAt ? new Date(s.startedAt).toLocaleString() : "?"}
                 </td>
-                <td className="py-1.5 pr-2">
+                <td className="px-3 py-2 font-mono text-ink border-y border-line">
                   {s.turnsUser}/{s.turnsAssistant}
                 </td>
-                <td className="py-1.5 pr-2">
+                <td className="px-3 py-2 font-mono text-ink border-y border-line">
                   {fmtTokens(s.tokensIn)} / {fmtTokens(s.tokensOut)}
                 </td>
-                <td className="py-1.5 pr-2">{s.costEstimate != null ? `$${s.costEstimate.toFixed(2)}` : "n/a"}</td>
-                <td className="py-1.5 pr-2">
+                <td className="px-3 py-2 font-mono text-ink border-y border-line">
+                  {s.costEstimate != null ? `$${s.costEstimate.toFixed(2)}` : "n/a"}
+                </td>
+                <td className="px-3 py-2 rounded-r-card border-y border-r border-line">
                   {s.runId != null && (
-                    <span className="rounded bg-surface2 px-1.5 py-0.5 text-xs">run {s.runId}</span>
+                    <span className="rounded-pill bg-surface2 px-2 py-0.5 font-mono text-xs text-ink2">run {s.runId}</span>
                   )}
                 </td>
               </tr>

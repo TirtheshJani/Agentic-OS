@@ -1,6 +1,8 @@
 "use client";
 import { useRuntimes } from "@/hooks/useRuntimes";
 import { RuntimeBadge } from "@/components/common/RuntimeBadge";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { Pill } from "@/components/common/Pill";
 import type { RuntimeCapabilities } from "@/lib/runtime/types";
 
 const CAPABILITY_LABELS: Array<{ key: keyof RuntimeCapabilities; label: string }> = [
@@ -27,7 +29,11 @@ export default function RuntimesPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-6">Runtimes</h1>
+      <SectionHeader
+        kicker="ENGINES"
+        title="Runtimes"
+        description="Agent runtime CLIs detected on this machine and their capabilities."
+      />
       {!runtimes ? (
         <p className="text-sm text-ink3">Detecting runtimes...</p>
       ) : (
@@ -35,7 +41,7 @@ export default function RuntimesPage() {
           {runtimes.map((rt) => (
             <section
               key={rt.id}
-              className="rounded-md border border-line p-4 space-y-3"
+              className="rounded-card border border-line bg-surface p-4 space-y-3 transition-colors hover:border-accent-line"
             >
               <header className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -43,9 +49,7 @@ export default function RuntimesPage() {
                   {rt.availability.available ? (
                     <span className="text-xs text-ink3 font-mono">v{rt.availability.version}</span>
                   ) : (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-danger-bg text-danger">
-                      not available
-                    </span>
+                    <Pill tone="danger">not available</Pill>
                   )}
                 </div>
               </header>

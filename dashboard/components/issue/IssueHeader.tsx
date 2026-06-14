@@ -1,5 +1,6 @@
 "use client";
 import { Field } from "@/components/common/Field";
+import { Pill } from "@/components/common/Pill";
 
 interface AgentDisplay {
   slug: string;
@@ -21,28 +22,31 @@ interface Props {
   onPatch: (patch: Partial<Issue>) => void;
 }
 
-const STATUS_COLORS: Record<Issue["status"], string> = {
-  backlog: "bg-surface2 text-ink2",
-  queued: "bg-blue-100 dark:bg-blue-900/40 text-accent-ink",
-  running: "bg-ok-bg text-ok",
-  review: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200",
-  done: "bg-surface2 text-ink2",
-  failed: "bg-danger-bg text-danger",
+type PillTone = "accent" | "ok" | "warn" | "danger" | "neutral";
+
+const STATUS_TONES: Record<Issue["status"], PillTone> = {
+  backlog: "neutral",
+  queued: "accent",
+  running: "ok",
+  review: "warn",
+  done: "neutral",
+  failed: "danger",
 };
+
+const selectBase =
+  "rounded-card border border-line2 bg-surface text-ink px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
 
 export function IssueHeader({ issue, crew, onPatch }: Props) {
   return (
     <div className="grid grid-cols-2 gap-3 text-sm">
       <Field label="Status">
-        <span className={"inline-block px-2 py-1 rounded text-xs " + STATUS_COLORS[issue.status]}>
-          {issue.status}
-        </span>
+        <Pill tone={STATUS_TONES[issue.status]}>{issue.status}</Pill>
       </Field>
       <Field label="Mode">
         <select
           value={issue.mode}
           onChange={(e) => onPatch({ mode: e.target.value as Issue["mode"] })}
-          className="rounded-md border border-line2 bg-surface px-2 py-1 text-sm"
+          className={selectBase}
         >
           <option value="async">async</option>
           <option value="sync">sync</option>
@@ -52,7 +56,7 @@ export function IssueHeader({ issue, crew, onPatch }: Props) {
         <select
           value={issue.assigneeSlug ?? ""}
           onChange={(e) => onPatch({ assigneeSlug: e.target.value || null })}
-          className="rounded-md border border-line2 bg-surface px-2 py-1 text-sm w-full"
+          className={selectBase + " w-full"}
         >
           <option value="">unassigned</option>
           {crew.map(a => (
@@ -64,7 +68,7 @@ export function IssueHeader({ issue, crew, onPatch }: Props) {
         <select
           value={issue.priority}
           onChange={(e) => onPatch({ priority: parseInt(e.target.value, 10) })}
-          className="rounded-md border border-line2 bg-surface px-2 py-1 text-sm"
+          className={selectBase}
         >
           <option value={-1}>Low</option>
           <option value={0}>Normal</option>
@@ -80,7 +84,7 @@ export function IssueHeader({ issue, crew, onPatch }: Props) {
             const labels = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
             onPatch({ labels });
           }}
-          className="rounded-md border border-line2 bg-surface px-2 py-1 text-sm w-full"
+          className={selectBase + " w-full"}
         />
       </Field>
     </div>

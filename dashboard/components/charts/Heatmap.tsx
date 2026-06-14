@@ -41,8 +41,8 @@ export function Heatmap({ data }: { data: Array<{ day: string; value: number }> 
               width={cell}
               height={cell}
               rx={2}
-              fill={d.value === 0 ? "rgb(229 231 235)" : `rgba(37, 99, 235, ${intensity.toFixed(2)})`}
-              className="dark:opacity-90"
+              fill={d.value === 0 ? "var(--surface-2)" : "var(--accent)"}
+              fillOpacity={d.value === 0 ? 1 : intensity.toFixed(2)}
             >
               <title>{`${d.day}: ${d.value.toLocaleString()}`}</title>
             </rect>

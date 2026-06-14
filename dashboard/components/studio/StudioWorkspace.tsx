@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Field";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { CanvasHost } from "@/components/studio/CanvasHost";
 import type { CanvasInfo, DesignDoc } from "@/lib/design/canvases";
 
@@ -52,15 +53,12 @@ export function StudioWorkspace({ slug }: { slug: string }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-semibold">Studio: {slug}</h1>
-          <p className="text-sm text-ink3">
-            Diagrams save to vault/projects/{slug}/design/ as scene JSON + SVG; docs are vault notes.
-          </p>
-        </div>
-        <Button onClick={requestReview}>Request design review</Button>
-      </div>
+      <SectionHeader
+        kicker="DESIGN STUDIO"
+        title={`Studio: ${slug}`}
+        description={`Diagrams save to vault/projects/${slug}/design/ as scene JSON + SVG; docs are vault notes.`}
+        action={<Button onClick={requestReview}>Request design review</Button>}
+      />
       {message && <p className="text-sm text-ink2 mb-3">{message}</p>}
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -70,8 +68,8 @@ export function StudioWorkspace({ slug }: { slug: string }) {
             onClick={() => setActive(c.name)}
             className={
               active === c.name
-                ? "rounded-md px-2 py-1 text-sm bg-surface2 font-medium"
-                : "rounded-md px-2 py-1 text-sm text-ink2 hover:bg-surface2"
+                ? "rounded-pill border border-accent-line bg-accent-bg px-3 py-1 text-sm font-medium text-accent-ink"
+                : "rounded-pill border border-line2 bg-surface px-3 py-1 text-sm text-ink2 hover:border-accent-line hover:bg-surface2"
             }
           >
             {c.name}
@@ -98,7 +96,7 @@ export function StudioWorkspace({ slug }: { slug: string }) {
       )}
 
       <section className="mt-6">
-        <h2 className="text-sm font-semibold mb-2">Design docs</h2>
+        <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mb-2">Design docs</h2>
         {docs.length === 0 ? (
           <p className="text-sm text-ink3">
             No design docs yet. Create ARCHITECTURE.md in the Notes view under projects/{slug}/design/.
@@ -107,7 +105,10 @@ export function StudioWorkspace({ slug }: { slug: string }) {
           <ul className="space-y-1 text-sm">
             {docs.map((d) => (
               <li key={d.relPath}>
-                <Link href={`/notes?path=${encodeURIComponent(d.relPath)}`} className="hover:underline">
+                <Link
+                  href={`/notes?path=${encodeURIComponent(d.relPath)}`}
+                  className="text-accent hover:underline"
+                >
                   {d.name}
                 </Link>
               </li>

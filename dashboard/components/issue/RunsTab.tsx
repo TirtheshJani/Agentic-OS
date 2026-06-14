@@ -118,7 +118,7 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
             <select
               value={runtimeOverride}
               onChange={(e) => setRuntimeOverride(e.target.value)}
-              className="text-xs rounded border border-line2 bg-white dark:bg-gray-900 px-1.5 py-1"
+              className="text-xs rounded-card border border-line2 bg-surface text-ink px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-accent-line"
               title="Runtime for the next run"
             >
               <option value="">Agent default</option>
@@ -148,11 +148,14 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
 
       {runs.filter(r => r.endedAt != null).length > 0 && (
         <section>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Previous runs</h4>
-          <ul className="space-y-2">
+          <h4 className="font-label text-[10px] uppercase tracking-[0.14em] text-ink3 mb-2">Previous runs</h4>
+          <ul className="space-y-1.5">
             {runs.filter(r => r.endedAt != null).map(r => (
-              <li key={r.id} className="text-xs text-ink2 font-mono">
-                #{r.id} {r.exitStatus} ({new Date(r.startedAt).toLocaleString()} → {r.endedAt ? new Date(r.endedAt).toLocaleString() : "?"})
+              <li
+                key={r.id}
+                className="rounded-card border border-line bg-surface2 px-3 py-2 text-xs font-mono text-ink2"
+              >
+                <span className="text-ink3">#{r.id}</span> {r.exitStatus} ({new Date(r.startedAt).toLocaleString()} → {r.endedAt ? new Date(r.endedAt).toLocaleString() : "?"})
               </li>
             ))}
           </ul>

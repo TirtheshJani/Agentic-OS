@@ -13,7 +13,7 @@ export default async function ActivityPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <SectionHeader title="Activity" description="Every run across all projects, newest first." />
+      <SectionHeader title="Activity" description="Every run across all projects, newest first." kicker="LIVE FEED" />
       <ActivityFeed runs={runs} />
     </main>
   );

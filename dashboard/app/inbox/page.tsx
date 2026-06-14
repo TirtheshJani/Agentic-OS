@@ -3,6 +3,9 @@ import { openDb, getDb } from "@/lib/db";
 import { listIssues } from "@/lib/issues";
 import { ensureServerBooted } from "@/lib/server-init";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { Pill } from "@/components/common/Pill";
+import { StatusDot } from "@/components/common/StatusDot";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +67,7 @@ export default async function InboxPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-6">Inbox</h1>
+      <SectionHeader kicker="TRIAGE" title="Inbox" />
 
       {empty && (
         <EmptyState
@@ -75,22 +78,28 @@ export default async function InboxPage() {
 
       {reviewIssues.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
+          <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-3">
             Awaiting review ({reviewIssues.length})
           </h2>
           <ul className="space-y-2">
             {reviewIssues.map((i) => (
-              <li key={i.id} className="rounded-md border border-line p-3 text-sm flex items-center justify-between gap-2">
-                <span>
-                  <span className="font-medium">{i.title}</span>
-                  {interruptedIds.has(i.id) && (
-                    <span className="text-[10px] font-medium uppercase tracking-wide ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                      interrupted
-                    </span>
-                  )}
-                  <span className="text-xs text-ink3 ml-2">{i.projectSlug} · {i.assigneeSlug ?? "unassigned"}</span>
+              <li
+                key={i.id}
+                className="rounded-card border border-line bg-surface p-3 text-sm flex items-center justify-between gap-2 transition-colors hover:border-accent-line"
+              >
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-ink">{i.title}</span>
+                  {interruptedIds.has(i.id) && <Pill tone="warn">interrupted</Pill>}
+                  <span className="text-xs text-ink3">
+                    {i.projectSlug} · {i.assigneeSlug ?? "unassigned"}
+                  </span>
                 </span>
-                <Link href="/issues" className="text-xs text-accent hover:underline shrink-0">board →</Link>
+                <Link
+                  href="/issues"
+                  className="shrink-0 rounded-pill border border-line2 bg-surface px-3 py-1 text-xs text-ink2 transition-colors hover:border-accent-line hover:text-accent-ink"
+                >
+                  board →
+                </Link>
               </li>
             ))}
           </ul>
@@ -99,15 +108,20 @@ export default async function InboxPage() {
 
       {failedRuns.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
+          <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-3">
             Failed runs, last 7 days ({failedRuns.length})
           </h2>
           <ul className="space-y-2">
             {failedRuns.map((r) => (
-              <li key={r.id} className="rounded-md border border-red-200 dark:border-red-900/50 p-3 text-sm">
-                <span className="font-medium">{r.title}</span>
-                <span className="text-xs text-ink3 ml-2">
-                  run #{r.id} · {r.project_slug} · {new Date(r.ended_at).toLocaleString()}
+              <li
+                key={r.id}
+                className="rounded-card border border-danger-bg bg-surface p-3 text-sm flex flex-wrap items-center gap-2"
+              >
+                <StatusDot tone="danger" />
+                <span className="font-medium text-ink">{r.title}</span>
+                <span className="text-xs text-ink3">
+                  <span className="font-mono">run #{r.id}</span> · {r.project_slug} ·{" "}
+                  {new Date(r.ended_at).toLocaleString()}
                 </span>
               </li>
             ))}
@@ -117,19 +131,22 @@ export default async function InboxPage() {
 
       {digests.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-ink3 uppercase tracking-wide mb-3">
+          <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-3">
             Recent captures and digests
           </h2>
           <ul className="space-y-2">
             {digests.map((d) => (
-              <li key={d.path} className="rounded-md border border-line p-3 text-sm flex items-center justify-between gap-2">
-                <span>
-                  <span className="font-medium">{d.title}</span>
-                  <span className="text-xs text-ink3 ml-2 font-mono">{d.path}</span>
+              <li
+                key={d.path}
+                className="rounded-card border border-line bg-surface p-3 text-sm flex items-center justify-between gap-2 transition-colors hover:border-accent-line"
+              >
+                <span className="min-w-0 flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-ink">{d.title}</span>
+                  <span className="text-xs text-ink3 font-mono truncate">{d.path}</span>
                 </span>
                 <a
                   href={`obsidian://open?vault=vault&file=${encodeURIComponent(d.path)}`}
-                  className="text-xs text-purple-600 hover:underline shrink-0"
+                  className="shrink-0 rounded-pill border border-line2 bg-surface px-3 py-1 text-xs text-ink2 transition-colors hover:border-accent-line hover:text-accent-ink"
                 >
                   Obsidian →
                 </a>

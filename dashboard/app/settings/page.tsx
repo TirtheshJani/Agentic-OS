@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Button } from "@/components/common/Button";
 import { Field, Input } from "@/components/common/Field";
+import { Switch } from "@/components/common/Switch";
+import { Pill } from "@/components/common/Pill";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { FeatureCard } from "@/components/settings/FeatureCard";
 import { useStream } from "@/hooks/useStream";
 import type { FeatureKey } from "@/lib/settings";
@@ -67,6 +70,33 @@ interface RagStatus {
 
 const TABS = ["Features", "General", "Knowledge", "Docker", "Evals"] as const;
 type Tab = (typeof TABS)[number];
+
+/** Shared select styling matching the cosmic Field/Input tokens. */
+const selectClass =
+  "w-full rounded-card border border-line2 bg-surface2 text-ink px-3 py-1.5 text-sm focus:border-accent-line focus:outline-none";
+
+/** Switch row used by the non-Features tabs (toggle + label + hint). */
+function ToggleRow({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="text-sm">
+        <span className="font-medium text-ink">{label}</span>
+        <span className="text-ink3"> {hint}</span>
+      </span>
+      <Switch checked={checked} onChange={onChange} label={label} />
+    </div>
+  );
+}
 
 /** Display metadata for the feature flags, grouped per the mockup. */
 const FEATURE_GROUPS: Array<{ category: string; items: Array<{ key: FeatureKey; name: string; description: string }> }> = [
@@ -225,16 +255,18 @@ export default function SettingsPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6">
-      <h1 className="font-display text-2xl font-semibold mb-4">Settings</h1>
+      <SectionHeader kicker="CONTROL" title="Settings" />
 
-      <div className="flex gap-1 border-b border-line mb-5">
+      <div className="flex flex-wrap gap-1 rounded-pill border border-line bg-surface p-1 mb-5 w-fit">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={clsx(
-              "px-3 py-2 text-sm font-label uppercase tracking-wide text-[11px] border-b-2 -mb-px transition-colors",
-              tab === t ? "border-accent text-accent-ink font-semibold" : "border-transparent text-ink3 hover:text-ink"
+              "px-3.5 py-1.5 text-[11px] font-label uppercase tracking-wide rounded-pill transition-colors",
+              tab === t
+                ? "bg-accent-bg text-accent-ink"
+                : "text-ink2 hover:text-ink"
             )}
           >
             {t}
@@ -306,7 +338,7 @@ export default function SettingsPage() {
             <select
               value={settings.theme}
               onChange={(e) => setSettings({ ...settings, theme: e.target.value as SettingsData["theme"] })}
-              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+              className={selectClass}
             >
               <option value="system">system</option>
               <option value="light">light</option>
@@ -314,41 +346,31 @@ export default function SettingsPage() {
             </select>
           </Field>
 
-          <section className="rounded-card border border-line p-4 space-y-3">
-            <h2 className="text-sm font-semibold">Autonomy</h2>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autonomy.enabled}
-                onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, enabled: e.target.checked } })}
-              />
-              <span>
-                <span className="font-medium">Enable autonomy</span>
-                <span className="text-ink3"> (kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog)</span>
-              </span>
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autonomy.schedulerEnabled}
-                onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, schedulerEnabled: e.target.checked } })}
-              />
-              <span>
-                <span className="font-medium">In-dashboard scheduler</span>
-                <span className="text-ink3"> (fires automations/remote/*.md crons as queued issues)</span>
-              </span>
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autonomy.llmRouting}
-                onChange={(e) => setSettings({ ...settings, autonomy: { ...settings.autonomy, llmRouting: e.target.checked } })}
-              />
-              <span>
-                <span className="font-medium">LLM routing fallback</span>
-                <span className="text-ink3"> (reserved; one headless claude call when keyword routing finds nothing)</span>
-              </span>
-            </label>
+          <section className="rounded-card border border-line bg-surface p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="font-label uppercase tracking-wide text-[11px] text-ink">Autonomy</h2>
+              <Pill tone="danger">kill switch</Pill>
+            </div>
+            <ToggleRow
+              checked={settings.autonomy.enabled}
+              onChange={(checked) => setSettings({ ...settings, autonomy: { ...settings.autonomy, enabled: checked } })}
+              label="Enable autonomy"
+              hint="(kill switch: when off, no auto-routing, no scheduler, handoffs land in backlog)"
+            />
+            <ToggleRow
+              checked={settings.autonomy.schedulerEnabled}
+              onChange={(checked) =>
+                setSettings({ ...settings, autonomy: { ...settings.autonomy, schedulerEnabled: checked } })
+              }
+              label="In-dashboard scheduler"
+              hint="(fires automations/remote/*.md crons as queued issues)"
+            />
+            <ToggleRow
+              checked={settings.autonomy.llmRouting}
+              onChange={(checked) => setSettings({ ...settings, autonomy: { ...settings.autonomy, llmRouting: checked } })}
+              label="LLM routing fallback"
+              hint="(reserved; one headless claude call when keyword routing finds nothing)"
+            />
             <Field label="Max handoff chain depth" hint="Children past this depth go to backlog instead of auto-running.">
               <Input
                 type="number"
@@ -368,8 +390,8 @@ export default function SettingsPage() {
 
       {tab === "Knowledge" && (
         <div className="space-y-4">
-          <section className="rounded-card border border-line p-4 space-y-3">
-            <h2 className="text-sm font-semibold">Vault RAG</h2>
+          <section className="rounded-card border border-line bg-surface p-4 space-y-3">
+            <h2 className="font-label uppercase tracking-wide text-[11px] text-ink">Vault RAG</h2>
             <Field label="Embedding provider" hint="none degrades retrieval to keyword + link-graph only.">
               <select
                 value={settings.rag.embeddingProvider}
@@ -379,7 +401,7 @@ export default function SettingsPage() {
                     rag: { ...settings.rag, embeddingProvider: e.target.value as SettingsData["rag"]["embeddingProvider"] },
                   })
                 }
-                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                className={selectClass}
               >
                 <option value="none">none</option>
                 <option value="gemini">gemini</option>
@@ -405,7 +427,7 @@ export default function SettingsPage() {
                     rag: { ...settings.rag, answerProvider: e.target.value as SettingsData["rag"]["answerProvider"] },
                   })
                 }
-                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                className={selectClass}
               >
                 <option value="gemini-cli">gemini-cli</option>
                 <option value="claude-cli">claude-cli</option>
@@ -425,34 +447,26 @@ export default function SettingsPage() {
             </Button>
           </section>
 
-          <section className="rounded-card border border-line p-4 space-y-3">
-            <h2 className="text-sm font-semibold">LightRAG</h2>
+          <section className="rounded-card border border-line bg-surface p-4 space-y-3">
+            <h2 className="font-label uppercase tracking-wide text-[11px] text-ink">LightRAG</h2>
             <Field label="Base URL" hint="Your local LightRAG instance.">
               <Input
                 value={settings.lightrag.baseUrl}
                 onChange={(e) => setSettings({ ...settings, lightrag: { ...settings.lightrag, baseUrl: e.target.value } })}
               />
             </Field>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.lightrag.autoIngest}
-                onChange={(e) =>
-                  setSettings({ ...settings, lightrag: { ...settings.lightrag, autoIngest: e.target.checked } })
-                }
-              />
-              <span>
-                <span className="font-medium">Auto-ingest finished runs</span>
-                <span className="text-ink3">
-                  {" "}
-                  (also requires lightrag-ingest: true in the project&apos;s PROJECT.md; clean exits only)
-                </span>
-              </span>
-            </label>
+            <ToggleRow
+              checked={settings.lightrag.autoIngest}
+              onChange={(checked) =>
+                setSettings({ ...settings, lightrag: { ...settings.lightrag, autoIngest: checked } })
+              }
+              label="Auto-ingest finished runs"
+              hint="(also requires lightrag-ingest: true in the project's PROJECT.md; clean exits only)"
+            />
           </section>
 
-          <section className="rounded-card border border-line p-4 space-y-3">
-            <h2 className="text-sm font-semibold">Export</h2>
+          <section className="rounded-card border border-line bg-surface p-4 space-y-3">
+            <h2 className="font-label uppercase tracking-wide text-[11px] text-ink">Export</h2>
             <Field
               label="NotebookLM export folder"
               hint='Point at a Google Drive for Desktop synced folder (e.g. G:\My Drive\NotebookLM-Inbox) so bundles appear in Drive. Empty = vault/outputs/notebooklm.'
@@ -468,17 +482,12 @@ export default function SettingsPage() {
 
       {tab === "Docker" && (
         <div className="space-y-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.docker.enabled}
-              onChange={(e) => setSettings({ ...settings, docker: { ...settings.docker, enabled: e.target.checked } })}
-            />
-            <span>
-              <span className="font-medium">Enable Docker management</span>
-              <span className="text-ink3"> (the /docker view talks to the local daemon)</span>
-            </span>
-          </label>
+          <ToggleRow
+            checked={settings.docker.enabled}
+            onChange={(checked) => setSettings({ ...settings, docker: { ...settings.docker, enabled: checked } })}
+            label="Enable Docker management"
+            hint="(the /docker view talks to the local daemon)"
+          />
           <Field
             label="Compose allowlist"
             hint="Comma-separated compose project names whose start/stop/restart is permitted."
@@ -501,17 +510,12 @@ export default function SettingsPage() {
 
       {tab === "Evals" && (
         <div className="space-y-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.evals.autoGradeEnabled}
-              onChange={(e) => setSettings({ ...settings, evals: { ...settings.evals, autoGradeEnabled: e.target.checked } })}
-            />
-            <span>
-              <span className="font-medium">Auto-grade finished runs</span>
-              <span className="text-ink3"> (also requires the global autonomy switch; one judge CLI call per grade)</span>
-            </span>
-          </label>
+          <ToggleRow
+            checked={settings.evals.autoGradeEnabled}
+            onChange={(checked) => setSettings({ ...settings, evals: { ...settings.evals, autoGradeEnabled: checked } })}
+            label="Auto-grade finished runs"
+            hint="(also requires the global autonomy switch; one judge CLI call per grade)"
+          />
           <Field label="Judge provider" hint="inherit follows the vault RAG answer provider.">
             <select
               value={settings.evals.judgeProvider}
@@ -521,7 +525,7 @@ export default function SettingsPage() {
                   evals: { ...settings.evals, judgeProvider: e.target.value as SettingsData["evals"]["judgeProvider"] },
                 })
               }
-              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+              className={selectClass}
             >
               <option value="inherit">inherit</option>
               <option value="gemini-cli">gemini-cli</option>
@@ -560,8 +564,8 @@ export default function SettingsPage() {
             />
           </Field>
 
-          <section className="rounded-card border border-line p-4 space-y-3">
-            <h2 className="text-sm font-semibold">Role assignment</h2>
+          <section className="rounded-card border border-line bg-surface p-4 space-y-3">
+            <h2 className="font-label uppercase tracking-wide text-[11px] text-ink">Role assignment</h2>
             <p className="text-sm text-ink3">
               Pin each handoff role to a registered runtime. Unset uses today&apos;s default runtime selection; the validate
               seat also selects the eval judge.
@@ -571,7 +575,7 @@ export default function SettingsPage() {
                 <select
                   value={settings.roleAssignment[role] ?? UNSET}
                   onChange={(e) => setRole(role, e.target.value)}
-                  className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                  className={selectClass}
                 >
                   <option value={UNSET}>unset</option>
                   {runtimeIds.map((id) => (

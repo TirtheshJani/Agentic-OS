@@ -78,19 +78,29 @@ export function CrewPickerDrawer({ projectSlug, projectCapabilities, currentCrew
             const checked = selected.has(a.slug);
             return (
               <li key={a.slug}>
-                <label className={"flex items-start gap-3 p-3 rounded-md border " + (checked ? "border-blue-400 bg-accent-bg" : "border-line")}>
+                <label
+                  className={
+                    "flex items-start gap-3 rounded-card border p-3 transition-colors " +
+                    (checked ? "border-accent-line bg-accent-bg" : "border-line hover:border-accent-line")
+                  }
+                >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggle(a.slug)}
-                    className="mt-1"
+                    className="mt-1 accent-accent"
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">{a.name}</div>
-                    <div className="text-xs text-ink3 font-mono">{a.slug}</div>
-                    <div className="flex gap-1 flex-wrap mt-1">
-                      {a.skills.map(s => (
-                        <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-surface2">{s}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-ink">{a.name}</div>
+                    <div className="font-mono text-xs text-ink3">{a.slug}</div>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {a.skills.map((s) => (
+                        <span
+                          key={s}
+                          className="rounded-pill bg-surface2 px-1.5 py-0.5 font-label text-[9px] uppercase tracking-wide text-ink3"
+                        >
+                          {s}
+                        </span>
                       ))}
                     </div>
                   </div>

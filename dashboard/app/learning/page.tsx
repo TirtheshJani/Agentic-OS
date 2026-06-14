@@ -5,6 +5,7 @@ import { Button } from "@/components/common/Button";
 import { Modal } from "@/components/common/Modal";
 import { Field, Input, Textarea } from "@/components/common/Field";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import type { LearningTopic } from "@/lib/learning/topics";
 
 interface AgentOption {
@@ -59,15 +60,16 @@ export default function LearningPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-semibold">Learning</h1>
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          New topic
-        </Button>
-      </div>
-      <p className="text-sm text-ink3 mb-6">
-        Topics live in vault/learning/. Sessions are live tutoring runs in the terminal; tutors write session logs back to the vault.
-      </p>
+      <SectionHeader
+        kicker="TUTOR"
+        title="Learning"
+        description="Topics live in vault/learning/. Sessions are live tutoring runs in the terminal; tutors write session logs back to the vault."
+        action={
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            New topic
+          </Button>
+        }
+      />
 
       {!topics && <p className="text-sm text-ink3">Loading...</p>}
       {topics && topics.length === 0 && (
@@ -79,12 +81,12 @@ export default function LearningPage() {
             <Link
               key={t.slug}
               href={`/learning/${t.slug}`}
-              className="rounded-md border border-line p-4 hover:bg-surface2"
+              className="rounded-card border border-line bg-surface p-4 transition-colors hover:border-accent-line"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{t.title}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-sm text-ink">{t.title}</span>
                 {t.tutorSlug && (
-                  <span className="rounded bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 text-xs text-purple-700 dark:text-purple-300">
+                  <span className="rounded-pill bg-accent-bg px-2 py-0.5 font-label text-[9px] uppercase tracking-wide text-accent-ink">
                     {t.tutorSlug}
                   </span>
                 )}
@@ -108,7 +110,7 @@ export default function LearningPage() {
               <select
                 value={tutor}
                 onChange={(e) => setTutor(e.target.value)}
-                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                className="rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink w-full"
               >
                 {(agents.length > 0 ? agents : [{ slug: "socratic-tutor", name: "socratic-tutor" }]).map((a) => (
                   <option key={a.slug} value={a.slug}>

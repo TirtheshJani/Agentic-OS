@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
+import { Pill } from "@/components/common/Pill";
 import type { SessionMessage } from "@/lib/sessions/parseClaude";
 
 interface DetailResponse {
@@ -53,42 +55,44 @@ export function SessionDetail({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-line p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-2">
+      <Card className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
         <div>
-          <span className="text-ink3">Provider</span>
-          <div>{summary.provider}</div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Provider</span>
+          <div className="mt-0.5">
+            <Pill tone={summary.provider === "claude-code" ? "warn" : "accent"}>{summary.provider}</Pill>
+          </div>
         </div>
         <div>
-          <span className="text-ink3">Turns (user/assistant)</span>
-          <div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Turns (user/assistant)</span>
+          <div className="mt-0.5 font-mono text-ink">
             {summary.turnsUser}/{summary.turnsAssistant}
           </div>
         </div>
         <div>
-          <span className="text-ink3">Tool calls</span>
-          <div>{summary.toolCalls}</div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Tool calls</span>
+          <div className="mt-0.5 font-mono text-ink">{summary.toolCalls}</div>
         </div>
         <div>
-          <span className="text-ink3">Tokens in/out</span>
-          <div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Tokens in/out</span>
+          <div className="mt-0.5 font-mono text-ink">
             {summary.tokensIn ?? "n/a"} / {summary.tokensOut ?? "n/a"}
           </div>
         </div>
         <div className="col-span-2">
-          <span className="text-ink3">Working directory</span>
-          <div className="truncate" title={summary.projectDir ?? undefined}>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Working directory</span>
+          <div className="mt-0.5 truncate font-mono text-ink2" title={summary.projectDir ?? undefined}>
             {summary.projectDir ?? "?"}
           </div>
         </div>
         <div>
-          <span className="text-ink3">Started</span>
-          <div>{summary.startedAt ? new Date(summary.startedAt).toLocaleString() : "?"}</div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Started</span>
+          <div className="mt-0.5 text-ink">{summary.startedAt ? new Date(summary.startedAt).toLocaleString() : "?"}</div>
         </div>
         <div>
-          <span className="text-ink3">Est. cost</span>
-          <div>{summary.costEstimate != null ? `$${summary.costEstimate.toFixed(2)}` : "n/a"}</div>
+          <span className="font-label uppercase tracking-wide text-[10px] text-ink3">Est. cost</span>
+          <div className="mt-0.5 font-mono text-ink">{summary.costEstimate != null ? `$${summary.costEstimate.toFixed(2)}` : "n/a"}</div>
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-3">
         {data.messages.map((m, i) => (
@@ -96,8 +100,8 @@ export function SessionDetail({ id }: { id: string }) {
             key={i}
             className={
               m.role === "user"
-                ? "rounded-md border-l-4 border-blue-400 bg-accent-bg p-3"
-                : "rounded-md border-l-4 border-line2 bg-raise p-3"
+                ? "rounded-card border border-line border-l-4 border-l-accent bg-accent-bg p-3"
+                : "rounded-card border border-line border-l-4 border-l-line2 bg-raise p-3"
             }
           >
             <div className="text-xs text-ink3 mb-1">
@@ -105,11 +109,11 @@ export function SessionDetail({ id }: { id: string }) {
               {m.model ? ` · ${m.model}` : ""}
               {m.timestamp ? ` · ${new Date(m.timestamp).toLocaleTimeString()}` : ""}
             </div>
-            {m.text && <pre className="whitespace-pre-wrap text-sm font-sans">{m.text}</pre>}
+            {m.text && <pre className="whitespace-pre-wrap text-sm font-sans text-ink">{m.text}</pre>}
             {m.toolCalls.map((t, j) => (
               <details key={j} className="mt-1 text-xs">
                 <summary className="cursor-pointer text-ink2">tool: {t.name}</summary>
-                <pre className="whitespace-pre-wrap mt-1 p-2 rounded bg-surface2 overflow-x-auto">
+                <pre className="whitespace-pre-wrap mt-1 p-2 rounded-card bg-surface2 font-mono text-ink2 overflow-x-auto">
                   {t.inputPreview}
                 </pre>
               </details>

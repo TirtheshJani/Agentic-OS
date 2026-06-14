@@ -116,7 +116,7 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
       <hr className="my-6 border-line" />
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Runs</h3>
+        <h3 className="font-label text-[10px] uppercase tracking-[0.14em] text-ink3 mb-3">Runs</h3>
         <RunsTab
           issueId={issue.id}
           projectSlug={issue.projectSlug}
@@ -134,7 +134,7 @@ export function IssueDrawer({ issueId, crew, onClose }: Props) {
       <hr className="my-6 border-line" />
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-3">Thread</h3>
+        <h3 className="font-label text-[10px] uppercase tracking-[0.14em] text-ink3 mb-3">Thread</h3>
         <ThreadList issueId={issue.id} />
         <div className="mt-3">
           <ThreadComposer issueId={issue.id} />

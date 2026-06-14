@@ -15,9 +15,9 @@ export interface RetrievedChunk {
 }
 
 const retrieverStyles: Record<Retriever, string> = {
-  vector: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  fts: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  graph: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+  vector: "bg-accent-bg text-accent-ink",
+  fts: "bg-ok-bg text-ok",
+  graph: "bg-surface2 text-ink2",
 };
 
 interface ChunkCardProps {
@@ -28,26 +28,32 @@ interface ChunkCardProps {
 export function ChunkCard({ chunk, onOpenNote }: ChunkCardProps) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <li className="rounded-md border border-line p-3 text-sm">
+    <li className="rounded-card border border-line bg-surface p-3 text-sm transition-colors hover:border-accent-line">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <button
           onClick={() => onOpenNote(chunk.notePath, chunk.title)}
-          className="font-medium hover:underline text-left"
+          className="font-medium text-ink hover:text-accent text-left"
         >
           {chunk.title}
         </button>
         <span className="text-xs text-ink3 font-mono">{chunk.notePath}</span>
         {chunk.heading && <span className="text-xs text-ink3">{chunk.heading}</span>}
-        <span className="text-xs text-ink3 ml-auto">{chunk.score.toFixed(3)}</span>
+        <span className="text-xs text-ink3 font-mono ml-auto">{chunk.score.toFixed(3)}</span>
         {chunk.retrievers.map((r) => (
-          <span key={r} className={clsx("text-xs px-1.5 py-0.5 rounded", retrieverStyles[r])}>
+          <span
+            key={r}
+            className={clsx(
+              "rounded-pill px-1.5 py-0.5 font-label text-[9px] uppercase tracking-wide",
+              retrieverStyles[r]
+            )}
+          >
             {r}
           </span>
         ))}
       </div>
       <pre
         className={clsx(
-          "text-xs whitespace-pre-wrap font-mono leading-relaxed overflow-y-auto",
+          "text-xs whitespace-pre-wrap font-mono leading-relaxed text-ink2 overflow-y-auto",
           expanded ? "max-h-96" : "max-h-24"
         )}
       >

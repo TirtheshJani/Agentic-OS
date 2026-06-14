@@ -2,6 +2,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { Bars } from "@/components/charts/Bars";
 import { useStream } from "@/hooks/useStream";
 
@@ -21,13 +22,13 @@ interface EvalRow {
   judgeProvider: string | null;
 }
 
-const GRADE_COLORS: Record<string, string> = {
-  A: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-  B: "bg-lime-100 text-lime-700 dark:bg-lime-950 dark:text-lime-300",
-  C: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
-  D: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-  F: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-};
+// Grade-chip tone matches OverviewCapacity: A/B → ok, C → warn, else danger.
+function gradeColor(grade: string): string {
+  const g = grade[0]?.toUpperCase();
+  if (g === "A" || g === "B") return "bg-ok-bg text-ok";
+  if (g === "C") return "bg-warn-bg text-warn";
+  return "bg-danger-bg text-danger";
+}
 
 // Behavioral validator results (spec 0032 / ADR-025) ride along on the persisted
 // rubric only when the harness ran. The page reads them read-only; the shape
@@ -45,9 +46,9 @@ interface ParsedRubric {
 }
 
 const BEHAVIORAL_COLORS: Record<BehavioralEntry["status"], string> = {
-  pass: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-  fail: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-  inconclusive: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  pass: "bg-ok-bg text-ok",
+  fail: "bg-danger-bg text-danger",
+  inconclusive: "bg-warn-bg text-warn",
 };
 
 export default function EvalsPage() {
@@ -101,16 +102,17 @@ export default function EvalsPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-1">Evals</h1>
-      <p className="text-sm text-ink3 mb-4">
-        Deterministic run metrics plus optional LLM-judged rubric scores (subjective; one CLI call per grade).
-      </p>
-      <div className="flex items-center gap-3 mb-6">
-        <Button onClick={() => grade("batch")} disabled={busy !== null}>
-          {busy === "batch" ? "Grading batch..." : "Grade ungraded runs"}
-        </Button>
-        {error && <span className="text-sm text-danger">{error}</span>}
-      </div>
+      <SectionHeader
+        kicker="JUDGE"
+        title="Evals"
+        description="Deterministic run metrics plus optional LLM-judged rubric scores (subjective; one CLI call per grade)."
+        action={
+          <Button variant="primary" onClick={() => grade("batch")} disabled={busy !== null}>
+            {busy === "batch" ? "Grading batch..." : "Grade ungraded runs"}
+          </Button>
+        }
+      />
+      {error && <p className="text-sm text-danger mb-6">{error}</p>}
 
       {!rows && !error && <p className="text-sm text-ink3">Loading evals...</p>}
       {rows && rows.length === 0 && (
@@ -119,22 +121,23 @@ export default function EvalsPage() {
 
       {graded.length > 0 && (
         <section className="mb-6 max-w-md">
-          <h2 className="text-sm font-semibold mb-2">Grade distribution</h2>
-          <Bars labels={["A", "B", "C", "D", "F"]} series={[{ label: "runs", values: distribution, fill: "rgb(59 130 246)" }]} height={100} />
+          <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">Grade distribution</h2>
+          <Bars labels={["A", "B", "C", "D", "F"]} series={[{ label: "runs", values: distribution, fill: "var(--accent)" }]} height={100} />
         </section>
       )}
 
       {rows && rows.length > 0 && (
+        <div className="rounded-card border border-line bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-ink3 border-b border-line">
-              <th className="py-1.5 pr-2">Run</th>
-              <th className="py-1.5 pr-2">Issue</th>
-              <th className="py-1.5 pr-2">Agent</th>
-              <th className="py-1.5 pr-2">Exit</th>
-              <th className="py-1.5 pr-2">Metrics</th>
-              <th className="py-1.5 pr-2">Grade</th>
-              <th className="py-1.5 pr-2"></th>
+            <tr className="text-left border-b border-line font-label uppercase tracking-wide text-[10px] text-ink3">
+              <th className="py-2 px-3">Run</th>
+              <th className="py-2 px-3">Issue</th>
+              <th className="py-2 px-3">Agent</th>
+              <th className="py-2 px-3">Exit</th>
+              <th className="py-2 px-3">Metrics</th>
+              <th className="py-2 px-3">Grade</th>
+              <th className="py-2 px-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -144,12 +147,12 @@ export default function EvalsPage() {
               const behavioral = rubric?.behavioral?.length ? rubric.behavioral : null;
               return (
                 <Fragment key={r.runId}>
-                <tr className="border-b border-line align-top">
-                  <td className="py-1.5 pr-2">{r.runId}</td>
-                  <td className="py-1.5 pr-2 max-w-64 truncate" title={r.issueTitle}>
+                <tr className="border-b border-line align-top transition-colors hover:bg-surface2">
+                  <td className="py-2 px-3 font-mono text-ink2">{r.runId}</td>
+                  <td className="py-2 px-3 max-w-64 truncate" title={r.issueTitle}>
                     {r.parentIssueId != null && (
                       <span
-                        className="mr-1 rounded bg-blue-100 px-1 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        className="mr-1 rounded-pill bg-accent-bg px-1.5 py-0.5 text-[10px] font-medium text-accent-ink"
                         title={`Revision of issue ${r.parentIssueId}`}
                       >
                         ↻ rev of #{r.parentIssueId}
@@ -157,30 +160,31 @@ export default function EvalsPage() {
                     )}
                     {r.projectSlug}: {r.issueTitle}
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2 px-3">
                     {r.agentSlug} <span className="text-ink3">({r.runtimeId})</span>
                   </td>
-                  <td className="py-1.5 pr-2">{r.exitStatus}</td>
-                  <td className="py-1.5 pr-2 text-xs text-ink3">
+                  <td className="py-2 px-3">{r.exitStatus}</td>
+                  <td className="py-2 px-3 text-xs text-ink3">
                     {metrics
                       ? `${metrics.durationMs != null ? `${Math.round((metrics.durationMs as number) / 1000)}s` : "?"} · ${
                           metrics.toolCalls ?? "?"
                         } tools · ${metrics.tokensOut ?? "n/a"} out`
                       : "-"}
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2 px-3">
                     {r.grade ? (
                       <span
-                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${GRADE_COLORS[r.grade] ?? ""}`}
+                        className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-xs font-medium ${gradeColor(r.grade)}`}
                         title={rubric ? String(rubric.rationale ?? "") : undefined}
                       >
-                        {r.grade} {r.score != null ? `(${Math.round(r.score)})` : ""}
+                        {r.grade}{" "}
+                        {r.score != null ? <span className="font-mono">({Math.round(r.score)})</span> : ""}
                       </span>
                     ) : (
                       <span className="text-xs text-ink3">ungraded</span>
                     )}
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2 px-3">
                     <Button onClick={() => grade(r.runId)} disabled={busy !== null}>
                       {busy === r.runId ? "Grading..." : r.grade ? "Re-grade" : "Grade"}
                     </Button>
@@ -188,13 +192,13 @@ export default function EvalsPage() {
                 </tr>
                 {behavioral && (
                   <tr className="border-b border-line">
-                    <td className="pb-2 pr-2 text-xs text-ink3" colSpan={7}>
+                    <td className="pb-2 px-3 text-xs text-ink3" colSpan={7}>
                       <span className="mr-2 font-medium">Behavioral checks</span>
                       <span className="inline-flex flex-wrap gap-1.5 align-middle">
                         {behavioral.map((b, i) => (
                           <span
                             key={i}
-                            className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${BEHAVIORAL_COLORS[b.status]}`}
+                            className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[11px] font-medium ${BEHAVIORAL_COLORS[b.status]}`}
                             title={`${b.assertion}: ${b.reason}`}
                           >
                             {b.status} · {b.assertion}
@@ -219,6 +223,7 @@ export default function EvalsPage() {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </main>
   );

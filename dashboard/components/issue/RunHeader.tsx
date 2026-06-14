@@ -1,8 +1,9 @@
 "use client";
-import clsx from "clsx";
 import type { RunData } from "@/hooks/useRun";
 import { useRuntime, useRuntimes } from "@/hooks/useRuntimes";
 import { RuntimeBadge } from "@/components/common/RuntimeBadge";
+import { StatusDot } from "@/components/common/StatusDot";
+import { Button } from "@/components/common/Button";
 
 interface Props {
   run: RunData;
@@ -23,35 +24,29 @@ export function RunHeader({ run, onOpenInTerminal }: Props) {
   const canEscape = runtimes == null ? true : runtime?.capabilities.externalTerminalEscape === true;
 
   return (
-    <div className="flex items-center justify-between text-xs font-mono bg-surface2 rounded-md p-2 mb-2">
+    <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface2 px-3 py-2 mb-2 text-xs">
       <div className="flex items-center gap-3 min-w-0">
-        <span className={clsx(
-          "px-1.5 py-0.5 rounded font-sans",
-          isActive ? "bg-green-200 dark:bg-green-900 text-ok" : "bg-surface2"
-        )}>
+        <span className="flex items-center gap-1.5 font-label text-[10px] uppercase tracking-wide text-ink2">
+          <StatusDot tone={isActive ? "ok" : "neutral"} pulse={isActive} />
           {status}
         </span>
         <RuntimeBadge runtimeId={run.runtimeId} />
-        <span>#{run.id}</span>
-        <span className="truncate" title={run.worktreePath}>{run.worktreePath}</span>
+        <span className="font-mono text-ink3">#{run.id}</span>
+        <span className="truncate font-mono text-ink3" title={run.worktreePath}>{run.worktreePath}</span>
         {run.ptySessionId && (
-          <span className="text-ink3" title={run.ptySessionId}>session: {run.ptySessionId.slice(0, 8)}</span>
+          <span className="font-mono text-ink3" title={run.ptySessionId}>session: {run.ptySessionId.slice(0, 8)}</span>
         )}
       </div>
       {canEscape && (
-        <button
+        <Button
+          variant="secondary"
           onClick={onOpenInTerminal}
           disabled={!run.ptySessionId}
-          className={clsx(
-            "text-xs px-2 py-0.5 rounded font-sans",
-            run.ptySessionId
-              ? "bg-accent text-white hover:opacity-90"
-              : "bg-gray-300 dark:bg-gray-700 text-ink3 cursor-not-allowed"
-          )}
+          className="shrink-0 px-2.5 py-1 text-xs"
           title={run.ptySessionId ? "Open in external terminal" : "Waiting for session ID"}
         >
           Open in terminal
-        </button>
+        </Button>
       )}
     </div>
   );

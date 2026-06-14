@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bars } from "@/components/charts/Bars";
 import { Heatmap } from "@/components/charts/Heatmap";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { StatCard } from "@/components/common/StatCard";
 
 interface Analytics {
   daily: Array<{ day: string; tokensIn: number; tokensOut: number; sessions: number; cost: number | null }>;
@@ -40,32 +42,34 @@ export default function AnalyticsPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-1">Analytics</h1>
-      <p className="text-sm text-ink3 mb-4">
-        Token usage and run outcomes across CLI sessions. Costs are estimates; subscription usage does not bill per token.
-      </p>
-
-      <div className="flex items-center gap-2 mb-6">
-        <select
-          value={days}
-          onChange={(e) => setDays(e.target.value)}
-          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
-        >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="all">All time</option>
-        </select>
-        <select
-          value={provider}
-          onChange={(e) => setProvider(e.target.value)}
-          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
-        >
-          <option value="">All providers</option>
-          <option value="claude-code">claude-code</option>
-          <option value="gemini-cli">gemini-cli</option>
-        </select>
-      </div>
+      <SectionHeader
+        kicker="USAGE & COST"
+        title="Analytics"
+        description="Token usage and run outcomes across CLI sessions. Costs are estimates; subscription usage does not bill per token."
+        action={
+          <>
+            <select
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              className="rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink"
+            >
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              className="rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink"
+            >
+              <option value="">All providers</option>
+              <option value="claude-code">claude-code</option>
+              <option value="gemini-cli">gemini-cli</option>
+            </select>
+          </>
+        }
+      />
 
       {error && <p className="text-sm text-danger">Failed to load analytics: {error}</p>}
       {!data && !error && <p className="text-sm text-ink3">Loading analytics...</p>}
@@ -80,73 +84,74 @@ export default function AnalyticsPage() {
               ["Est. cost", data.totals.cost != null ? `$${data.totals.cost.toFixed(2)}` : "n/a"],
               ["Runs done/failed", `${data.totals.runsDone}/${data.totals.runsFailed}`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-md border border-line p-3">
-                <div className="text-xs text-ink3">{label}</div>
-                <div className="text-lg font-semibold">{value}</div>
-              </div>
+              <StatCard key={label} label={label} value={value} />
             ))}
           </div>
 
           <section>
-            <h2 className="text-sm font-semibold mb-2">Tokens per day</h2>
+            <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">Tokens per day</h2>
             <Bars
               labels={data.daily.map((d) => d.day)}
               series={[
-                { label: "in", values: data.daily.map((d) => d.tokensIn), fill: "rgb(59 130 246)" },
-                { label: "out", values: data.daily.map((d) => d.tokensOut), fill: "rgb(16 185 129)" },
+                { label: "in", values: data.daily.map((d) => d.tokensIn), fill: "var(--accent)" },
+                { label: "out", values: data.daily.map((d) => d.tokensOut), fill: "var(--ok)" },
               ]}
             />
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold mb-2">Activity</h2>
+            <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">Activity</h2>
             <Heatmap data={data.daily.map((d) => ({ day: d.day, value: d.sessions }))} />
           </section>
 
           <div className="grid md:grid-cols-2 gap-6">
             <section>
-              <h2 className="text-sm font-semibold mb-2">By model</h2>
-              <table className="w-full text-sm">
+              <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">By model</h2>
+              <table className="w-full border-separate border-spacing-y-1.5 text-sm">
                 <thead>
-                  <tr className="text-left text-ink3 border-b border-line">
-                    <th className="py-1 pr-2">Model</th>
-                    <th className="py-1 pr-2">In</th>
-                    <th className="py-1 pr-2">Out</th>
-                    <th className="py-1 pr-2">Turns</th>
-                    <th className="py-1 pr-2">Est. cost</th>
+                  <tr className="text-left font-label uppercase tracking-wide text-[10px] text-ink3">
+                    <th className="px-3 py-1 font-normal">Model</th>
+                    <th className="px-3 py-1 font-normal">In</th>
+                    <th className="px-3 py-1 font-normal">Out</th>
+                    <th className="px-3 py-1 font-normal">Turns</th>
+                    <th className="px-3 py-1 font-normal">Est. cost</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.byModel.map((m) => (
-                    <tr key={m.model} className="border-b border-line">
-                      <td className="py-1 pr-2">{m.model}</td>
-                      <td className="py-1 pr-2">{fmt(m.tokensIn)}</td>
-                      <td className="py-1 pr-2">{fmt(m.tokensOut)}</td>
-                      <td className="py-1 pr-2">{m.turns}</td>
-                      <td className="py-1 pr-2">{m.cost != null ? `$${m.cost.toFixed(2)}` : "n/a"}</td>
+                    <tr key={m.model} className="rounded-card border border-line bg-surface">
+                      <td className="px-3 py-2 rounded-l-card border-y border-l border-line text-ink">{m.model}</td>
+                      <td className="px-3 py-2 border-y border-line font-mono text-ink">{fmt(m.tokensIn)}</td>
+                      <td className="px-3 py-2 border-y border-line font-mono text-ink">{fmt(m.tokensOut)}</td>
+                      <td className="px-3 py-2 border-y border-line font-mono text-ink">{m.turns}</td>
+                      <td className="px-3 py-2 rounded-r-card border-y border-r border-line font-mono text-ink">
+                        {m.cost != null ? `$${m.cost.toFixed(2)}` : "n/a"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </section>
             <section>
-              <h2 className="text-sm font-semibold mb-2">By project</h2>
-              <table className="w-full text-sm">
+              <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">By project</h2>
+              <table className="w-full border-separate border-spacing-y-1.5 text-sm">
                 <thead>
-                  <tr className="text-left text-ink3 border-b border-line">
-                    <th className="py-1 pr-2">Project</th>
-                    <th className="py-1 pr-2">Sessions</th>
-                    <th className="py-1 pr-2">In</th>
-                    <th className="py-1 pr-2">Out</th>
+                  <tr className="text-left font-label uppercase tracking-wide text-[10px] text-ink3">
+                    <th className="px-3 py-1 font-normal">Project</th>
+                    <th className="px-3 py-1 font-normal">Sessions</th>
+                    <th className="px-3 py-1 font-normal">In</th>
+                    <th className="px-3 py-1 font-normal">Out</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.byProject.map((p) => (
-                    <tr key={p.projectSlug} className="border-b border-line">
-                      <td className="py-1 pr-2">{p.projectSlug}</td>
-                      <td className="py-1 pr-2">{p.sessions}</td>
-                      <td className="py-1 pr-2">{fmt(p.tokensIn)}</td>
-                      <td className="py-1 pr-2">{fmt(p.tokensOut)}</td>
+                    <tr key={p.projectSlug} className="rounded-card border border-line bg-surface">
+                      <td className="px-3 py-2 rounded-l-card border-y border-l border-line text-ink">{p.projectSlug}</td>
+                      <td className="px-3 py-2 border-y border-line font-mono text-ink">{p.sessions}</td>
+                      <td className="px-3 py-2 border-y border-line font-mono text-ink">{fmt(p.tokensIn)}</td>
+                      <td className="px-3 py-2 rounded-r-card border-y border-r border-line font-mono text-ink">
+                        {fmt(p.tokensOut)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -52,15 +52,17 @@ export default function Home() {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <SectionHeader
+        kicker="Ad astra per aspera"
+        size="lg"
         title="Command Center"
         description="Delegate recurring work to agents; watch it run."
         action={
           <div className="relative">
             <details className="group">
-              <summary className="list-none cursor-pointer text-sm px-3 py-1.5 rounded-md border border-line2 hover:border-accent-line">
+              <summary className="list-none cursor-pointer rounded-pill bg-accent px-4 py-1.5 text-sm font-medium text-white shadow-glow">
                 + New Project
               </summary>
-              <div className="absolute right-0 mt-1 w-56 rounded-md border border-line bg-surface shadow-card z-10">
+              <div className="absolute right-0 z-10 mt-1 w-56 rounded-card border border-line bg-surface shadow-card">
                 <button
                   onClick={() => setDialogMode("clone")}
                   className="block w-full text-left px-3 py-2 text-sm hover:bg-surface2"
@@ -121,7 +123,7 @@ export default function Home() {
                 name={p.name}
                 path={p.path}
                 repo={p.repo}
-                crewSize={p.crew.length}
+                crew={p.crew}
                 capabilities={p.capabilities}
                 lastModified={p.lastModified}
               />

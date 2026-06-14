@@ -11,10 +11,9 @@ interface Props {
 
 function gradeColor(grade: string): string {
   const g = grade[0]?.toUpperCase();
-  if (g === "A") return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
-  if (g === "B") return "bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-300";
-  if (g === "C") return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
-  return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
+  if (g === "A" || g === "B") return "bg-ok-bg text-ok";
+  if (g === "C") return "bg-warn-bg text-warn";
+  return "bg-danger-bg text-danger";
 }
 
 export function OverviewCapacity({ settings, activeCount }: Props) {
@@ -56,10 +55,13 @@ export function OverviewCapacity({ settings, activeCount }: Props) {
             {globalMax !== null ? ` / ${globalMax}` : ""}
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-surface2 overflow-hidden">
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
           <div
-            className={"h-full rounded-full " + (pct >= 100 ? "bg-red-500" : "bg-accent")}
-            style={{ width: `${pct}%` }}
+            className="h-full rounded-full"
+            style={{
+              width: `${pct}%`,
+              background: pct >= 100 ? "var(--danger)" : "linear-gradient(90deg,#4a8fd1,#7fb4e8)",
+            }}
           />
         </div>
       </div>

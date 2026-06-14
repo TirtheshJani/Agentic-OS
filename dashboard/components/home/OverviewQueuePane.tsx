@@ -47,8 +47,8 @@ export function OverviewQueuePane({ issues }: Props) {
             <li key={i.id} className="flex items-center gap-2">
               <span
                 className={
-                  "inline-block w-1.5 h-1.5 rounded-full shrink-0 " +
-                  (i.status === "running" ? "bg-emerald-500" : "bg-amber-500")
+                  "inline-block h-1.5 w-1.5 shrink-0 rounded-full " +
+                  (i.status === "running" ? "bg-ok" : "bg-warn")
                 }
               />
               <span className="truncate">{i.title}</span>

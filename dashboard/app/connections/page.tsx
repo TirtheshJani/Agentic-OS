@@ -2,7 +2,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Drawer } from "@/components/common/Drawer";
 import { Button } from "@/components/common/Button";
-import clsx from "clsx";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { Pill } from "@/components/common/Pill";
+import { StatusDot } from "@/components/common/StatusDot";
 
 interface ConnectionStatus {
   id: string;
@@ -12,11 +14,11 @@ interface ConnectionStatus {
   setup: string[];
 }
 
-const STATUS_STYLES: Record<ConnectionStatus["status"], string> = {
-  connected: "bg-ok-bg text-ok",
-  "not-configured": "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200",
-  unavailable: "bg-danger-bg text-danger",
-  deferred: "bg-surface2 text-ink2",
+const STATUS_TONES: Record<ConnectionStatus["status"], "ok" | "warn" | "danger" | "neutral"> = {
+  connected: "ok",
+  "not-configured": "warn",
+  unavailable: "danger",
+  deferred: "neutral",
 };
 
 const MCP_EDITABLE = new Set(["gmail", "calendar"]);
@@ -79,18 +81,26 @@ export default function ConnectionsPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-6">Connections</h1>
+      <SectionHeader
+        kicker="INTEGRATIONS"
+        title="Connections"
+        description="MCP servers and external accounts available to agent runs."
+      />
       {!connections ? (
         <p className="text-sm text-ink3">Checking connections...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {connections.map((c) => (
-            <section key={c.id} className="rounded-md border border-line p-4 space-y-2">
+            <section
+              key={c.id}
+              className="rounded-card border border-line bg-surface p-4 space-y-2 transition-colors hover:border-accent-line"
+            >
               <header className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-medium">{c.label}</h2>
-                <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full", STATUS_STYLES[c.status])}>
+                <h2 className="text-sm font-medium text-ink">{c.label}</h2>
+                <Pill tone={STATUS_TONES[c.status]}>
+                  <StatusDot tone={STATUS_TONES[c.status]} pulse={c.status === "connected"} />
                   {c.status}
-                </span>
+                </Pill>
               </header>
               <p className="text-xs text-ink3">{c.detail}</p>
               {c.setup.length > 0 && (
@@ -132,7 +142,7 @@ export default function ConnectionsPage() {
             onChange={(e) => setTemplateText(e.target.value)}
             rows={16}
             spellCheck={false}
-            className="w-full rounded-md border border-line2 bg-surface px-3 py-2 text-xs font-mono"
+            className="w-full rounded-card border border-line2 bg-surface px-3 py-2 text-xs font-mono"
           />
           {saveError && <p className="text-sm text-danger mt-2">{saveError}</p>}
         </Drawer>

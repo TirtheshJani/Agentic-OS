@@ -6,6 +6,7 @@ import { IssueDrawer } from "@/components/issue/IssueDrawer";
 import { NewIssueDialog } from "@/components/project/NewIssueDialog";
 import { ImportGitHubButton } from "@/components/project/ImportGitHubButton";
 import { Button } from "@/components/common/Button";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { useProjects } from "@/hooks/useProjects";
 import { useStream } from "@/hooks/useStream";
 
@@ -45,34 +46,39 @@ export default function IssuesPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">Issues</h1>
-        <div className="flex items-center gap-2">
-          {projects && projects.length > 0 && (
-            <select
-              value={newIssueProject}
-              onChange={(e) => setNewIssueProject(e.target.value)}
-              className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
-              title="Project for the new issue"
+      <SectionHeader
+        kicker="Workstream"
+        size="lg"
+        title="Issues"
+        description="Backlog → Queued → Running → Review → Done. Drag a card, or open it to act."
+        action={
+          <>
+            {projects && projects.length > 0 && (
+              <select
+                value={newIssueProject}
+                onChange={(e) => setNewIssueProject(e.target.value)}
+                className="rounded-pill border border-line2 bg-surface2 px-3 py-1.5 text-sm text-ink2"
+                title="Project for the new issue"
+              >
+                {projects.map(p => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+              </select>
+            )}
+            {newIssueProject && (
+              <ImportGitHubButton
+                projectSlug={newIssueProject}
+                repo={projects?.find((p) => p.slug === newIssueProject)?.repo}
+              />
+            )}
+            <Button
+              variant="primary"
+              onClick={() => setShowNewIssue(true)}
+              disabled={!newIssueProject}
             >
-              {projects.map(p => <option key={p.slug} value={p.slug}>{p.name}</option>)}
-            </select>
-          )}
-          {newIssueProject && (
-            <ImportGitHubButton
-              projectSlug={newIssueProject}
-              repo={projects?.find((p) => p.slug === newIssueProject)?.repo}
-            />
-          )}
-          <Button
-            variant="primary"
-            onClick={() => setShowNewIssue(true)}
-            disabled={!newIssueProject}
-          >
-            + New Issue
-          </Button>
-        </div>
-      </header>
+              + New Issue
+            </Button>
+          </>
+        }
+      />
 
       <EpicsBoard />
 

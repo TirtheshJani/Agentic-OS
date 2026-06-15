@@ -4,6 +4,7 @@ import { AgentCard, type AgentSummary } from "@/components/agents/AgentCard";
 import { AgentEditor } from "@/components/agents/AgentEditor";
 import { Button } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { useStream } from "@/hooks/useStream";
 
 export default function AgentsPage() {
@@ -28,10 +29,11 @@ export default function AgentsPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">Agents</h1>
-        <Button variant="primary" onClick={() => setEditor(null)}>+ New Agent</Button>
-      </header>
+      <SectionHeader
+        kicker="ROSTER"
+        title="Agents"
+        action={<Button variant="primary" onClick={() => setEditor(null)}>+ New Agent</Button>}
+      />
 
       {!agents ? (
         <p className="text-sm text-ink3">Loading agents...</p>

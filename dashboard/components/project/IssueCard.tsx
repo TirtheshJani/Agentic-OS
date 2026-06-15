@@ -2,6 +2,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
+import { Pill } from "@/components/common/Pill";
 import type { IssueSummary } from "@/hooks/useIssues";
 import type { AgentDisplay } from "./KanbanBoard";
 
@@ -13,6 +14,13 @@ interface Props {
   /** When provided, the assignee renders as a quick-assign select. */
   agents?: AgentDisplay[];
 }
+
+// Priority → label + accent color (matches the v2 cosmic palette).
+const PRIORITY: Record<number, { label: string; className: string }> = {
+  3: { label: "P3", className: "text-ink3" },
+  2: { label: "URGENT", className: "text-danger" },
+  1: { label: "HIGH", className: "text-warn" },
+};
 
 export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -34,13 +42,17 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
     // SSE issue.changed triggers the board reload.
   }
 
+  const isRunning = issue.status === "running";
+  const priority = PRIORITY[issue.priority];
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "rounded-md border border-line bg-surface p-3 cursor-grab active:cursor-grabbing text-sm",
-        isDragging && "shadow-lg"
+        "flex flex-col gap-2.5 rounded-card border border-line bg-surface p-3 cursor-grab active:cursor-grabbing text-sm shadow-card transition-colors hover:border-accent-line",
+        isRunning && "border-l-2 border-l-accent",
+        isDragging && "shadow-card-lg"
       )}
       {...attributes}
       {...listeners}
@@ -52,44 +64,51 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
         }
       }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium text-ink">{issue.title}</h3>
-        {issue.priority > 0 && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 shrink-0">
-            P{issue.priority}
+      <div className="flex items-center gap-2">
+        <span className="font-label text-[10px] text-ink3">#{issue.id}</span>
+        <Pill tone={issue.mode === "sync" ? "warn" : "neutral"}>{issue.mode}</Pill>
+        {priority && (
+          <span className={clsx("ml-auto font-label text-[9px] uppercase tracking-wide", priority.className)}>
+            {priority.label}
           </span>
         )}
       </div>
+
+      <h3 className="font-medium leading-snug text-ink">{issue.title}</h3>
+
       {showProject && (
-        <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200">
+        <span className="inline-flex w-fit rounded-pill bg-accent-bg px-2 py-0.5 font-label text-[10px] uppercase tracking-wide text-accent-ink">
           {issue.projectSlug}
         </span>
       )}
-      <div className="mt-2 flex items-center justify-between text-xs text-ink3">
+
+      {issue.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {issue.labels.map((l) => (
+            <span key={l} className="rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[9px] text-ink3">
+              {l}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 border-t border-line pt-2 text-xs text-ink3">
         {agents && agents.length > 0 ? (
           <select
             value={issue.assigneeSlug ?? ""}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => { e.stopPropagation(); assign(e.target.value); }}
-            className="text-xs max-w-[140px] rounded border border-line bg-transparent px-1 py-0.5"
+            className="ml-auto max-w-[120px] rounded-md border border-line2 bg-surface2 px-1.5 py-0.5 text-xs text-ink2"
             title="Assign agent"
           >
             <option value="">unassigned</option>
-            {agents.map(a => <option key={a.slug} value={a.slug}>{a.name}</option>)}
+            {agents.map((a) => <option key={a.slug} value={a.slug}>{a.name}</option>)}
           </select>
         ) : (
-          <span>{issue.assigneeSlug ?? "unassigned"}</span>
+          <span className="ml-auto truncate font-mono text-[11px]">{issue.assigneeSlug ?? "unassigned"}</span>
         )}
-        <span>{issue.mode}</span>
       </div>
-      {issue.labels.length > 0 && (
-        <div className="flex gap-1 flex-wrap mt-2">
-          {issue.labels.map(l => (
-            <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-surface2">{l}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

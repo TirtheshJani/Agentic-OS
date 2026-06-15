@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GraphView, type GraphNode, type GraphEdge } from "@/components/graph/GraphView";
 import { Drawer } from "@/components/common/Drawer";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { useStream } from "@/hooks/useStream";
 
 interface SearchResult {
@@ -64,18 +65,21 @@ export default function GraphPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6">
-      <header className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Knowledge Graph</h1>
-        <span className="text-sm text-ink3">
-          {data ? `${data.nodes.filter(n => !n.ghost).length} notes, ${data.edges.length} links` : "indexing..."}
-        </span>
-      </header>
+      <SectionHeader
+        kicker="KNOWLEDGE MAP"
+        title="Knowledge Graph"
+        action={
+          <span className="text-sm text-ink3">
+            {data ? `${data.nodes.filter((n) => !n.ghost).length} notes, ${data.edges.length} links` : "indexing..."}
+          </span>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <select
           value={folder}
           onChange={(e) => setFolder(e.target.value)}
-          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
+          className="rounded-pill border border-line2 bg-surface px-2 py-1.5 text-sm text-ink"
         >
           <option value="">All folders</option>
           {folders.map((f) => <option key={f} value={f}>{f}</option>)}
@@ -83,7 +87,7 @@ export default function GraphPage() {
         <select
           value={tag}
           onChange={(e) => setTag(e.target.value)}
-          className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm"
+          className="rounded-pill border border-line2 bg-surface px-2 py-1.5 text-sm text-ink"
         >
           <option value="">All tags</option>
           {tags.map((t) => <option key={t} value={t}>#{t}</option>)}
@@ -95,20 +99,20 @@ export default function GraphPage() {
             runSearch(e.target.value);
           }}
           placeholder="Search notes (title filter + full text)"
-          className="flex-1 min-w-[220px] rounded-md border border-line2 bg-surface px-3 py-1.5 text-sm"
+          className="flex-1 min-w-[220px] rounded-pill border border-line2 bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-ink3"
         />
       </div>
 
       {searchResults && searchResults.length > 0 && (
-        <div className="mb-4 rounded-md border border-line divide-y divide-line max-h-48 overflow-y-auto">
+        <div className="mb-4 rounded-card border border-line bg-surface divide-y divide-line max-h-48 overflow-y-auto">
           {searchResults.map((r) => (
             <button
               key={r.path}
               onClick={() => openNote(r.path, r.title)}
               className="block w-full text-left px-3 py-2 text-sm hover:bg-surface2"
             >
-              <span className="font-medium">{r.title}</span>
-              <span className="text-ink3 text-xs ml-2">{r.path}</span>
+              <span className="font-medium text-ink">{r.title}</span>
+              <span className="text-ink3 text-xs ml-2 font-mono">{r.path}</span>
               <span
                 className="block text-xs text-ink3 mt-0.5"
                 dangerouslySetInnerHTML={{ __html: r.snippet }}
@@ -139,14 +143,14 @@ export default function GraphPage() {
           footer={
             <a
               href={`obsidian://open?vault=vault&file=${encodeURIComponent(preview.path)}`}
-              className="text-sm px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+              className="text-sm px-3 py-1.5 rounded-pill bg-accent text-white shadow-glow hover:opacity-90"
             >
               Open in Obsidian
             </a>
           }
         >
           <p className="text-xs text-ink3 font-mono mb-3">{preview.path}</p>
-          <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono">{preview.content}</pre>
+          <pre className="text-xs whitespace-pre-wrap leading-relaxed font-mono text-ink2">{preview.content}</pre>
         </Drawer>
       )}
     </main>

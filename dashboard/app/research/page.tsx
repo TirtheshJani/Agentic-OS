@@ -5,6 +5,7 @@ import { Button } from "@/components/common/Button";
 import { Modal } from "@/components/common/Modal";
 import { Field, Input, Textarea } from "@/components/common/Field";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import type { ResearchProject } from "@/lib/research/projects";
 
 export default function ResearchPage() {
@@ -47,15 +48,16 @@ export default function ResearchPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-semibold">Research</h1>
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          New research project
-        </Button>
-      </div>
-      <p className="text-sm text-ink3 mb-6">
-        Research projects live in vault/research/. Sources are collected by agents; chat is grounded in the project folder.
-      </p>
+      <SectionHeader
+        kicker="DEEP WORK"
+        title="Research"
+        description="Research projects live in vault/research/. Sources are collected by agents; chat is grounded in the project folder."
+        action={
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            New research project
+          </Button>
+        }
+      />
 
       {!projects && <p className="text-sm text-ink3">Loading...</p>}
       {projects && projects.length === 0 && (
@@ -67,11 +69,13 @@ export default function ResearchPage() {
             <Link
               key={p.slug}
               href={`/research/${p.slug}`}
-              className="rounded-md border border-line p-4 hover:bg-surface2"
+              className="rounded-card border border-line bg-surface p-4 transition-colors hover:border-accent-line"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{p.title}</span>
-                <span className="rounded bg-surface2 px-1.5 py-0.5 text-xs">{p.status}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-sm text-ink">{p.title}</span>
+                <span className="rounded-pill bg-surface2 px-2 py-0.5 font-label text-[9px] uppercase tracking-wide text-ink2">
+                  {p.status}
+                </span>
               </div>
               <p className="text-sm text-ink3 mt-1 line-clamp-2">{p.question}</p>
               <p className="text-xs text-ink3 mt-2">

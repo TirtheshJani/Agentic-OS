@@ -111,7 +111,7 @@ export function NoteEditor({ path, content, onSaved }: NoteEditorProps) {
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 mb-2">
         <span className="flex-1 min-w-0 text-xs text-ink3 font-mono truncate">{path}</span>
-        {dirty && <span className="text-xs text-yellow-600">Unsaved changes</span>}
+        {dirty && <span className="text-xs text-warn">Unsaved changes</span>}
         <Button variant="primary" onClick={() => void save()} disabled={!dirty || saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
@@ -122,17 +122,17 @@ export function NoteEditor({ path, content, onSaved }: NoteEditorProps) {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         spellCheck={false}
-        className="flex-1 w-full resize-none rounded-md border border-line2 bg-surface px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent-line"
+        className="flex-1 w-full resize-none rounded-card border border-line2 bg-surface px-3 py-2 text-sm font-mono leading-relaxed text-ink focus:outline-none focus:ring-2 focus:ring-accent-line"
       />
       {linkCtx && suggestions.length > 0 && (
-        <div className="mt-1 rounded-md border border-line divide-y divide-line max-h-40 overflow-y-auto">
+        <div className="mt-1 rounded-card border border-line bg-surface divide-y divide-line max-h-40 overflow-y-auto shadow-card">
           {suggestions.map((s) => (
             <button
               key={s.path}
               onClick={() => insertLink(s.basename)}
-              className="block w-full text-left px-3 py-1.5 text-sm hover:bg-surface2"
+              className="block w-full text-left px-3 py-1.5 text-sm text-ink2 hover:bg-surface2"
             >
-              <span className="font-medium">[[{s.basename}]]</span>
+              <span className="font-medium text-ink">[[{s.basename}]]</span>
               <span className="text-xs text-ink3 font-mono ml-2">{s.path}</span>
             </button>
           ))}

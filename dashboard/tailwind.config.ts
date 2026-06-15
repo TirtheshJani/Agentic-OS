@@ -27,6 +27,8 @@ export default {
         "ok-bg": "var(--ok-bg)",
         danger: "var(--danger)",
         "danger-bg": "var(--danger-bg)",
+        warn: "var(--warn)",
+        "warn-bg": "var(--warn-bg)",
       },
       fontFamily: {
         display: ["var(--font-display)", "serif"],
@@ -35,10 +37,12 @@ export default {
       },
       borderRadius: {
         card: "12px",
+        pill: "999px",
       },
       boxShadow: {
         card: "var(--shadow)",
         "card-lg": "var(--shadow-lg)",
+        glow: "var(--glow)",
       },
     },
   },

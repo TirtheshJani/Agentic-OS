@@ -178,7 +178,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
   return (
     <div className="max-w-3xl">
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Knowledge docs</h3>
+        <h3 className="mb-2 font-label text-[11px] uppercase tracking-[0.16em] text-ink3">Knowledge docs</h3>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -191,9 +191,9 @@ export function KnowledgeTab({ projectSlug }: Props) {
             uploadFiles(e.dataTransfer.files);
           }}
           className={clsx(
-            "rounded-md border border-dashed p-4 text-center text-sm transition-colors",
+            "rounded-card border border-dashed p-4 text-center text-sm transition-colors",
             dragOver
-              ? "border-blue-500 bg-accent-bg"
+              ? "border-accent-line bg-accent-bg"
               : "border-line2"
           )}
         >
@@ -222,18 +222,18 @@ export function KnowledgeTab({ projectSlug }: Props) {
             {data.docs.map((doc) => (
               <li
                 key={doc.relPath}
-                className="flex items-center justify-between gap-3 rounded-md border border-line p-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-2.5 text-sm shadow-card"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium" title={doc.relPath}>{doc.name}</div>
+                  <div className="truncate font-medium text-ink" title={doc.relPath}>{doc.name}</div>
                   <div className="text-xs text-ink3 mt-0.5">{(doc.size / 1024).toFixed(1)} KB</div>
                 </div>
                 <span
                   className={clsx(
-                    "text-xs px-1.5 py-0.5 rounded whitespace-nowrap",
+                    "whitespace-nowrap rounded-pill px-2 py-0.5 font-label text-[10px] uppercase tracking-wide",
                     doc.chunkCount > 0 && doc.embedded === doc.chunkCount
-                      ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                      : "bg-gray-100 text-ink2 dark:bg-gray-900 dark:text-ink3"
+                      ? "bg-ok-bg text-ok"
+                      : "bg-surface2 text-ink3"
                   )}
                 >
                   {doc.embedded}/{doc.chunkCount} embedded
@@ -246,7 +246,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
       </section>
 
       <section className="mt-8">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Instructions</h3>
+        <h3 className="mb-2 font-label text-[11px] uppercase tracking-[0.16em] text-ink3">Instructions</h3>
         <Textarea
           rows={6}
           value={instructions}
@@ -272,7 +272,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
         <button
           onClick={() => setChatOpen((v) => !v)}
           aria-expanded={chatOpen}
-          className="text-xs font-semibold uppercase tracking-wide text-ink3 hover:text-ink"
+          className="font-label text-[11px] uppercase tracking-[0.16em] text-ink3 transition-colors hover:text-ink"
         >
           {chatOpen ? "▾" : "▸"} Project chat
         </button>
@@ -297,8 +297,8 @@ export function KnowledgeTab({ projectSlug }: Props) {
             {asking && <p className="text-sm text-ink3 mt-2">Thinking...</p>}
             {askError && <p className="text-sm text-danger mt-2">{askError}</p>}
             {askResult && (
-              <div className="mt-3 rounded-md border border-line p-3 text-sm">
-                <p className="whitespace-pre-wrap">{askResult.answer}</p>
+              <div className="mt-3 rounded-card border border-line bg-surface p-3 text-sm shadow-card">
+                <p className="whitespace-pre-wrap text-ink">{askResult.answer}</p>
                 {askResult.citations.length > 0 && (
                   <ul className="mt-2 space-y-0.5 text-xs text-ink3">
                     {askResult.citations.map((c) => (
@@ -309,7 +309,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
                   </ul>
                 )}
                 {askResult.degraded?.vector && (
-                  <p className="text-xs text-yellow-600 mt-2">
+                  <p className="text-xs text-warn mt-2">
                     Keyword-only retrieval{askResult.degraded.reason ? `: ${askResult.degraded.reason}` : "."}
                   </p>
                 )}
@@ -320,7 +320,7 @@ export function KnowledgeTab({ projectSlug }: Props) {
       </section>
 
       <section className="mt-8">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink3 mb-2">Outputs</h3>
+        <h3 className="mb-2 font-label text-[11px] uppercase tracking-[0.16em] text-ink3">Outputs</h3>
         {data.outputs.length === 0 ? (
           <EmptyState
             title="No outputs yet"
@@ -331,9 +331,9 @@ export function KnowledgeTab({ projectSlug }: Props) {
             {data.outputs.map((out) => (
               <li
                 key={out.relPath}
-                className="flex items-center justify-between gap-3 rounded-md border border-line p-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-2.5 text-sm shadow-card"
               >
-                <div className="truncate font-medium" title={out.relPath}>{out.name}</div>
+                <div className="truncate font-medium text-ink" title={out.relPath}>{out.name}</div>
                 <span className="text-xs text-ink3 whitespace-nowrap">
                   {new Date(out.mtime).toLocaleString()}
                 </span>

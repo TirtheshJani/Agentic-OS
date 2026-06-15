@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useStream, type StreamEventPayload } from "@/hooks/useStream";
 import { EmptyState } from "@/components/common/EmptyState";
+import { StatusDot } from "@/components/common/StatusDot";
 
 interface FeedItem {
   id: number;
@@ -59,14 +60,16 @@ export function OverviewEventStream() {
 
   return (
     <div className="rounded-md border border-line bg-surface p-3 flex flex-col min-h-0">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3">Event stream</h2>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="flex items-center gap-1.5 font-label text-[10px] uppercase tracking-wide text-ink3">
+          <StatusDot tone="ok" pulse /> Live Events
+        </h2>
         <Link href="/activity" className="text-xs text-accent hover:underline">activity →</Link>
       </div>
       {items.length === 0 ? (
         <EmptyState title="Listening…" description="Live events will appear here as runs and issues change." />
       ) : (
-        <ul className="space-y-1 overflow-y-auto text-xs" style={{ maxHeight: 280 }}>
+        <ul className="ao-scroll space-y-1 overflow-y-auto text-xs" style={{ maxHeight: 280 }}>
           {items.map((it) => (
             <li key={it.id} className="flex items-baseline gap-2">
               <span className="text-ink3 tabular-nums shrink-0">

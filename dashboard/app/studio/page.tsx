@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listProjects } from "@/lib/projects";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,11 @@ export default function StudioPage() {
   const projects = listProjects();
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-1">Design Studio</h1>
-      <p className="text-sm text-ink3 mb-6">
-        Architecture diagrams and design docs per project, stored in the vault and readable by agents.
-      </p>
+      <SectionHeader
+        kicker="DESIGN STUDIO"
+        title="Design Studio"
+        description="Architecture diagrams and design docs per project, stored in the vault and readable by agents."
+      />
       {projects.length === 0 ? (
         <EmptyState title="No projects" description="Create or link a project first." />
       ) : (
@@ -20,10 +22,10 @@ export default function StudioPage() {
             <Link
               key={p.slug}
               href={`/studio/${p.slug}`}
-              className="rounded-md border border-line p-4 hover:bg-surface2"
+              className="rounded-card border border-line bg-surface p-4 transition-colors hover:border-accent-line"
             >
-              <span className="font-medium text-sm">{p.name}</span>
-              <p className="text-xs text-ink3 mt-1">{p.slug}</p>
+              <span className="font-semibold text-sm text-ink">{p.name}</span>
+              <p className="text-xs text-ink3 mt-1 font-mono">{p.slug}</p>
             </Link>
           ))}
         </div>

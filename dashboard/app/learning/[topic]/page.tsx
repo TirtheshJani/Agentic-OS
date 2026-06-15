@@ -2,6 +2,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/common/Button";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import type { LearningTopic } from "@/lib/learning/topics";
 
 export default function LearningTopicPage({ params }: { params: Promise<{ topic: string }> }) {
@@ -57,38 +58,42 @@ export default function LearningTopicPage({ params }: { params: Promise<{ topic:
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-semibold">{data.title}</h1>
-        <div className="flex gap-2">
-          <Button variant="primary" onClick={() => startSession("tutor")} disabled={busy}>
-            Start session
-          </Button>
-          <Button onClick={() => startSession("srs-review")} disabled={busy || !data.hasSrs}>
-            SRS review
-          </Button>
-        </div>
-      </div>
-      <p className="text-sm text-ink3 mb-4">
-        Tutor: {data.tutorSlug ?? "none"} · {data.sessionCount} sessions
-      </p>
+      <SectionHeader
+        kicker="TUTOR"
+        title={data.title}
+        description={`Tutor: ${data.tutorSlug ?? "none"} · ${data.sessionCount} sessions`}
+        action={
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={() => startSession("tutor")} disabled={busy}>
+              Start session
+            </Button>
+            <Button onClick={() => startSession("srs-review")} disabled={busy || !data.hasSrs}>
+              SRS review
+            </Button>
+          </div>
+        }
+      />
       {message && <p className="text-sm text-ink2 mb-4">{message}</p>}
 
       <section className="mb-6">
-        <h2 className="text-sm font-semibold mb-2">Syllabus</h2>
-        <pre className="whitespace-pre-wrap text-sm rounded-md border border-line p-3">
+        <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mb-2">Syllabus</h2>
+        <pre className="whitespace-pre-wrap text-sm rounded-card border border-line bg-surface p-4 text-ink2">
           {data.syllabus || "(empty)"}
         </pre>
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold mb-2">Session logs</h2>
+        <h2 className="font-label uppercase tracking-wide text-[11px] text-ink3 mb-2">Session logs</h2>
         {sessions.length === 0 ? (
           <p className="text-sm text-ink3">No session logs yet.</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {sessions.map((s) => (
               <li key={s.path}>
-                <Link href={`/notes?path=${encodeURIComponent(s.path)}`} className="hover:underline">
+                <Link
+                  href={`/notes?path=${encodeURIComponent(s.path)}`}
+                  className="text-accent hover:underline"
+                >
                   {s.path.split("/").pop()}
                 </Link>
               </li>

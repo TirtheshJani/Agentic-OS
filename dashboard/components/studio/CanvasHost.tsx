@@ -100,7 +100,7 @@ export function CanvasHost({ slug, name }: { slug: string; name: string }) {
         </Button>
         {message && <span className="text-sm text-ink3">{message}</span>}
       </div>
-      <div className="flex-1 rounded-md border border-line overflow-hidden">
+      <div className="flex-1 rounded-card border border-line bg-surface overflow-hidden shadow-card">
         <Excalidraw
           initialData={initial === "new" ? undefined : (initial as never)}
           excalidrawAPI={(api) => {

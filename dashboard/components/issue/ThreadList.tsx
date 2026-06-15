@@ -44,12 +44,14 @@ export function ThreadList({ issueId }: Props) {
     <ul className="space-y-3">
       {entries.map((e, i) => (
         <li key={i} className="text-sm">
-          <div className="text-xs text-ink3 mb-1">
-            {formatTime(e.timestamp)}
-            {" · "}
-            {e.kind === "comment" ? e.author : `event: ${e.eventType}`}
+          <div className="mb-1 flex items-center gap-2 text-xs text-ink3">
+            <span className="font-mono">{formatTime(e.timestamp)}</span>
+            <span>·</span>
+            <span className={e.kind === "comment" ? "text-ink2" : "font-label uppercase tracking-wide text-[10px]"}>
+              {e.kind === "comment" ? e.author : `event: ${e.eventType}`}
+            </span>
           </div>
-          <div className="whitespace-pre-wrap font-mono leading-relaxed bg-raise rounded p-2 border border-gray-100 dark:border-gray-800">
+          <div className="whitespace-pre-wrap font-mono leading-relaxed bg-surface2 rounded-card p-2.5 border border-line text-ink2">
             {e.body}
           </div>
         </li>

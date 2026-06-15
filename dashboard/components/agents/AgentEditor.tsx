@@ -185,7 +185,8 @@ export function AgentEditor({ editSlug, onClose }: Props) {
         <p className="text-sm text-ink3">Loading agent...</p>
       ) : (
         <div className="space-y-4">
-          <section className="rounded-md border border-dashed border-line2 p-3 space-y-2">
+          <section className="rounded-card border border-dashed border-line2 bg-surface2 p-3 space-y-2">
+            <p className="font-label uppercase tracking-wide text-[10px] text-accent-ink">Draft with AI</p>
             <p className="text-xs text-ink3">
               Describe the agent and let Claude draft the profile (one headless call against your Max plan credits).
             </p>
@@ -223,7 +224,7 @@ export function AgentEditor({ editSlug, onClose }: Props) {
               <select
                 value={form.runtime}
                 onChange={(e) => changeRuntime(e.target.value)}
-                className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                className="w-full rounded-card border border-line2 bg-surface2 text-ink px-3 py-1.5 text-sm focus:border-accent-line focus:outline-none"
               >
                 {(runtimes ?? []).map((rt) => (
                   <option key={rt.id} value={rt.id} disabled={!rt.availability.available}>
@@ -244,7 +245,7 @@ export function AgentEditor({ editSlug, onClose }: Props) {
                       setForm({ ...form, model: e.target.value });
                     }
                   }}
-                  className="rounded-md border border-line2 bg-surface px-2 py-1.5 text-sm w-full"
+                  className="w-full rounded-card border border-line2 bg-surface2 text-ink px-3 py-1.5 text-sm focus:border-accent-line focus:outline-none"
                 >
                   <option value="">Default (runtime decides)</option>
                   {runtimeModels.map((m) => (

@@ -23,9 +23,9 @@ export function ProjectTabs({ board, knowledge }: Props) {
             aria-selected={active === tab}
             onClick={() => setActive(tab)}
             className={clsx(
-              "px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors",
+              "px-3 py-2 -mb-px border-b-2 font-label uppercase tracking-wide text-xs transition-colors",
               active === tab
-                ? "border-blue-600 text-accent"
+                ? "border-accent text-accent-ink"
                 : "border-transparent text-ink3 hover:text-ink"
             )}
           >

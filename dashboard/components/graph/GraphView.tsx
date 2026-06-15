@@ -25,16 +25,26 @@ interface Props {
   onSelectNode: (node: GraphNode) => void;
 }
 
-const FOLDER_COLORS: Record<string, string> = {
-  raw: "#f59e0b",
-  wiki: "#60a5fa",
-  outputs: "#34d399",
-  projects: "#c084fc",
-  shared: "#f472b6",
-  archive: "#9ca3af",
-  "(root)": "#e5e7eb",
-  "(unresolved)": "#4b5563",
+// Sigma's WebGL renderer needs concrete color strings, so we resolve the design
+// tokens (CSS custom properties) at render time. Folders map onto semantic tokens
+// (accent/ok/warn/danger) plus ink tiers so node colors follow the active theme.
+const FOLDER_TOKENS: Record<string, string> = {
+  raw: "--warn",
+  wiki: "--accent",
+  outputs: "--ok",
+  projects: "--accent-ink",
+  shared: "--danger",
+  archive: "--text-3",
+  "(root)": "--text-2",
+  "(unresolved)": "--text-3",
 };
+
+/** Read a CSS custom property off the document root (theme-aware token value). */
+function token(name: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
 
 export function GraphView({ nodes, edges, highlight, onSelectNode }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,19 +67,22 @@ export function GraphView({ nodes, edges, highlight, onSelectNode }: Props) {
       ]);
       if (disposed || !containerRef.current) return;
 
+      const defaultNode = token("--text-3", "#94a3b8");
+      const edgeColor = token("--border-2", "#374151");
       const graph = new Graph({ multi: true, type: "undirected" });
       for (const n of nodes) {
+        const tk = FOLDER_TOKENS[n.folder];
         graph.addNode(n.id, {
           label: n.title,
           size: Math.min(3 + Math.sqrt(n.degree) * 2, 14),
-          color: FOLDER_COLORS[n.folder] ?? "#94a3b8",
+          color: tk ? token(tk, defaultNode) : defaultNode,
           x: Math.random(),
           y: Math.random(),
         });
       }
       for (const e of edges) {
         if (graph.hasNode(e.source) && graph.hasNode(e.target)) {
-          graph.addEdge(e.source, e.target, { size: 0.5, color: "#374151" });
+          graph.addEdge(e.source, e.target, { size: 0.5, color: edgeColor });
         }
       }
 
@@ -84,7 +97,7 @@ export function GraphView({ nodes, edges, highlight, onSelectNode }: Props) {
       const renderer = new SigmaCtor(graph, containerRef.current, {
         renderEdgeLabels: false,
         labelRenderedSizeThreshold: 7,
-        labelColor: { color: "#9ca3af" },
+        labelColor: { color: token("--text-3", "#9ca3af") },
       });
       renderer.on("clickNode", ({ node }) => {
         const data = nodesRef.current.find((n) => n.id === node);
@@ -118,7 +131,7 @@ export function GraphView({ nodes, edges, highlight, onSelectNode }: Props) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-md border border-line bg-gray-950"
+      className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-card border border-line bg-canvas shadow-card"
     />
   );
 }

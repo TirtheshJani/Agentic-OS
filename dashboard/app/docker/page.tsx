@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/common/Button";
 import { Drawer } from "@/components/common/Drawer";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { StatusDot } from "@/components/common/StatusDot";
+import { Pill } from "@/components/common/Pill";
 import type { DockerStack, DockerContainer } from "@/lib/docker";
 
 interface DockerData {
@@ -66,10 +69,11 @@ export default function DockerPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-1">Docker</h1>
-      <p className="text-sm text-ink3 mb-6">
-        Compose stacks and containers. Lifecycle actions only work for allowlisted projects (Settings).
-      </p>
+      <SectionHeader
+        kicker="CONTAINERS"
+        title="Docker"
+        description="Compose stacks and containers. Lifecycle actions only work for allowlisted projects (Settings)."
+      />
 
       {error && <p className="text-sm text-danger mb-4">{error}</p>}
       {!data && !error && <p className="text-sm text-ink3">Loading...</p>}
@@ -84,18 +88,25 @@ export default function DockerPage() {
       {data && data.available.daemon && (
         <div className="space-y-6">
           <section>
-            <h2 className="text-sm font-semibold mb-2">Compose stacks</h2>
+            <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">Compose stacks</h2>
             {data.stacks.length === 0 ? (
               <p className="text-sm text-ink3">No compose stacks.</p>
             ) : (
               <div className="grid md:grid-cols-2 gap-3">
                 {data.stacks.map((s) => {
                   const allowed = data.allowlist.includes(s.name);
+                  const running = /running|up/i.test(s.status);
                   return (
-                    <div key={s.name} className="rounded-md border border-line p-3">
+                    <div
+                      key={s.name}
+                      className="rounded-card border border-line bg-surface p-3 transition-colors hover:border-accent-line"
+                    >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">{s.name}</span>
-                        <span className="text-xs text-ink3">{s.status}</span>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-ink3">
+                          <StatusDot tone={running ? "ok" : "neutral"} pulse={running} />
+                          {s.status}
+                        </span>
                       </div>
                       <div className="text-xs text-ink3 truncate" title={s.configFiles}>
                         {s.configFiles}
@@ -120,48 +131,48 @@ export default function DockerPage() {
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold mb-2">Containers</h2>
+            <h2 className="font-label uppercase tracking-wide text-[10px] text-ink3 mb-2">Containers</h2>
             {data.containers.length === 0 ? (
               <p className="text-sm text-ink3">No containers.</p>
             ) : (
+              <div className="rounded-card border border-line bg-surface overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-ink3 border-b border-line">
-                    <th className="py-1.5 pr-2">Name</th>
-                    <th className="py-1.5 pr-2">Image</th>
-                    <th className="py-1.5 pr-2">State</th>
-                    <th className="py-1.5 pr-2">Project</th>
-                    <th className="py-1.5 pr-2">Ports</th>
-                    <th className="py-1.5 pr-2"></th>
+                  <tr className="text-left border-b border-line font-label uppercase tracking-wide text-[10px] text-ink3">
+                    <th className="py-2 px-3">Name</th>
+                    <th className="py-2 px-3">Image</th>
+                    <th className="py-2 px-3">State</th>
+                    <th className="py-2 px-3">Project</th>
+                    <th className="py-2 px-3">Ports</th>
+                    <th className="py-2 px-3"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.containers.map((c) => (
-                    <tr key={c.id} className="border-b border-line">
-                      <td className="py-1.5 pr-2">{c.name}</td>
-                      <td className="py-1.5 pr-2 max-w-48 truncate" title={c.image}>
+                  {data.containers.map((c) => {
+                    const isRunning = c.state === "running";
+                    return (
+                    <tr key={c.id} className="border-b border-line transition-colors hover:bg-surface2">
+                      <td className="py-2 px-3 font-mono text-ink2">{c.name}</td>
+                      <td className="py-2 px-3 max-w-48 truncate text-ink2" title={c.image}>
                         {c.image}
                       </td>
-                      <td className="py-1.5 pr-2">
-                        <span
-                          className={
-                            c.state === "running"
-                              ? "rounded bg-green-100 dark:bg-green-950 px-1.5 py-0.5 text-xs text-ok"
-                              : "rounded bg-surface2 px-1.5 py-0.5 text-xs text-ink2"
-                          }
-                        >
+                      <td className="py-2 px-3">
+                        <Pill tone={isRunning ? "ok" : "neutral"}>
+                          <StatusDot tone={isRunning ? "ok" : "neutral"} pulse={isRunning} />
                           {c.state}
-                        </span>
+                        </Pill>
                       </td>
-                      <td className="py-1.5 pr-2">{c.composeProject ?? ""}</td>
-                      <td className="py-1.5 pr-2 text-xs text-ink3">{c.ports}</td>
-                      <td className="py-1.5 pr-2">
+                      <td className="py-2 px-3">{c.composeProject ?? ""}</td>
+                      <td className="py-2 px-3 text-xs text-ink3 font-mono">{c.ports}</td>
+                      <td className="py-2 px-3">
                         <Button onClick={() => setLogTarget(c)}>Logs</Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
+              </div>
             )}
           </section>
         </div>
@@ -169,7 +180,7 @@ export default function DockerPage() {
 
       {logTarget && (
         <Drawer title={`Logs: ${logTarget.name}`} onClose={() => setLogTarget(null)}>
-          <pre className="text-xs whitespace-pre-wrap p-3 overflow-auto max-h-[70vh] bg-raise rounded">
+          <pre className="font-mono text-xs whitespace-pre-wrap p-3 overflow-auto max-h-[70vh] bg-raise rounded-card border border-line">
             {logs || "Loading logs..."}
           </pre>
         </Drawer>

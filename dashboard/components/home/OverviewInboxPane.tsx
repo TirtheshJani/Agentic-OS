@@ -35,7 +35,7 @@ export function OverviewInboxPane({ issues, recentRuns }: Props) {
             <li key={i.id} className="flex items-center gap-2">
               <span className="truncate">{i.title}</span>
               {interruptedIssueIds.has(i.id) && (
-                <span className="text-[9px] font-medium uppercase tracking-wide px-1 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 shrink-0">
+                <span className="shrink-0 rounded-full bg-warn-bg px-1.5 py-0.5 font-label text-[9px] uppercase tracking-wide text-warn">
                   interrupted
                 </span>
               )}

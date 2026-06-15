@@ -1,5 +1,6 @@
 "use client";
 import clsx from "clsx";
+import { StatusDot } from "@/components/common/StatusDot";
 import type { CreateStepId, StepState } from "@/lib/createProject/steps";
 
 const STEP_LABELS: Record<CreateStepId, string> = {
@@ -13,39 +14,39 @@ const STEP_LABELS: Record<CreateStepId, string> = {
   issues: "Filing kickoff issues",
 };
 
-function glyph(status: StepState["status"]): { char: string; cls: string } {
+type DotTone = "ok" | "accent" | "warn" | "danger" | "neutral";
+
+function tone(status: StepState["status"]): { tone: DotTone; pulse: boolean } {
   switch (status) {
-    case "pending":
-      return { char: "○", cls: "text-ink3" }; // ○
     case "running":
-      return { char: "●", cls: "text-accent animate-pulse" }; // ●
+      return { tone: "accent", pulse: true };
     case "done":
-      return { char: "✓", cls: "text-ok" }; // ✓
-    case "skipped":
-      return { char: "−", cls: "text-ink3" }; // −
+      return { tone: "ok", pulse: false };
     case "warning":
-      return { char: "⚠", cls: "text-yellow-600" }; // ⚠
+      return { tone: "warn", pulse: false };
     case "failed":
-      return { char: "✕", cls: "text-danger" }; // ✕
+      return { tone: "danger", pulse: false };
+    case "skipped":
+    case "pending":
+    default:
+      return { tone: "neutral", pulse: false };
   }
 }
 
 export function StepChecklist({ steps }: { steps: StepState[] }) {
   return (
-    <ol className="space-y-2">
+    <ol className="space-y-2.5">
       {steps.map((step) => {
-        const g = glyph(step.status);
+        const t = tone(step.status);
         return (
           <li key={step.id} className="flex items-start gap-3">
-            <span className={clsx("w-4 text-center shrink-0 font-mono", g.cls)}>{g.char}</span>
+            <StatusDot tone={t.tone} pulse={t.pulse} className="mt-1.5" />
             <div className="min-w-0">
               <span
                 className={clsx(
                   "text-sm",
                   step.status === "skipped" && "line-through text-ink3",
-                  step.status === "pending"
-                    ? "text-ink3 dark:text-ink3"
-                    : "text-ink"
+                  step.status === "pending" ? "text-ink3" : "text-ink"
                 )}
               >
                 {STEP_LABELS[step.id]}

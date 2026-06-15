@@ -16,7 +16,10 @@ export function RuntimeBadge({ runtimeId }: { runtimeId: string }) {
   const label = RUNTIME_LABELS[runtimeId] ?? runtimeId;
   return (
     <span
-      className={clsx("px-1.5 py-0.5 rounded text-xs font-sans whitespace-nowrap", style)}
+      className={clsx(
+        "inline-flex items-center px-2 py-0.5 rounded-full font-label uppercase tracking-wide text-[10px] whitespace-nowrap",
+        style,
+      )}
       title={`Runtime: ${label}`}
     >
       {label}

@@ -33,7 +33,7 @@ export function IssueBodyEditor({ title, body, onSave }: Props) {
           setLocalTitle(e.target.value);
           scheduleSave({ title: e.target.value });
         }}
-        className="w-full text-lg font-semibold bg-transparent focus:outline-none border-b border-transparent hover:border-line2 focus:border-accent-line"
+        className="w-full font-display text-lg font-semibold text-ink bg-transparent focus:outline-none border-b border-transparent hover:border-line2 focus:border-accent-line"
       />
       <Textarea
         rows={10}

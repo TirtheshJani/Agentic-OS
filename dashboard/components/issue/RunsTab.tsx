@@ -6,6 +6,8 @@ import { RunTerminal } from "./RunTerminal";
 import { RunHeader } from "./RunHeader";
 import { StartButton } from "./StartButton";
 import { StopButton } from "./StopButton";
+import { Select } from "@/components/common/Select";
+import { RuntimeBadge } from "@/components/common/RuntimeBadge";
 
 interface Props {
   issueId: number;
@@ -108,17 +110,18 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-ink3">
-          {runs.length === 0 ? "No runs yet." : `${runs.length} run${runs.length === 1 ? "" : "s"}`}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface2 px-3 py-2.5">
+        <div className="flex items-center gap-2 font-label text-[10px] uppercase tracking-[0.16em] text-ink3">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+          {runs.length === 0 ? "No runs yet" : `${runs.length} run${runs.length === 1 ? "" : "s"}`}
         </div>
         <div className="flex items-center gap-2">
           {activeRun && <StopButton runId={activeRun.id} onStopped={onStopped} />}
           {!activeRun && runtimes && runtimes.length > 1 && (
-            <select
+            <Select
+              size="sm"
               value={runtimeOverride}
               onChange={(e) => setRuntimeOverride(e.target.value)}
-              className="text-xs rounded-card border border-line2 bg-surface text-ink px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-accent-line"
               title="Runtime for the next run"
             >
               <option value="">Agent default</option>
@@ -127,7 +130,7 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
                   {rt.displayName}{rt.availability.available ? "" : " (not installed)"}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
           <StartButton
             issueId={issueId}
@@ -150,14 +153,28 @@ export function RunsTab({ issueId, projectSlug, issueStatus, hasAssignee }: Prop
         <section>
           <h4 className="font-label text-[10px] uppercase tracking-[0.14em] text-ink3 mb-2">Previous runs</h4>
           <ul className="space-y-1.5">
-            {runs.filter(r => r.endedAt != null).map(r => (
-              <li
-                key={r.id}
-                className="rounded-card border border-line bg-surface2 px-3 py-2 text-xs font-mono text-ink2"
-              >
-                <span className="text-ink3">#{r.id}</span> {r.exitStatus} ({new Date(r.startedAt).toLocaleString()} → {r.endedAt ? new Date(r.endedAt).toLocaleString() : "?"})
-              </li>
-            ))}
+            {runs.filter(r => r.endedAt != null).map(r => {
+              const ok = r.exitStatus === "done";
+              const failed = r.exitStatus === "failed";
+              return (
+                <li
+                  key={r.id}
+                  className="flex items-center gap-2 rounded-card border border-line bg-surface2 px-3 py-2 text-xs"
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${ok ? "bg-ok" : failed ? "bg-danger" : "bg-ink3"}`}
+                  />
+                  <span className="font-mono text-ink3">#{r.id}</span>
+                  <RuntimeBadge runtimeId={r.runtimeId} />
+                  <span className={`font-label uppercase tracking-wide text-[10px] ${ok ? "text-ok" : failed ? "text-danger" : "text-ink2"}`}>
+                    {r.exitStatus ?? "ended"}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px] text-ink3">
+                    {new Date(r.startedAt).toLocaleString()}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

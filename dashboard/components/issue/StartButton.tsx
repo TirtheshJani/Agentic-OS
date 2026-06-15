@@ -55,8 +55,21 @@ export function StartButton({ issueId, disabled, disabledReason, runtimeId, onSt
         onClick={start}
         disabled={busy || disabled}
         title={disabledReason ?? undefined}
+        className={busy ? "ao-sheen" : undefined}
       >
-        {busy ? "Starting..." : "Start"}
+        <span className="inline-flex items-center gap-1.5">
+          {busy ? (
+            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2.5" />
+              <path d="M14 8a6 6 0 0 0-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+              <path d="M4.5 3.2v9.6a.6.6 0 0 0 .92.5l7.2-4.8a.6.6 0 0 0 0-1l-7.2-4.8a.6.6 0 0 0-.92.5Z" />
+            </svg>
+          )}
+          {busy ? "Starting..." : "Start"}
+        </span>
       </Button>
       {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>

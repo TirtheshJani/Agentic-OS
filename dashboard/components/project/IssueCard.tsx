@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
 import { Pill } from "@/components/common/Pill";
+import { Select } from "@/components/common/Select";
 import type { IssueSummary } from "@/hooks/useIssues";
 import type { AgentDisplay } from "./KanbanBoard";
 
@@ -94,19 +95,27 @@ export function IssueCard({ issue, onOpen, showProject, agents }: Props) {
 
       <div className="flex items-center gap-2 border-t border-line pt-2 text-xs text-ink3">
         {agents && agents.length > 0 ? (
-          <select
+          <Select
+            size="sm"
             value={issue.assigneeSlug ?? ""}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => { e.stopPropagation(); assign(e.target.value); }}
-            className="ml-auto max-w-[120px] rounded-md border border-line2 bg-surface2 px-1.5 py-0.5 text-xs text-ink2"
+            className="ml-auto max-w-[140px] truncate"
             title="Assign agent"
           >
             <option value="">unassigned</option>
             {agents.map((a) => <option key={a.slug} value={a.slug}>{a.name}</option>)}
-          </select>
+          </Select>
+        ) : issue.assigneeSlug ? (
+          <span className="ml-auto inline-flex items-center gap-1.5 truncate">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent-bg font-label text-[9px] uppercase text-accent-ink">
+              {issue.assigneeSlug.charAt(0)}
+            </span>
+            <span className="truncate font-mono text-[11px] text-ink2">{issue.assigneeSlug}</span>
+          </span>
         ) : (
-          <span className="ml-auto truncate font-mono text-[11px]">{issue.assigneeSlug ?? "unassigned"}</span>
+          <span className="ml-auto truncate font-mono text-[11px]">unassigned</span>
         )}
       </div>
     </div>

@@ -1,28 +1,24 @@
 "use client";
 import clsx from "clsx";
+import { runtimeTheme, runtimeAccentVars } from "@/lib/runtimeTheme";
 
-const RUNTIME_STYLES: Record<string, string> = {
-  "claude-code": "bg-accent-bg text-accent-ink",
-  "gemini-cli": "bg-ok-bg text-ok",
-};
-
-const RUNTIME_LABELS: Record<string, string> = {
-  "claude-code": "Claude Code",
-  "gemini-cli": "Gemini CLI",
-};
-
-export function RuntimeBadge({ runtimeId }: { runtimeId: string }) {
-  const style = RUNTIME_STYLES[runtimeId] ?? "bg-surface2 text-ink2";
-  const label = RUNTIME_LABELS[runtimeId] ?? runtimeId;
+// Accent-tinted runtime chip. Driven by lib/runtimeTheme so every runtime
+// (including antigravity, which previously fell through to a grey id) gets its
+// own hue. Token-backed, so it tracks the active theme.
+export function RuntimeBadge({ runtimeId, className }: { runtimeId: string; className?: string }) {
+  const theme = runtimeTheme(runtimeId);
   return (
     <span
+      style={runtimeAccentVars(runtimeId)}
       className={clsx(
-        "inline-flex items-center px-2 py-0.5 rounded-full font-label uppercase tracking-wide text-[10px] whitespace-nowrap",
-        style,
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label uppercase tracking-wide text-[10px] whitespace-nowrap",
+        "bg-[color:var(--rt-bg)] text-[color:var(--rt)]",
+        className,
       )}
-      title={`Runtime: ${label}`}
+      title={`Runtime: ${theme.label}`}
     >
-      {label}
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[color:var(--rt)]" />
+      {theme.label}
     </span>
   );
 }

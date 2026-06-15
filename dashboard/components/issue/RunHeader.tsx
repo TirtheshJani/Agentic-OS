@@ -1,9 +1,11 @@
 "use client";
+import type { CSSProperties } from "react";
 import type { RunData } from "@/hooks/useRun";
 import { useRuntime, useRuntimes } from "@/hooks/useRuntimes";
 import { RuntimeBadge } from "@/components/common/RuntimeBadge";
 import { StatusDot } from "@/components/common/StatusDot";
 import { Button } from "@/components/common/Button";
+import { runtimeAccentVars } from "@/lib/runtimeTheme";
 
 interface Props {
   run: RunData;
@@ -24,7 +26,10 @@ export function RunHeader({ run, onOpenInTerminal }: Props) {
   const canEscape = runtimes == null ? true : runtime?.capabilities.externalTerminalEscape === true;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface2 px-3 py-2 mb-2 text-xs">
+    <div
+      style={runtimeAccentVars(run.runtimeId) as CSSProperties}
+      className="flex items-center justify-between gap-3 rounded-card border border-line border-l-2 border-l-[color:var(--rt)] bg-surface2 px-3 py-2 mb-2 text-xs"
+    >
       <div className="flex items-center gap-3 min-w-0">
         <span className="flex items-center gap-1.5 font-label text-[10px] uppercase tracking-wide text-ink2">
           <StatusDot tone={isActive ? "ok" : "neutral"} pulse={isActive} />

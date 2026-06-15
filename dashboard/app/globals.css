@@ -34,6 +34,20 @@
   --glow: 0 0 14px rgba(74, 143, 209, 0.35);
   --star-op: 0;
   --grid-op: 0.04;
+  /* Per-runtime accent identities (agentic-os-v2 bolder redesign): each CLI gets
+     its own hue so the runtimes page, badges, and run controls read as distinct
+     "engines". Light values here, dark overrides below. Components set --rt /
+     --rt-bg / --rt-line inline from lib/runtimeTheme.ts and consume them with
+     arbitrary-value utilities (text-[color:var(--rt)] etc.). */
+  --rt-claude: #b85c3c;
+  --rt-claude-bg: rgba(184, 92, 60, 0.1);
+  --rt-claude-line: rgba(184, 92, 60, 0.34);
+  --rt-gemini: #2a7de1;
+  --rt-gemini-bg: rgba(42, 125, 225, 0.1);
+  --rt-gemini-line: rgba(42, 125, 225, 0.32);
+  --rt-agy: #7c4ddb;
+  --rt-agy-bg: rgba(124, 77, 219, 0.1);
+  --rt-agy-line: rgba(124, 77, 219, 0.32);
 }
 
 [data-theme="dark"] {
@@ -62,6 +76,15 @@
   --glow: 0 0 14px rgba(74, 143, 209, 0.55);
   --star-op: 1;
   --grid-op: 0.05;
+  --rt-claude: #e0875f;
+  --rt-claude-bg: rgba(224, 135, 95, 0.16);
+  --rt-claude-line: rgba(224, 135, 95, 0.4);
+  --rt-gemini: #6faef3;
+  --rt-gemini-bg: rgba(111, 174, 243, 0.16);
+  --rt-gemini-line: rgba(111, 174, 243, 0.4);
+  --rt-agy: #a98bf0;
+  --rt-agy-bg: rgba(169, 139, 240, 0.18);
+  --rt-agy-line: rgba(169, 139, 240, 0.42);
 }
 
 body {
@@ -132,12 +155,34 @@ body::after {
     stroke-dashoffset: -16;
   }
 }
+/* Launch-control sheen: a diagonal highlight sweeps across a busy "Starting..."
+   button so the wait reads as motion rather than a dead disabled state. */
+@keyframes ao-sheen {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
 
 .rise {
   animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .ao-pulse {
   animation: ao-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+/* Applied to the Start button while a run is being requested. */
+.ao-sheen {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: ao-sheen 1.4s linear infinite;
 }
 
 /* Opt-in custom scrollbar for scroll regions. */

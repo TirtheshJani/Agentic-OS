@@ -27,7 +27,7 @@ export function Switch({ checked, onChange, disabled = false, label }: SwitchPro
     >
       <span
         className={clsx(
-          "absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all duration-200",
+          "absolute top-[3px] w-4 h-4 rounded-full bg-white border border-line2 shadow transition-all duration-200",
           checked ? "left-[21px]" : "left-[3px]"
         )}
       />

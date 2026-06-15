@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   title: "Agentic OS",
   description: "Personal command center",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: { url: "/icons/icon-192.png", sizes: "192x192" },
+  },
 };
 
 export const viewport: Viewport = {

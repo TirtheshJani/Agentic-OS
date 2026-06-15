@@ -48,12 +48,18 @@ async function main() {
 
   const wss = new WebSocketServer({ noServer: true });
 
+  // Next owns its own WebSocket upgrades: hot module reload connects to
+  // /_next/webpack-hmr in dev. Hand every non-runtime upgrade to Next instead
+  // of destroying the socket, or HMR (and any future Next upgrade) silently
+  // breaks and code edits never reach the browser without a manual refresh.
+  // Next leaves upgrade paths it does not recognize untouched, so this is safe.
+  const nextUpgrade = app.getUpgradeHandler();
+
   server.on("upgrade", (req, socket, head) => {
     const { pathname } = parse(req.url ?? "");
     const match = pathname?.match(/^\/api\/runtime\/socket\/(\d+)$/);
     if (!match) {
-      console.log(`[ws] non-runtime upgrade rejected: ${pathname}`);
-      socket.destroy();
+      void nextUpgrade(req, socket, head);
       return;
     }
     const runId = parseInt(match[1], 10);

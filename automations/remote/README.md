@@ -52,6 +52,26 @@ repo:
 After registration, the skill runs unattended on the remote on the
 configured cadence. Local laptop state is irrelevant.
 
+## In-dashboard scheduler (why an automation might never fire)
+
+Separately from Claude Code's external runner above, the dashboard has its own
+60-second scheduler (`dashboard/lib/scheduler.ts`, spec 0009) that files queued
+issues for due automations. It fires a spec **only when ALL of these hold** — if
+your automations "never fire," check these first:
+
+1. **The spec has a `project:` key.** Without it the scheduler cannot file an
+   issue and silently skips the spec (`dueAutomations`). The value must be a
+   vault project slug (a folder under `vault/projects/<slug>/` with a
+   `PROJECT.md`). The specs in this folder ship **without** a `project:` key, so
+   none of them fire until you add one pointing at one of your projects.
+2. **Autonomy is ON.** The kill switch `autonomy.enabled` defaults to **off**.
+3. **The scheduler toggle is ON.** `autonomy.schedulerEnabled` also gates it.
+
+Toggle both in Settings (or `.agentic-os/settings.json`). With autonomy off the
+scheduler loop runs but every tick returns early — by design, so nothing is
+filed until you opt in. A spec with a bad cron is also skipped (and reported by
+`npm run validate:automations`).
+
 ## Failure handling
 
 Every spec must document its **failure mode** in the body — whether the

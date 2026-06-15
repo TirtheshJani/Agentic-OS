@@ -21,8 +21,30 @@ export function worktreePathFor(workspaceRoot: string, projectSlug: string, issu
   return path.join(workspaceRoot, projectSlug, ".worktrees", `issue-${issueId}`);
 }
 
+/**
+ * Run one git command. Uses the SYNCHRONOUS `spawnSync`, which blocks the
+ * dashboard's single-threaded event loop until git returns — so a stalled
+ * `git worktree add` (a Windows credential prompt, an index lock, an
+ * antivirus/OneDrive-synced workspace) would freeze the whole server and a
+ * `POST /api/runs` would never respond, leaving the UI stuck on "Starting...".
+ * The `timeout` converts a hang into a fast, visible error. Bin and timeout are
+ * read per call (overridable via env for tests / unusual installs).
+ */
 function runGit(cwd: string, args: string[]): { stdout: string; stderr: string; status: number } {
-  const r = spawnSync("git", args, { cwd, encoding: "utf8" });
+  const bin = process.env.AGENTIC_OS_GIT_BIN || "git";
+  const timeoutMs = Number(process.env.AGENTIC_OS_GIT_TIMEOUT_MS) || 30_000;
+  const r = spawnSync(bin, args, { cwd, encoding: "utf8", timeout: timeoutMs, windowsHide: true });
+  // spawnSync sets `error` (and leaves status null) on timeout (ETIMEDOUT) or
+  // when git is not on PATH (ENOENT). Surface both as a clear non-zero result so
+  // callers throw a descriptive WorktreeError instead of masking the cause.
+  if (r.error) {
+    const code = (r.error as NodeJS.ErrnoException).code;
+    const reason =
+      code === "ETIMEDOUT"
+        ? `git timed out after ${timeoutMs}ms (git ${args.join(" ")})`
+        : `git could not be run (${code ?? r.error.message}); is git installed and on PATH?`;
+    return { stdout: r.stdout ?? "", stderr: r.stderr || reason, status: typeof r.status === "number" ? r.status : 1 };
+  }
   return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", status: r.status ?? 1 };
 }
 

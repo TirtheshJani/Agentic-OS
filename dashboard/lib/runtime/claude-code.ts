@@ -1,5 +1,7 @@
 import * as pty from "node-pty";
 import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 import type { Runtime, SpawnOpts, SpawnedRun, RuntimeAvailability } from "@/lib/runtime/types";
 import { installSessionStartHook } from "@/lib/runtime/hookInstaller";
 import { watchForJsonlSessionId } from "@/lib/runtime/sessionIdCapture";
@@ -7,6 +9,43 @@ import { resolveLaunch } from "@/lib/runtime/launch";
 import { probeVersion } from "@/lib/runtime/detect";
 import { injectPrompt } from "@/lib/runtime/promptInjector";
 import { REPO_ROOT } from "@/lib/paths";
+
+/**
+ * Pre-accept the "Do you trust the files in this folder?" dialog for a worktree.
+ *
+ * `--dangerously-skip-permissions` bypasses per-tool permission prompts but NOT
+ * the one-time folder-trust dialog, which claude shows on first launch in any
+ * directory it has not seen (trust is per-exact-path and does not inherit from a
+ * trusted parent). That dialog blocks the input, so the prompt we type lands in
+ * the dialog and is lost — the agent then sits idle at an empty prompt. Gemini
+ * solves the equivalent with `--skip-trust`; claude has no such flag, so we set
+ * the trust flag directly in ~/.claude.json (the file claude reads at startup)
+ * before spawning. Best-effort: a malformed or missing file is non-fatal (the
+ * worst case is the pre-existing dialog behavior).
+ */
+export function preTrustWorktree(worktreePath: string): void {
+  const configPath = path.join(os.homedir(), ".claude.json");
+  let config: { projects?: Record<string, Record<string, unknown>> } = {};
+  try {
+    if (fs.existsSync(configPath)) config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch {
+    return; // unreadable/unparseable: leave it alone
+  }
+  // claude stores project keys with forward slashes even on Windows.
+  const key = worktreePath.replace(/\\/g, "/");
+  config.projects = config.projects ?? {};
+  config.projects[key] = {
+    ...(config.projects[key] ?? {}),
+    hasTrustDialogAccepted: true,
+    hasCompletedProjectOnboarding: true,
+    projectOnboardingSeenCount: 1,
+  };
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch {
+    /* non-fatal */
+  }
+}
 
 const HOOK_SCRIPT_PATH = path.join(REPO_ROOT, "dashboard", "scripts", "claude-session-hook.js");
 
@@ -37,6 +76,9 @@ export function claudeSpawnArgs(model?: string): string[] {
 
 async function spawnClaude(opts: SpawnOpts): Promise<SpawnedRun> {
   console.log(`[claude-code.spawn] run ${opts.runId}: cwd=${opts.worktreePath}, prompt length=${opts.initialPrompt.length}`);
+  // 0. Pre-accept the folder-trust dialog for this worktree. Without this the
+  // dialog swallows the typed prompt and the agent sits idle (see preTrustWorktree).
+  preTrustWorktree(opts.worktreePath);
   // 1. Install SessionStart hook in worktree so claude calls back with session_id.
   installSessionStartHook({
     worktreePath: opts.worktreePath,

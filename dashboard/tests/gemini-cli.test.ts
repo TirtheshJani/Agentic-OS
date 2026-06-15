@@ -35,8 +35,9 @@ describe("gemini-cli runtime", () => {
 
   it("resumes via cwd-scoped --resume latest (ignores the session-id marker)", () => {
     // gemini --resume takes "latest" or an index, not a UUID; the external
-    // terminal opens in the run's worktree where "latest" is this run.
-    expect(geminiCliRuntime.formatResumeCommand("uuid-123")).toBe("gemini --resume latest");
+    // terminal opens in the run's worktree where "latest" is this run. Resume
+    // carries --yolo --skip-trust so it keeps skipping prompts like spawn does.
+    expect(geminiCliRuntime.formatResumeCommand("uuid-123")).toBe("gemini --resume latest --yolo --skip-trust");
   });
 });
 
@@ -80,7 +81,7 @@ describe("antigravity-cli runtime", () => {
   });
 
   it("resumes via cwd-scoped --continue (ignores the marker id)", () => {
-    expect(antigravityCliRuntime.formatResumeCommand("anything")).toBe("agy --continue");
+    expect(antigravityCliRuntime.formatResumeCommand("anything")).toBe("agy --continue --dangerously-skip-permissions");
   });
 });
 

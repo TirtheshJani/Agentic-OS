@@ -27,7 +27,7 @@ nothing in the runtime registry blocks adding more.)
 | Bills | Claude Max plan (logged-in CLI) | Google AI Pro account | Google Antigravity account |
 | Spawn | `claude --dangerously-skip-permissions` in a PTY | `gemini --yolo --skip-trust --session-id <uuid>` | `agy --prompt-interactive <prompt> --dangerously-skip-permissions` |
 | Session id | hook or jsonl watcher (30s race) | self-assigned UUID (instant) | self-assigned UUID marker (instant) |
-| Resume / open-in-terminal | yes (`claude --resume <sid>`) | no (hidden in UI) | yes (`agy --continue`, cwd-scoped) |
+| Resume / open-in-terminal | yes (`claude --resume <sid>`) | no (hidden in UI; `gemini --resume latest --yolo --skip-trust`) | yes (`agy --continue --dangerously-skip-permissions`, cwd-scoped) |
 | Hooks (SessionStart etc.) | yes | no | no |
 | MCP injection per worktree | yes | no (global config only) | no (global config only) |
 

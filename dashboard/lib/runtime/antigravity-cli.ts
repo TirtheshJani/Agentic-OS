@@ -120,6 +120,8 @@ export const antigravityCliRuntime: Runtime = {
   detect: detectAgy,
   spawn: spawnAgy,
   // sid is unused: --continue is cwd-scoped and the open-terminal route runs it
-  // from the run's worktree, landing on this run's conversation.
-  formatResumeCommand: () => `agy --continue`,
+  // from the run's worktree, landing on this run's conversation. Carry the same
+  // --dangerously-skip-permissions as spawn so a resumed session keeps
+  // auto-approving tool actions instead of re-prompting.
+  formatResumeCommand: () => `agy --continue --dangerously-skip-permissions`,
 };

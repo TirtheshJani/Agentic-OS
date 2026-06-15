@@ -1,6 +1,7 @@
 "use client";
-import { Field } from "@/components/common/Field";
-import { Pill } from "@/components/common/Pill";
+import clsx from "clsx";
+import { Field, Input } from "@/components/common/Field";
+import { Select } from "@/components/common/Select";
 
 interface AgentDisplay {
   slug: string;
@@ -22,69 +23,66 @@ interface Props {
   onPatch: (patch: Partial<Issue>) => void;
 }
 
-type PillTone = "accent" | "ok" | "warn" | "danger" | "neutral";
-
-const STATUS_TONES: Record<Issue["status"], PillTone> = {
-  backlog: "neutral",
-  queued: "accent",
-  running: "ok",
-  review: "warn",
-  done: "neutral",
-  failed: "danger",
+// dot + text colors per status, plus whether the dot should pulse (live states).
+const STATUS_STYLES: Record<Issue["status"], { dot: string; text: string; bg: string; pulse: boolean }> = {
+  backlog: { dot: "bg-ink3", text: "text-ink2", bg: "bg-surface2", pulse: false },
+  queued: { dot: "bg-accent", text: "text-accent-ink", bg: "bg-accent-bg", pulse: false },
+  running: { dot: "bg-ok", text: "text-ok", bg: "bg-ok-bg", pulse: true },
+  review: { dot: "bg-warn", text: "text-warn", bg: "bg-warn-bg", pulse: false },
+  done: { dot: "bg-ink3", text: "text-ink2", bg: "bg-surface2", pulse: false },
+  failed: { dot: "bg-danger", text: "text-danger", bg: "bg-danger-bg", pulse: true },
 };
 
-const selectBase =
-  "rounded-card border border-line2 bg-surface text-ink px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-line";
-
 export function IssueHeader({ issue, crew, onPatch }: Props) {
+  const s = STATUS_STYLES[issue.status];
   return (
     <div className="grid grid-cols-2 gap-3 text-sm">
       <Field label="Status">
-        <Pill tone={STATUS_TONES[issue.status]}>{issue.status}</Pill>
+        <span className={clsx("inline-flex items-center gap-2 rounded-pill px-3 py-1 font-label text-xs uppercase tracking-wide", s.bg, s.text)}>
+          <span className={clsx("inline-block h-2 w-2 rounded-full", s.dot, s.pulse && "ao-pulse")} />
+          {issue.status}
+        </span>
       </Field>
       <Field label="Mode">
-        <select
+        <Select
           value={issue.mode}
           onChange={(e) => onPatch({ mode: e.target.value as Issue["mode"] })}
-          className={selectBase}
         >
           <option value="async">async</option>
           <option value="sync">sync</option>
-        </select>
+        </Select>
       </Field>
       <Field label="Assignee">
-        <select
+        <Select
+          fullWidth
           value={issue.assigneeSlug ?? ""}
           onChange={(e) => onPatch({ assigneeSlug: e.target.value || null })}
-          className={selectBase + " w-full"}
         >
           <option value="">unassigned</option>
           {crew.map(a => (
             <option key={a.slug} value={a.slug}>{a.name}</option>
           ))}
-        </select>
+        </Select>
       </Field>
       <Field label="Priority">
-        <select
+        <Select
           value={issue.priority}
           onChange={(e) => onPatch({ priority: parseInt(e.target.value, 10) })}
-          className={selectBase}
         >
           <option value={-1}>Low</option>
           <option value={0}>Normal</option>
           <option value={1}>High</option>
           <option value={2}>Urgent</option>
-        </select>
+        </Select>
       </Field>
       <Field label="Labels" hint="Comma-separated">
-        <input
+        <Input
           type="text"
           defaultValue={issue.labels.join(", ")}
           onBlur={(e) => {
             const labels = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
             onPatch({ labels });
           }}
-          className={selectBase + " w-full"}
         />
       </Field>
     </div>

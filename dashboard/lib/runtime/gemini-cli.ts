@@ -93,5 +93,7 @@ export const geminiCliRuntime: Runtime = {
   // cwd-scoped resume: the external terminal opens in the run's worktree, where
   // "latest" is this run's session. The session-id marker is ignored (gemini
   // --resume does not accept a UUID), mirroring antigravity's --continue.
-  formatResumeCommand: () => `gemini --resume latest`,
+  // Carry the same --yolo --skip-trust as spawn so a resumed session keeps
+  // skipping the trust dialog and per-action approvals instead of re-prompting.
+  formatResumeCommand: () => `gemini --resume latest --yolo --skip-trust`,
 };
